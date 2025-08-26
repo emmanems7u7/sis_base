@@ -68,8 +68,7 @@ Route::middleware(['auth', 'can:Administración de Usuarios'])->group(function (
         ->middleware('can:usuarios.editar');
 
     Route::put('/usuarios/{id}/{perfil}', [UserController::class, 'update'])
-        ->name('users.update')
-        ->middleware('can:usuarios.editar');
+        ->name('users.update');
 
     Route::delete('/usuarios/{user}', [UserController::class, 'destroy'])
         ->name('users.destroy')
