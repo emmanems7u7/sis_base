@@ -158,18 +158,19 @@ class PermisoRepository extends BaseRepository implements PermisoInterface
 
             $contenido = File::get($seeder->getRealPath());
 
-            // Construimos la línea esperada para borrar
-            $pattern = "/\s*\[\s*'name'\s*=>\s*'" . preg_quote($permiso->name, '/') . "',\s*'tipo'\s*=>\s*'" . preg_quote($permiso->tipo, '/') . "',\s*'guard_name'\s*=>\s*'" . preg_quote($permiso->guard_name, '/') . "'\s*\],?\s*/";
+            // Patrón para buscar cualquier array que tenga el 'id' del permiso
+            $pattern = "/\s*\[\s*'id'\s*=>\s*" . preg_quote($permiso->id, '/') . "[^\]]*\],?\s*/";
 
             $contenidoNuevo = preg_replace($pattern, '', $contenido, 1);
 
-            // Si cambió algo, guardamos
+            // Guardamos si hubo cambios
             if ($contenido !== $contenidoNuevo) {
                 File::put($seeder->getRealPath(), $contenidoNuevo);
-                break; // lo encontramos, no buscamos más
+                break; // ya lo encontramos
             }
         }
     }
+
 
 
     public function EditarPermiso($request, $permission)

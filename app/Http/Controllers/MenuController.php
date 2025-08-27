@@ -103,6 +103,9 @@ class MenuController extends Controller
 
         }
         if ($menu != null) {
+
+            $this->menuRepository->eliminarMenuDeSeeder($id);
+
             $this->menuRepository->eliminarDeSeederMenu($menu);
             $menu->delete();
         }

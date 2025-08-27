@@ -3,7 +3,8 @@
         <form id="formEditarPermiso" method="POST">
             @csrf
             @method('PUT')
-            <div class="modal-content">
+            <div
+                class="modal-content {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }}">
                 <div class="modal-header">
                     <h5 class="modal-title">Editar Permiso</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>

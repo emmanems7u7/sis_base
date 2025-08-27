@@ -368,7 +368,7 @@
         </nav>
         <!-- End Navbar -->
         <div class="container">
-        <div class="main-content position-relative max-height-vh-100 h-100">
+
        
         <script>
     document.addEventListener('DOMContentLoaded', function () {
@@ -390,7 +390,7 @@
       
         @yield('content')
       
-          </div>
+          
             
         </div>
 

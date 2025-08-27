@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 use App\Models\Configuracion;
 use Illuminate\Http\Request;
+use App\Models\Token;
+
 
 class ConfiguracionController extends Controller
 {
@@ -13,7 +15,8 @@ class ConfiguracionController extends Controller
             ['name' => 'Configuracion', 'url' => route('admin.configuracion.edit')],
         ];
         $config = Configuracion::first();
-        return view('configuracion.configuracion_general', compact('config', 'breadcrumb'));
+        $tokens = Token::where('tipo', 'groq')->get();
+        return view('configuracion.configuracion_general', compact('tokens', 'config', 'breadcrumb'));
     }
 
     public function update(Request $request)
@@ -22,8 +25,8 @@ class ConfiguracionController extends Controller
         $request->validate([
             'doble_factor_autenticacion' => 'nullable|boolean',
             'limite_de_sesiones' => 'nullable|integer|min:1',
-            'GROQ_API_KEY' => 'nullable|string|max:255',
-
+            'tokens.*.token' => 'required|string',
+            'tokens.*.estado' => 'required'
         ]);
 
         $config = Configuracion::first();
@@ -31,9 +34,17 @@ class ConfiguracionController extends Controller
         $config->update([
             'doble_factor_autenticacion' => $request->has('doble_factor_autenticacion'),
             'limite_de_sesiones' => $request->input('limite_de_sesiones'),
-            'GROQ_API_KEY' => $request->input('GROQ_API_KEY'),
             'mantenimiento' => $request->has('mantenimiento'),
         ]);
+
+
+        foreach ($request->tokens as $data) {
+            Token::updateOrCreate(
+                ['token' => $data['token']],
+                ['estado' => 1, 'tipo' => 'groq']
+            );
+        }
+
 
         return redirect()->back()->with('status', 'Configuración actualizada.');
     }

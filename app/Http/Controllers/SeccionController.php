@@ -10,16 +10,20 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use App\Interfaces\PermisoInterface;
 use Spatie\Permission\Models\Permission;
+use App\Interfaces\IAInterface;
 
 
 class SeccionController extends Controller
 {
     protected $menuRepository;
     protected $PermisoRepository;
-    public function __construct(MenuInterface $MenuInterface, PermisoInterface $PermisoInterface)
+    protected $IARepository;
+
+    public function __construct(MenuInterface $MenuInterface, PermisoInterface $PermisoInterface, IAInterface $iAInterface)
     {
         $this->PermisoRepository = $PermisoInterface;
         $this->menuRepository = $MenuInterface;
+        $this->IARepository = $iAInterface;
     }
 
     public function index()
@@ -91,6 +95,8 @@ class SeccionController extends Controller
 
         if ($permiso != null) {
             $this->PermisoRepository->eliminarDeSeeder($permiso);
+            $this->menuRepository->eliminarSeccionDeSeeder($id);
+
             $permiso->delete();
 
         }
@@ -102,52 +108,44 @@ class SeccionController extends Controller
     public function SugerirIcono(Request $request)
     {
         $titulo = $request->input('titulo');
-        $conf = Configuracion::first();
-        try {
-            $respuesta = Http::withHeaders([
-                'Authorization' => 'Bearer ' . $conf->GROQ_API_KEY,
-                'Content-Type' => 'application/json',
-            ])
-                ->timeout(10)
-                ->post('https://api.groq.com/openai/v1/chat/completions', [
-                    'model' => 'llama3-70b-8192',
-                    'messages' => [
-                        [
-                            'role' => 'system',
-                            'content' => 'Eres un asistente que sugiere nombres de iconos de Font Awesome. Responde ÚNICAMENTE con la clase del ícono (ej: "fas fa-user"). No incluyas texto adicional.'
-                        ],
-                        [
-                            'role' => 'user',
-                            'content' => "¿Qué ícono de Font Awesome corresponde al título: '$titulo'?"
-                        ]
-                    ],
-                    'max_tokens' => 10,
-                    'temperature' => 0.3,
-                ]);
 
-            if ($respuesta->successful()) {
-                $icono = trim($respuesta->json('choices.0.message.content') ?? '');
+        // Instrucción específica para la IA
+        $instruccion = 'Eres un asistente que sugiere nombres de iconos de Font Awesome. 
+        Responde ÚNICAMENTE con la clase del ícono (ej: "fas fa-user"). 
+        No incluyas texto adicional.';
 
+        // Llamar a la función consultarIA
+        $respuesta = $this->IARepository->consultarIA(
+            "¿Qué ícono de Font Awesome corresponde al título: '$titulo'?",
+            $instruccion,
+            10,        // max_tokens
+            0.3,       // temperature
+            'icono'    // tipoConsulta
+        );
 
-                if (preg_match('/^fas fa-[a-zA-Z0-9-]+$/', $icono)) {
-                    return response()->json(['icono' => $icono]);
-                } else {
-                    Log::warning('Respuesta inesperada de Llama 3', ['respuesta' => $icono]);
-                    return response()->json(['icono' => 'fas fa-question']);
-                }
-            } else {
-                Log::error('Error en la respuesta de Groq/Llama 3', [
-                    'status' => $respuesta->status(),
-                    'body' => $respuesta->body(),
-                ]);
-                return response()->json(['error' => 'Error al obtener el ícono'], 500);
+        // Si la respuesta es un JsonResponse, la devolvemos tal cual (puede ser error)
+        if ($respuesta instanceof \Illuminate\Http\JsonResponse) {
+            $data = $respuesta->getData(true);
+
+            // Si hay error, retornamos como está
+            if (isset($data['error'])) {
+                return $respuesta;
             }
 
-        } catch (\Exception $e) {
-            Log::error('Excepción al conectar con Groq', ['exception' => $e->getMessage()]);
-            return response()->json(['error' => 'Servicio no disponible'], 503);
+            // Validamos el formato del ícono
+            $icono = $data['respuesta'] ?? '';
+            if (preg_match('/^fas fa-[a-zA-Z0-9-]+$/', $icono)) {
+                return response()->json(['icono' => $icono]);
+            } else {
+                Log::warning('Respuesta inesperada de Llama 3', ['respuesta' => $icono]);
+                return response()->json(['icono' => 'fas fa-question']);
+            }
         }
+
+        // Si algo raro pasó
+        return response()->json(['icono' => 'fas fa-question']);
     }
+
 
     public function ordenar(Request $request)
     {

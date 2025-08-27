@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Providers;
+use App\Interfaces\IAInterface;
+use App\Repositories\IARepository;
 
 use Illuminate\Support\ServiceProvider;
 use App\Interfaces\UserInterface;
@@ -30,6 +32,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(UserInterface::class, UserRepository::class);
         $this->app->bind(RoleInterface::class, RoleRepository::class);
         $this->app->bind(PermisoInterface::class, PermisoRepository::class);
+        $this->app->bind(IAInterface::class, IARepository::class);
+
 
     }
 

@@ -208,4 +208,54 @@ class MenuRepository extends BaseRepository implements MenuInterface
         $menus = Menu::Where('seccion_id', $seccion_id)->orderBy('orden')->get();
         return $menus;
     }
+
+
+    function eliminarSeccionDeSeeder(int $id)
+    {
+        $seeders = File::files(database_path('seeders'));
+
+        foreach ($seeders as $seeder) {
+            // Solo buscamos los seeders de secciones generados
+            if (!Str::startsWith($seeder->getFilename(), 'Generado_SeederSeccion_')) {
+                continue;
+            }
+
+            $contenido = File::get($seeder->getRealPath());
+
+            // Patrón para eliminar cualquier array que tenga el 'id' de la sección
+            $pattern = "/\s*\[\s*'id'\s*=>\s*" . preg_quote($id, '/') . "[^\]]*\],?\s*/";
+
+            $contenidoNuevo = preg_replace($pattern, '', $contenido, 1);
+
+            // Guardamos si hubo cambios
+            if ($contenido !== $contenidoNuevo) {
+                File::put($seeder->getRealPath(), $contenidoNuevo);
+                break; // ya lo encontramos
+            }
+        }
+    }
+    function eliminarMenuDeSeeder(int $id)
+    {
+        $seeders = File::files(database_path('seeders'));
+
+        foreach ($seeders as $seeder) {
+            // Solo buscamos los seeders de menús generados
+            if (!Str::startsWith($seeder->getFilename(), 'Generado_SeederMenu_')) {
+                continue;
+            }
+
+            $contenido = File::get($seeder->getRealPath());
+
+            // Patrón para eliminar cualquier array que tenga el 'id' del menú
+            $pattern = "/\s*\[\s*'id'\s*=>\s*['\"]?" . preg_quote($id, '/') . "['\"]?[^\]]*\],?\s*/";
+
+            $contenidoNuevo = preg_replace($pattern, '', $contenido, 1);
+
+            // Guardamos si hubo cambios
+            if ($contenido !== $contenidoNuevo) {
+                File::put($seeder->getRealPath(), $contenidoNuevo);
+                break; // ya lo encontramos
+            }
+        }
+    }
 }

@@ -12,4 +12,6 @@ interface PermisoInterface
     public function EditarPermiso($request, $permission);
     function eliminarDeSeeder(Permission $permiso);
 
+
+
 }

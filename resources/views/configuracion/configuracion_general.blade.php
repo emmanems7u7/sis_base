@@ -28,19 +28,7 @@
                         <form method="POST" action="{{ route('admin.configuracion.update') }}">
                             @csrf
                             @method('PUT')
-                              
-                            <!-- API KEY IA GROQ -->
-                            <div class="mb-3">
-                                <label for="GROQ_API_KEY" class="form-label"> API KEY IA GROQ</label>
-                                <input type="text" 
-                                       class="form-control @error('GROQ_API_KEY') is-invalid @enderror" 
-                                       id="GROQ_API_KEY"
-                                       name="GROQ_API_KEY" 
-                                       value="{{ old('GROQ_API_KEY', $config->GROQ_API_KEY) }}">
-                                @error('GROQ_API_KEY')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
+                          @include('configuracion.input_tokens')
 
                             <!-- Activación de 2FA -->
                             <div class="form-check form-switch mb-3">
