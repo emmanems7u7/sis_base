@@ -40,7 +40,7 @@ class DatabaseSeeder extends Seeder
         // $this->call(GeneroSeeder::class);
         // $this->call(TipoDocumentoSeeder::class);
         //$this->call(FormulariosSeeder::class);
-        $this->call(class: CamposSeeder::class);
+        //     $this->call(class: CamposSeeder::class);
 
         /*
                 // Seeders creados automaticamente 28-08-2025
