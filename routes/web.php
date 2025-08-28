@@ -31,14 +31,12 @@ Route::get('/clear-cache', function () {
 
 //RUTAS PARA EJECUTAR ARTISAN EN PRODUCCION
 
-Route::middleware(['auth', 'can:ejecutar-artisan'])->group(function () {
 
-    Route::get('/artisan-panel', [ArtisanController::class, 'verificacion'])->name('artisan.admin');
+Route::get('/artisan-panel', [ArtisanController::class, 'verificacion'])->name('artisan.admin');
 
-    Route::post('/artisan-panel', [ArtisanController::class, 'index'])->name('artisan.verificar');
+Route::post('/artisan-panel', [ArtisanController::class, 'index'])->name('artisan.verificar');
 
-    Route::post('/artisan/run', [ArtisanController::class, 'run'])->name('artisan.run');
-});
+Route::post('/artisan/run', [ArtisanController::class, 'run'])->name('artisan.run');
 
 Route::post('/guardar-color-sidebar', [UserPersonalizacionController::class, 'guardarSidebarColor'])->middleware('auth');
 Route::post('/user/personalizacion/sidebar-type', [UserPersonalizacionController::class, 'updateSidebarType'])->middleware('auth');
