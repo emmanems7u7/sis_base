@@ -27,7 +27,7 @@ class MenuRepository extends BaseRepository implements MenuInterface
             'padre_id' => $this->cleanHtml($request->input('padre_id')) ?: null,
             'seccion_id' => $this->cleanHtml($request->input('seccion_id')),
             'ruta' => $this->cleanHtml($request->input('ruta')),
-            'accion_usuario' => Auth::user()->na
+
         ]);
 
 
@@ -49,7 +49,6 @@ class MenuRepository extends BaseRepository implements MenuInterface
         $padreId = $menu->padre_id !== null ? $menu->padre_id : 'null';
         $seccionId = (int) $menu->seccion_id;
         $ruta = addslashes($menu->ruta);
-        $accionUsuario = addslashes($menu->accion_usuario);
 
         $registro = <<<PHP
                                     [
@@ -59,7 +58,6 @@ class MenuRepository extends BaseRepository implements MenuInterface
                                         'padre_id' => {$padreId},
                                         'seccion_id' => {$seccionId},
                                         'ruta' => '{$ruta}',
-                                        'accion_usuario' => '{$accionUsuario}',
                                     ],
                         PHP;
 
@@ -132,7 +130,7 @@ class MenuRepository extends BaseRepository implements MenuInterface
                 'titulo' => $this->cleanHtml($request->input('titulo')),
                 'icono' => $this->cleanHtml($request->input('icono')),
                 'posicion' => $ultimaPosicion + 1,
-                'accion_usuario' => Auth::user()->name,
+
             ]
         );
         $this->guardarEnSeederSeccion($seccion);
@@ -151,7 +149,7 @@ class MenuRepository extends BaseRepository implements MenuInterface
         $titulo = addslashes($seccion->titulo);
         $icono = addslashes($seccion->icono);
         $posicion = (int) $seccion->posicion;
-        $accionUsuario = addslashes($seccion->accion_usuario);
+
 
         $registro = <<<PHP
                                 [
@@ -159,7 +157,7 @@ class MenuRepository extends BaseRepository implements MenuInterface
                                     'titulo' => '{$titulo}',
                                     'icono' => '{$icono}',
                                     'posicion' => {$posicion},
-                                    'accion_usuario' => '{$accionUsuario}',
+                                    
                                 ],
                     PHP;
 
