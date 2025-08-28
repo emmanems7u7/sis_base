@@ -16,6 +16,8 @@ use App\Http\Controllers\CategoriaController;
 use App\Http\Controllers\ConfiguracionCredencialesController;
 use App\Http\Controllers\ArtisanController;
 use App\Http\Controllers\UserPersonalizacionController;
+use App\Http\Controllers\FormularioController;
+use App\Http\Controllers\CamposFormController;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -264,6 +266,34 @@ Route::middleware(['auth', 'can:Administración y Parametrización'])->group(fun
 
 
 
+Route::get('formularios', [FormularioController::class, 'index'])->name('formularios.index');
+Route::get('formularios/create', [FormularioController::class, 'create'])->name('formularios.create');
+Route::post('formularios', [FormularioController::class, 'store'])->name('formularios.store');
+Route::get('formularios/{formulario}/edit', [FormularioController::class, 'edit'])->name('formularios.edit');
+Route::put('formularios/{formulario}', [FormularioController::class, 'update'])->name('formularios.update');
+Route::delete('formularios/{formulario}', [FormularioController::class, 'destroy'])->name('formularios.destroy');
 
 
+// Listado y constructor de campos
+Route::get('/formularios/{formulario}/campos', [CamposFormController::class, 'index'])
+    ->name('formularios.campos.index');
 
+// Crear campo
+Route::post('/campos/{formulario}', [CamposFormController::class, 'store'])
+    ->name('campos.store');
+
+// Obtener datos de un campo (para editar)
+Route::get('/campos/{campo}', [CamposFormController::class, 'show'])
+    ->name('campos.show');
+
+// Actualizar campo
+Route::put('/campos/{campo}', [CamposFormController::class, 'update'])
+    ->name('campos.update');
+
+// Eliminar campo
+Route::delete('/campos/{campo}', [CamposFormController::class, 'destroy'])
+    ->name('campos.destroy');
+
+// Reordenar campos
+Route::put('/formularios/{formulario}/campos/reordenar', [CamposFormController::class, 'reordenar'])
+    ->name('formularios.campos.reordenar');

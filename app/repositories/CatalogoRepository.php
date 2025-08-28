@@ -273,6 +273,23 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
         return $query->get();
     }
 
+    public function obtenerCatalogosPorCategoriaID($id, $soloActivos = false)
+    {
+        $categoria = Categoria::find($id);
+
+        if (!$categoria) {
+            return collect(); // Retorna colección vacía si no existe
+        }
+
+        $query = Catalogo::where('categoria_id', $categoria->id);
+
+        if ($soloActivos) {
+            $query->where('catalogo_estado', 1);
+        }
+
+        return $query->get();
+    }
+
     public function getNombreCatalogo($catalogo_codigo)
     {
         return Catalogo::where('catalogo_codigo', $catalogo_codigo)
