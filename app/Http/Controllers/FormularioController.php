@@ -221,7 +221,7 @@ class FormularioController extends Controller
             $datos[] = $fila;
 
 
-            $datos[] = $fila;
+
         }
         return $datos;
 
