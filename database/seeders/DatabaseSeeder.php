@@ -46,6 +46,7 @@ class DatabaseSeeder extends Seeder
         $this->call(class: TipoVideosSeeder::class);
 */
 
+        $this->call(EstadosActivoInactivoSeeder::class);
 
 
         // Seeders creados automaticamente 28-08-2025
