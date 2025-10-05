@@ -8,31 +8,38 @@
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-3">
                         <h5>Constructor de Formulario: {{ $formulario->nombre }}</h5>
+
                     </div>
+                    <a href="{{ route('formularios.index') }}" class="btn btn-secondary btn-sm"><i
+                            class="fas fa-arrow-left me-1"></i>Volver a Formularios</a>
+
+                    <button class="btn btn-primary ms-2 btn-sm ver-formulario" data-id="{{ $formulario->id }}">
+                        <i class="fas fa-eye"></i> Ver Formulario
+                    </button>
                 </div>
             </div>
         </div>
-        <div class="col-md-6">
-            <h5><i class="fas fa-edit me-2"></i>Construcción de Formularios</h5>
+        <div class="col-md-6 mt-3">
 
-            <small><i class="fas fa-info-circle me-1"></i>En este módulo puedes diseñar y gestionar formularios
-                personalizados para cualquier propósito dentro del sistema.</small><br>
+            <div class="card shadow-lg">
+                <div class="card-body">
+                    <h5><i class="fas fa-edit me-2"></i>Construcción de Formularios</h5>
 
-
-
-            <small><i class="fas fa-arrows-alt me-1"></i>Los campos se pueden <strong>arrastrar</strong> para cambiar su
-                orden de aparición dentro del formulario. El cambio se guarda automáticamente al soltar el
-                campo.</small><br>
+                    <small><i class="fas fa-info-circle me-1"></i>En este módulo puedes diseñar y gestionar formularios
+                        personalizados para cualquier propósito dentro del sistema.</small><br>
 
 
 
+                    <small><i class="fas fa-arrows-alt me-1"></i>Los campos se pueden <strong>arrastrar</strong> para
+                        cambiar su
+                        orden de aparición dentro del formulario. El cambio se guarda automáticamente al soltar el
+                        campo.</small><br>
 
-            <small><i class="fas fa-copy me-1"></i>Los formularios pueden ser reutilizados y exportados para distintos
-                módulos según la necesidad.</small><br>
-
-
-
-
+                    <small><i class="fas fa-copy me-1"></i>Los formularios pueden ser reutilizados y exportados para
+                        distintos
+                        módulos según la necesidad.</small><br>
+                </div>
+            </div>
         </div>
 
     </div>
@@ -83,7 +90,7 @@
                     <!-- Requerido -->
                     <div class="col-md-1 d-flex align-items-center">
                         <div class="form-check d-flex align-items-center gap-1">
-                            <input type="checkbox" id="requeridoCampo" class="form-check-input">
+                            <input type="checkbox" id="requeridoCampo" name="requerido" class="form-check-input">
                             <label class="form-check-label mb-0" for="requeridoCampo">Requerido</label>
                             <i class="fas fa-question-circle text-primary" data-bs-toggle="tooltip" data-bs-placement="top"
                                 title="Marca la casilla Requerido si deseas que el campo sea obligatorio al completar el formulario."></i>
@@ -95,7 +102,7 @@
                         <label for="categoriaCampo" class="form-label">Categoría</label> <i
                             class="fas fa-question-circle text-primary" data-bs-toggle="tooltip" data-bs-placement="top"
                             title="Seleccione una categoría que se utilizará para completar el tipo seleccionado."></i>
-                        <select id="categoriaCampo" class="form-select">
+                        <select id="categoriaCampo" name="categoria_id" class="form-select">
                             <option value="">-- Seleccionar categoría --</option>
                             @foreach($categorias as $categoria)
                                 <option value="{{ $categoria->id }}">{{ $categoria->nombre }}</option>
@@ -106,7 +113,8 @@
                     <!-- Botones -->
                     <div class="col-md-12 d-flex gap-2 mt-2">
                         <button id="btnAgregarCampo" class="btn btn-primary">Agregar campo</button>
-                        <button id="btnCancelarEdicion" class="btn btn-secondary" style="display:none;">Cancelar</button>
+                        <button type="button" id="btnCancelarEdicion" class="btn btn-secondary"
+                            style="display:none;">Cancelar</button>
                     </div>
                 </div>
 
@@ -137,10 +145,10 @@
 
 
                             <a type="button" class="btn btn-sm btn-danger " id=""
-                                onclick="confirmarEliminacion('eliminarCampo', '¿Estás seguro de que deseas eliminar este Campo?')">Eliminar</a>
+                                onclick="eliminarCampo('eliminarCampo_{{ $campo->id }}',{{ $campo->id }})">Eliminar</a>
 
-                            <form id="eliminarCampo" method="POST" action="{{ route('campos.destroy', $campo) }}"
-                                style="display: none;">
+                            <form id="eliminarCampo_{{ $campo->id }}" method="POST"
+                                action="{{ route('campos.destroy', $campo) }}" style="display: none;">
                                 @csrf
                                 @method('DELETE')
                             </form>
@@ -152,7 +160,7 @@
     </div>
 
 
-
+    @include('formularios.campos.modal_visor')
     <script>
         // Drag & Drop
 
@@ -192,10 +200,16 @@
         const categoriaCampo = document.getElementById('ContenedorCategoria');
 
         tipoCampo.addEventListener('change', function () {
+
             const tipoTexto = this.options[this.selectedIndex].textContent.trim();
-            if (['Radio', 'Checkbox', 'Selector'].includes(tipoTexto)) {
-                categoriaCampo.style.display = 'inline-block';
+            if (['Radio', 'Checkbox', 'Selector', 'Imagen', 'Video', 'Archivo'].includes(tipoTexto)) {
+
+
+                categoriaCampo.style.display = '';
+                document.getElementById('categoriaCampo').style.display = 'inline-block';
             } else {
+
+
                 categoriaCampo.style.display = 'none';
                 categoriaCampo.value = '';
             }
@@ -205,6 +219,7 @@
 
         // Cancelar edición
         document.getElementById('btnCancelarEdicion').addEventListener('click', function () {
+            alertify.error("Edición cancelada");
             editId = null;
             document.getElementById('tipoCampo').value = '';
             document.getElementById('nombreCampo').value = '';
@@ -214,17 +229,79 @@
             categoriaCampo.value = '';
             this.style.display = 'none';
             document.getElementById('btnAgregarCampo').textContent = 'Agregar campo';
+            const form = document.getElementById('formCampo');
             form.action = "{{ route('campos.store', $formulario) }}";
             form.querySelector('input[name="_method"]')?.remove();
+
         });
+
+        // Editar campo
+
+
+        // Función para cargar los datos del campo en el formulario
+        function cargarCampo(editId) {
+            fetch(`/campos/${editId}`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) {
+                        alertify.error('No se pudo cargar el campo');
+                        return;
+                    }
+
+                    const campo = data.campo;
+
+                    // Llenar form
+                    document.getElementById('tipoCampo').value = campo.tipo;
+                    document.getElementById('nombreCampo').value = campo.nombre;
+                    document.getElementById('etiquetaCampo').value = campo.etiqueta;
+                    document.getElementById('requeridoCampo').checked = campo.requerido;
+
+                    const categoriaCampo = document.getElementById('categoriaCampo');
+                    if (campo.categoria_id) {
+                        categoriaCampo.style.display = 'inline-block';
+                        categoriaCampo.value = campo.categoria_id;
+                    } else {
+                        categoriaCampo.style.display = 'none';
+                        categoriaCampo.value = '';
+                    }
+
+                    // Cambiar acción del form para edición
+                    const form = document.getElementById('formCampo');
+                    form.action = `/campos/${editId}`;
+                    form.method = 'POST';
+
+                    // Agregar hidden para PUT
+                    let inputMethod = form.querySelector('input[name="_method"]');
+                    if (!inputMethod) {
+                        inputMethod = document.createElement('input');
+                        inputMethod.type = 'hidden';
+                        inputMethod.name = '_method';
+                        form.appendChild(inputMethod);
+                    }
+                    inputMethod.value = 'PUT';
+
+                    // Cambiar texto de botón y mostrar cancelar
+                    document.getElementById('btnAgregarCampo').textContent = 'Actualizar campo';
+                    document.getElementById('btnCancelarEdicion').style.display = 'inline-block';
+                    alertify.success("Ahora puede editar el campo seleccionado");
+
+                })
+                .catch(() => alertify.error('Error al cargar el campo'));
+        }
 
         // Editar campo
         document.querySelectorAll('.btnEditarCampo').forEach(btn => {
             btn.addEventListener('click', function () {
-                editId = this.getAttribute('data-id');
+                const editId = this.getAttribute('data-id');
 
-                // Hacer fetch al backend para obtener datos del campo
-                fetch(`/campos/${editId}`, {
+                // Verificar si el formulario tiene respuestas antes de permitir editar
+                fetch(`/campos/${editId}/check-respuestas`, {
                     method: 'GET',
                     headers: {
                         'X-CSRF-TOKEN': '{{ csrf_token() }}',
@@ -232,49 +309,76 @@
                     }
                 })
                     .then(res => res.json())
-                    .then(data => {
-                        if (!data.success) return alert('No se pudo cargar el campo');
-
-                        const campo = data.campo;
-
-                        // Llenar form
-                        document.getElementById('tipoCampo').value = campo.tipo;
-                        document.getElementById('nombreCampo').value = campo.nombre;
-                        document.getElementById('etiquetaCampo').value = campo.etiqueta;
-                        document.getElementById('requeridoCampo').checked = campo.requerido;
-
-                        if (campo.categoria_id) {
-                            document.getElementById('categoriaCampo').style.display = 'inline-block';
-                            document.getElementById('categoriaCampo').value = campo.categoria_id;
+                    .then(check => {
+                        if (check.tiene_respuestas) {
+                            alertify.confirm(
+                                'Advertencia',
+                                'Este campo pertenece a un formulario que ya tiene respuestas. ¿Seguro que quieres editarlo?',
+                                function () {
+                                    // Confirmó: cargar campo
+                                    cargarCampo(editId);
+                                },
+                                function () {
+                                    // Canceló
+                                    alertify.error('Edición cancelada');
+                                }
+                            );
                         } else {
-                            document.getElementById('categoriaCampo').style.display = 'none';
-                            document.getElementById('categoriaCampo').value = '';
+                            // No hay respuestas, cargar campo directamente
+                            cargarCampo(editId);
                         }
-
-                        // Cambiar acción del form para edición
-                        const form = document.getElementById('formCampo');
-                        form.action = `/campos/${editId}`;
-                        form.method = 'POST';
-
-                        // Agregar hidden para PUT
-                        let inputMethod = form.querySelector('input[name="_method"]');
-                        if (!inputMethod) {
-                            inputMethod = document.createElement('input');
-                            inputMethod.type = 'hidden';
-                            inputMethod.name = '_method';
-                            form.appendChild(inputMethod);
-                        }
-                        inputMethod.value = 'PUT';
-
-                        // Cambiar texto de botón y mostrar cancelar
-                        document.getElementById('btnAgregarCampo').textContent = 'Actualizar campo';
-                        document.getElementById('btnCancelarEdicion').style.display = 'inline-block';
                     })
-                    .catch(() => alert('Error al cargar el campo'));
+                    .catch(() => alertify.error('Error al verificar respuestas del formulario'));
             });
         });
 
 
+        //eliminar campo
+        function eliminarCampo(id, campo) {
+            // Verificar si el formulario tiene respuestas antes de permitir editar
+            fetch(`/campos/${campo}/check-respuestas`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+                .then(res => res.json())
+                .then(check => {
+                    if (check.tiene_respuestas) {
+                        alertify.confirm(
+                            'Advertencia',
+                            'Este campo pertenece a un formulario que ya tiene respuestas. ¿Seguro que quieres eliminarlo?',
+                            function () {
+                                document.getElementById(id).submit();
+
+                                confirmarEliminacion(id, '¿Estás seguro de que deseas eliminar este Campo?')
+
+                            },
+                            function () {
+                                // Canceló
+                                alertify.error('Eliminación cancelada');
+                            }
+                        );
+                    } else {
+                        alertify.confirm(
+                            'Confirmar eliminación',
+                            '¿Estás seguro de que deseas eliminar este Campo?',
+                            function () {
+                                document.getElementById(id).submit();
+
+                            },
+                            function () {
+
+                                alertify.error('Eliminación cancelada');
+                            }
+                        );
+
+
+                    }
+                })
+                .catch(() => alertify.error('Error al verificar respuestas del formulario'));
+        }
 
     </script>
 @endsection

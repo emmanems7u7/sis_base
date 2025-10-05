@@ -241,7 +241,22 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
             File::put($rutaSeeder, $contenidoModificado);
         }
     }
+    public function obtenerCatalogosPorCategoria($nombreCategoria, $soloActivos = false)
+    {
+        $categoria = Categoria::where('nombre', $nombreCategoria)->first();
 
+        if (!$categoria) {
+            return collect(); // Retorna colección vacía si no existe
+        }
+
+        $query = Catalogo::where('categoria_id', $categoria->id);
+
+        if ($soloActivos) {
+            $query->where('catalogo_estado', 1);
+        }
+
+        return $query->get();
+    }
     function generarNuevoCodigoCatalogo(int $categoriaId, string $codigoInicial = 'diag-001'): string
     {
         $ultimoCatalogo = Catalogo::where('categoria_id', $categoriaId)
@@ -269,4 +284,23 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
         return Catalogo::where('catalogo_codigo', $catalogo_codigo)
             ->value('catalogo_descripcion') ?? 'No encontrado';
     }
+
+    public function obtenerCatalogosPorCategoriaID($id, $soloActivos = false)
+    {
+        $categoria = Categoria::find($id);
+
+        if (!$categoria) {
+            return collect(); // Retorna colección vacía si no existe
+        }
+
+        $query = Catalogo::where('categoria_id', $categoria->id);
+
+        if ($soloActivos) {
+            $query->where('catalogo_estado', 1);
+        }
+
+        return $query->get();
+    }
+
+
 }

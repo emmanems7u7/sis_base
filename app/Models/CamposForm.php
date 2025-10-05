@@ -21,7 +21,7 @@ class CamposForm extends Model
         'config' => 'array',
         'requerido' => 'boolean'
     ];
-
+    protected $appends = ['campo_nombre'];
     public function formulario()
     {
         return $this->belongsTo(Formulario::class, 'form_id');
@@ -38,4 +38,10 @@ class CamposForm extends Model
 
         return strtolower($descripcion);
     }
+
+    public function opciones_catalogo()
+    {
+        return $this->hasMany(Catalogo::class, 'categoria_id', 'categoria_id');
+    }
+
 }

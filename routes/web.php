@@ -19,6 +19,7 @@ use App\Http\Controllers\UserPersonalizacionController;
 use App\Http\Controllers\FormularioController;
 use App\Http\Controllers\CamposFormController;
 use Illuminate\Support\Facades\Artisan;
+use App\Http\Controllers\RespuestasFormController;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -31,12 +32,14 @@ Route::get('/clear-cache', function () {
 
 //RUTAS PARA EJECUTAR ARTISAN EN PRODUCCION
 
+Route::middleware(['auth', 'can:ejecutar-artisan'])->group(function () {
 
-Route::get('/artisan-panel', [ArtisanController::class, 'verificacion'])->name('artisan.admin');
+    Route::get('/artisan-panel', [ArtisanController::class, 'verificacion'])->name('artisan.admin');
 
-Route::post('/artisan-panel', [ArtisanController::class, 'index'])->name('artisan.verificar');
+    Route::post('/artisan-panel', [ArtisanController::class, 'index'])->name('artisan.verificar');
 
-Route::post('/artisan/run', [ArtisanController::class, 'run'])->name('artisan.run');
+    Route::post('/artisan/run', [ArtisanController::class, 'run'])->name('artisan.run');
+});
 
 Route::post('/guardar-color-sidebar', [UserPersonalizacionController::class, 'guardarSidebarColor'])->middleware('auth');
 Route::post('/user/personalizacion/sidebar-type', [UserPersonalizacionController::class, 'updateSidebarType'])->middleware('auth');
@@ -300,3 +303,35 @@ Route::delete('/campos/{campo}', [CamposFormController::class, 'destroy'])
 // Reordenar campos
 Route::put('/formularios/{formulario}/campos/reordenar', [CamposFormController::class, 'reordenar'])
     ->name('formularios.campos.reordenar');
+
+Route::get('/formulario/{id}/campos', [App\Http\Controllers\FormularioController::class, 'showCampos'])->name('formulario.campos');
+
+
+Route::get('/formularios/{form}/create', [RespuestasFormController::class, 'create'])
+    ->name('formularios.registrar');
+
+
+Route::post('/formularios/{form}/responder', [RespuestasFormController::class, 'store'])
+    ->name('formularios.responder');
+
+
+Route::get('/formularios/{form}/respuestas', [App\Http\Controllers\RespuestasFormController::class, 'indexPorFormulario'])
+    ->name('formularios.respuestas.formulario');
+
+
+Route::get('/campos/{campo}/check-respuestas', [CamposFormController::class, 'checkRespuestas'])
+    ->name('campos.checkRespuestas');
+
+
+Route::get('/respuestas/{respuesta}/edit', [RespuestasFormController::class, 'edit'])
+    ->name('respuestas.edit');
+
+Route::put('/respuestas/{respuesta}', [RespuestasFormController::class, 'update'])
+    ->name('respuestas.update');
+
+Route::delete('/respuestas/{respuesta}', [RespuestasFormController::class, 'destroy'])
+    ->name('respuestas.destroy');
+
+Route::get('/formularios/{form}/export-pdf', [FormularioController::class, 'exportPdf'])
+    ->name('formularios.exportPdf');
+Route::get('/formularios/{form}/export/excel', [FormularioController::class, 'exportExcel'])->name('formularios.exportExcel');

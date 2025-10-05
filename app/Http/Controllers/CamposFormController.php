@@ -49,6 +49,7 @@ class CamposFormController extends Controller
     // Crear campo
     public function store(Request $request, Formulario $formulario)
     {
+
         $request->validate([
 
             'tipo' => 'required',
@@ -80,6 +81,8 @@ class CamposFormController extends Controller
     // Actualizar campo
     public function update(Request $request, CamposForm $campo)
     {
+
+
         $formulario = Formulario::find($campo->form_id);
         $request->validate([
             'tipo' => 'required',
@@ -137,6 +140,18 @@ class CamposFormController extends Controller
         return response()->json([
             'success' => true,
             'campo' => $campo
+        ]);
+    }
+
+    public function checkRespuestas($campoId)
+    {
+        $campo = CamposForm::findOrFail($campoId);
+
+        // Revisar si el formulario tiene respuestas
+        $tieneRespuestas = $campo->formulario()->first()->respuestas()->exists();
+
+        return response()->json([
+            'tiene_respuestas' => $tieneRespuestas
         ]);
     }
 }

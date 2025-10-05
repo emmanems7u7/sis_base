@@ -63,6 +63,28 @@
                                 @enderror
                             </div>
 
+                                 <!-- Reportes con firma -->
+                            <input type="hidden" name="firma" value="0">
+                            <div class="form-check form-switch mb-3">
+                                <input class="form-check-input" type="checkbox" id="firmaSwitch"
+                                    name="firma" value="1" {{ $config->firma ? 'checked' : '' }}>
+                                <label class="form-check-label text-black" for="firmaSwitch">
+                                    Los reportes tienen Firma
+                                </label>
+                            </div>
+
+                                <!-- Tamaño de hoja -->
+                                <div class="mb-3">
+                                    <label for="hoja_export" class="form-label">Tamaño de hoja para reportes</label>
+                                    <select class="form-control" name="hoja_export" id="hoja_export">
+                                        @foreach(['A4','Letter','Legal','A5','A3','B5','Folio','Executive'] as $hoja)
+                                            <option value="{{ $hoja }}" {{ $config->hoja_export == $hoja ? 'selected' : '' }}>
+                                                {{ $hoja }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                </div>
+
                             @can('configuracion.actualizar')
                             <button type="submit" class="btn btn-primary mt-3">Guardar cambios</button>
                             @endcan

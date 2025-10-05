@@ -10,7 +10,9 @@ class Configuracion extends Model
         'doble_factor_autenticacion',
         'limite_de_sesiones',
         'GROQ_API_KEY',
-        'mantenimiento'
+        'mantenimiento',
+        'firma',
+        'hoja_export',
     ];
 
     protected $table = 'configuracion';

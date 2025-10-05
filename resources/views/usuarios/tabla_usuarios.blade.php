@@ -65,10 +65,10 @@
                     @endcan
                     @can('usuarios.eliminar')
                         <a type="button" class="text-secondary font-weight-bold text-xs" id="modal_edit_usuario_button"
-                            onclick="confirmarEliminacion('eliminarUsuarioForm', '¿Estás seguro de que deseas eliminar este usuario?')">Eliminar
+                            onclick="confirmarEliminacion('eliminarUsuarioForm_{{ $usuario->id }}', '¿Estás seguro de que deseas eliminar este usuario?')">Eliminar
                             Usuario</a>
 
-                        <form id="eliminarUsuarioForm" method="POST"
+                        <form id="eliminarUsuarioForm_{{ $usuario->id }}" method="POST"
                             action="{{ route('users.destroy', ['user' => $usuario->id]) }}" style="display: none;">
                             @csrf
                             @method('DELETE')

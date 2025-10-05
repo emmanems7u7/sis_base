@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class RespuestasForm extends Model
 {
-    protected $fillable = ['form_id', 'user_id', 'actor_id'];
+    protected $fillable = ['form_id', 'actor_id'];
 
     public function formulario()
     {
@@ -17,4 +17,11 @@ class RespuestasForm extends Model
     {
         return $this->hasMany(RespuestasCampo::class, 'respuesta_id');
     }
+
+
+    public function actor()
+    {
+        return $this->belongsTo(User::class, 'actor_id');
+    }
+
 }

@@ -21,12 +21,13 @@ class ConfiguracionController extends Controller
 
     public function update(Request $request)
     {
-
         $request->validate([
             'doble_factor_autenticacion' => 'nullable|boolean',
             'limite_de_sesiones' => 'nullable|integer|min:1',
             'tokens.*.token' => 'required|string',
-            'tokens.*.estado' => 'required'
+            'tokens.*.estado' => 'required',
+            'firma' => 'nullable|boolean',
+            'hoja_export' => 'nullable|string|max:255',
         ]);
 
         $config = Configuracion::first();
@@ -35,6 +36,8 @@ class ConfiguracionController extends Controller
             'doble_factor_autenticacion' => $request->has('doble_factor_autenticacion'),
             'limite_de_sesiones' => $request->input('limite_de_sesiones'),
             'mantenimiento' => $request->has('mantenimiento'),
+            'firma' => $request->boolean('firma'),
+            'hoja_export' => $request->input('hoja_export'),
         ]);
 
 

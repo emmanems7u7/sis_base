@@ -186,13 +186,13 @@
                 <ul id="secciones-list" class="list-unstyled" {{ $configuracion->mantenimiento ? 'data-draggable="false"' : 'data-draggable="true"' }}>
                     @foreach ($secciones as $seccion)
                         @can($seccion->titulo)
-                            <li class="seccion-item mb-3 p-2 text-black" data-id="{{ $seccion->id }}">
+                            <li class="seccion-item p-2 text-black" data-id="{{ $seccion->id }}">
                                 <div class=" text-black d-flex align-items-center {{ $configuracion->mantenimiento ? 'text-warning' : '' }}">
                                     <i class="{{ $seccion->icono }} me-2"></i>
                                     <h6 class=" text-black m-0 text-uppercase text-xs font-weight-bolder  {{ $configuracion->mantenimiento ? 'text-warning' : '' }}">{{ $seccion->titulo }}</h6>
                                 </div>
 
-                                <ul class="list-unstyled ms-4 mt-2">
+                                <ul class="list-unstyled ms-4">
                                     @foreach ($seccion->menus as $menu)
                                         @can($menu->nombre)
                                             <li class="nav-item text-black">
