@@ -32,44 +32,105 @@ class BaseRepository
         return $this->purifier->purify($content);
     }
 
-    protected function agregarSeederADatabaseSeeder(string $nombreClase, string $bloqueEtiqueta): void
+    protected function agregarSeederADatabaseSeeder(string $nombreClase): void
     {
         $rutaDatabaseSeeder = database_path('seeders/DatabaseSeeder.php');
-        if (!File::exists($rutaDatabaseSeeder))
+        if (!File::exists($rutaDatabaseSeeder)) {
             return;
+        }
 
         $contenidoSeeder = File::get($rutaDatabaseSeeder);
 
-        if (Str::contains($contenidoSeeder, "\$this->call({$nombreClase}::class)"))
-            return;
-
+        $fecha = date('d-m-Y'); // ejemplo: 17-08-2025
+        $inicio = `/******************** Seeders creados automaticamente {$fecha} ****************************/`;
+        $fin = `/********************  Fin Seeders creados automaticamente {$fecha} ****************************/`;
         $linea = "        \$this->call({$nombreClase}::class);";
-        $inicio = "//INICIO {$bloqueEtiqueta}";
-        $fin = "//FIN {$bloqueEtiqueta}";
 
-        // Permite espacios/tabs antes de los comentarios
-        $contenidoModificado = preg_replace_callback(
-            "/(^[ \t]*" . preg_quote($inicio, '/') . ")(.*?)(^[ \t]*" . preg_quote($fin, '/') . ")/sm",
-            function ($matches) use ($linea) {
-                $bloque = rtrim($matches[2]);
+        // Evitar duplicados globales
+        if (Str::contains($contenidoSeeder, $linea)) {
+            return;
+        }
 
-                // Evitar duplicado si ya existe
-                if (Str::contains($bloque, $linea)) {
-                    return "{$matches[1]}{$matches[2]}{$matches[3]}";
-                }
+        // Detectar categoría según nombre de clase
+        $categoria = null;
+        if (Str::contains($nombreClase, 'Seccion')) {
+            $categoria = 'SECCION';
+        } elseif (Str::contains($nombreClase, 'Menu')) {
+            $categoria = 'MENU';
+        } elseif (Str::contains($nombreClase, 'Permisos')) {
+            $categoria = 'PERMISOS';
+        } else {
+            $categoria = 'OTROS';
+        }
 
-                // Insertar la línea justo antes del FIN
-                $nuevoBloque = $bloque . "\n" . $linea . "\n";
+        // Si ya existe bloque de la fecha
+        if (Str::contains($contenidoSeeder, $inicio) && Str::contains($contenidoSeeder, $fin)) {
+            $contenidoModificado = preg_replace_callback(
+                "/(^[ \t]*" . preg_quote($inicio, '/') . ")(.*?)(^[ \t]*" . preg_quote($fin, '/') . ")/sm",
+                function ($matches) use ($linea, $categoria) {
+                    $bloque = $matches[2];
 
-                return "{$matches[1]}\n{$nuevoBloque}{$matches[3]}";
-            },
-            $contenidoSeeder,
-            1,
-            $reemplazos
-        );
+                    // Buscar subbloque de la categoría
+                    $iniCat = "        // {$categoria}";
+                    $finCat = "        // FIN {$categoria}";
 
-        if ($reemplazos > 0) {
+                    // Si existe categoría, insertar antes de su FIN
+                    if (Str::contains($bloque, $iniCat) && Str::contains($bloque, $finCat)) {
+                        return preg_replace_callback(
+                            "/(" . preg_quote($iniCat, '/') . ".*?" . preg_quote($finCat, '/') . ")/s",
+                            function ($sub) use ($linea, $finCat) {
+                                if (Str::contains($sub[0], $linea)) {
+                                    return $sub[0]; // evitar duplicados
+                                }
+                                return str_replace($finCat, $linea . "\n\n" . $finCat, $sub[0]);
+                            },
+                            $matches[0],
+                            1
+                        );
+                    }
+
+                    // Si no existe, crear el bloque de la categoría en orden
+                    $orden = ['SECCION', 'MENU', 'PERMISOS', 'OTROS'];
+                    $nuevoSubbloque = "\n        // {$categoria}\n{$linea}\n\n        // FIN {$categoria}\n";
+
+                    // Insertar en la posición correcta según dependencias
+                    foreach ($orden as $cat) {
+                        $finCatExistente = "        // FIN {$cat}";
+                        if ($cat === $categoria) {
+                            // Si es la misma categoría y no existe aún → insertamos justo antes del FIN global
+                            return str_replace($matches[3], $nuevoSubbloque . $matches[3], $matches[0]);
+                        } elseif (Str::contains($bloque, $finCatExistente)) {
+                            // Si ya existe un bloque anterior, insertamos después de él
+                            return str_replace($finCatExistente, $finCatExistente . $nuevoSubbloque, $matches[0]);
+                        }
+                    }
+
+                    // Si no encontró nada, lo pone antes del FIN global
+                    return str_replace($matches[3], $nuevoSubbloque . $matches[3], $matches[0]);
+                },
+                $contenidoSeeder,
+                1,
+                $reemplazos
+            );
+
+            if ($reemplazos > 0) {
+                File::put($rutaDatabaseSeeder, $contenidoModificado);
+            }
+        } else {
+            // Crear bloque nuevo al final del método run()
+            $bloque = "\n        {$inicio}\n"
+                . "        // {$categoria}\n{$linea}\n\n        // FIN {$categoria}\n"
+                . "        {$fin}\n";
+
+            $contenidoModificado = preg_replace(
+                '/(    \})/m',
+                $bloque . "    }",
+                $contenidoSeeder,
+                1
+            );
+
             File::put($rutaDatabaseSeeder, $contenidoModificado);
         }
     }
+
 }

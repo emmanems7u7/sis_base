@@ -9,15 +9,22 @@ use Illuminate\Support\Facades\Route;
 use Illuminate\Validation\Rule;
 use App\Interfaces\MenuInterface;
 use App\Interfaces\PermisoInterface;
+use App\Models\Modulo;
 use Spatie\Permission\Models\Permission;
+use App\Interfaces\IAInterface;
+
 class MenuController extends Controller
 {
     protected $menuRepository;
     protected $PermisoRepository;
-    public function __construct(MenuInterface $MenuInterface, PermisoInterface $permisoInterface)
+    protected $IARepository;
+
+    public function __construct(MenuInterface $MenuInterface, PermisoInterface $permisoInterface, IAInterface $iAInterface)
     {
         $this->PermisoRepository = $permisoInterface;
         $this->menuRepository = $MenuInterface;
+        $this->IARepository = $iAInterface;
+
     }
     public function index()
     {
@@ -30,13 +37,14 @@ class MenuController extends Controller
 
         $menus = Menu::with('seccion')->paginate(10);
 
+        $modulos = Modulo::where('activo', 1)->get();
         $routes = Route::getRoutes();
         //dd($routes);
         $routes = collect($routes)->filter(function ($route) {
             return str_contains($route->getName(), 'index');
         });
 
-        return view('menus.index', compact('menus', 'secciones', 'routes', 'breadcrumb'));
+        return view('menus.index', compact('modulos', 'menus', 'secciones', 'routes', 'breadcrumb'));
     }
 
     public function create()
@@ -47,6 +55,7 @@ class MenuController extends Controller
 
     public function store(Request $request)
     {
+
 
         $request->validate([
             'nombre' => 'required|string|max:255',
@@ -60,6 +69,8 @@ class MenuController extends Controller
             'seccion_id' => 'required|exists:secciones,id',
             'ruta' => 'required|string|max:255',
         ]);
+
+
 
         $this->menuRepository->CrearMenu($request);
 
@@ -97,16 +108,16 @@ class MenuController extends Controller
 
         $permiso = Permission::where('id_relacion', $menu->id)->where('name', $menu->nombre)->first();
 
+
         if ($permiso != null) {
+
             $this->PermisoRepository->eliminarDeSeeder($permiso);
             $permiso->delete();
 
         }
         if ($menu != null) {
 
-            $this->menuRepository->eliminarMenuDeSeeder($id);
-
-            $this->menuRepository->eliminarDeSeederMenu($menu);
+            $this->menuRepository->eliminarMenuDeSeeders($menu);
             $menu->delete();
         }
         return redirect()->route('menus.index')->with('status', 'Menú eliminado exitosamente.');

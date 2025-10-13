@@ -93,7 +93,7 @@ class PermisoRepository extends BaseRepository implements PermisoInterface
     protected function registrarEnSeeder(Permission $permiso, $id_relacion = 0)
     {
         $fecha = now()->format('Ymd');
-        $nombreClase = 'SeederPermisos_' . $fecha;
+        $nombreClase = 'Generado_SeederPermisos_' . $fecha;
         $rutaSeeder = database_path("seeders/{$nombreClase}.php");
 
         $lineaPermiso = "            ['id' => {$permiso->id}, 'name' => '{$permiso->name}', 'tipo' => '{$permiso->tipo}', 'id_relacion' => {$id_relacion}, 'guard_name' => '{$permiso->guard_name}' ],";
@@ -140,31 +140,41 @@ class PermisoRepository extends BaseRepository implements PermisoInterface
             File::put($rutaSeeder, $contenidoActual);
         }
 
-        $this->agregarSeederADatabaseSeeder($nombreClase, 'SEEDERS PERMISOS');
+        $this->agregarSeederADatabaseSeeder($nombreClase);
     }
-    function eliminarDeSeeder(Permission $permiso)
+    public function eliminarDeSeeder(Permission $permiso)
     {
         $seeders = File::files(database_path('seeders'));
 
+
         foreach ($seeders as $seeder) {
-            if (!Str::startsWith($seeder->getFilename(), 'SeederPermisos_')) {
+            if (!Str::startsWith($seeder->getFilename(), 'Generado_SeederPermisos_')) {
                 continue;
             }
 
             $contenido = File::get($seeder->getRealPath());
+            $contenidoOriginal = $contenido;
 
-            // Construimos la línea esperada para borrar
-            $pattern = "/\s*\[\s*'name'\s*=>\s*'" . preg_quote($permiso->name, '/') . "',\s*'tipo'\s*=>\s*'" . preg_quote($permiso->tipo, '/') . "',\s*'guard_name'\s*=>\s*'" . preg_quote($permiso->guard_name, '/') . "'\s*\],?\s*/";
+            // Patrón que busca cualquier array que contenga name, tipo y guard_name
+            $pattern = '/\[\s*\'id\'\s*=>\s*\d+\s*,\s*\'name\'\s*=>\s*\'' . preg_quote($permiso->name, '/') . '\'\s*,\s*\'tipo\'\s*=>\s*\'' . preg_quote($permiso->tipo, '/') . '\'\s*,[^\]]*?\'guard_name\'\s*=>\s*\'' . preg_quote($permiso->guard_name, '/') . '\'\s*\],?/s';
+
 
             $contenidoNuevo = preg_replace($pattern, '', $contenido, 1);
 
-            // Si cambió algo, guardamos
-            if ($contenido !== $contenidoNuevo) {
+
+            if ($contenidoOriginal !== $contenidoNuevo) {
+
                 File::put($seeder->getRealPath(), $contenidoNuevo);
-                break; // lo encontramos, no buscamos más
+                break; // lo encontramos y eliminamos
             }
+
+
         }
+
+
     }
+
+
 
 
     public function EditarPermiso($request, $permission)

@@ -196,7 +196,17 @@
                                     @foreach ($seccion->menus as $menu)
                                         @can($menu->nombre)
                                             <li class="nav-item text-black">
-                                                <a class="nav-link {{ Route::currentRouteName() === $menu->ruta ? 'active bg-gradient-' . $color : '' }}" href="{{ route($menu->ruta) }}">
+                                                @if($menu->modulo_id == null || $menu->modulo_id == 0)
+                                                @php
+                                                        $ruta = route($menu->ruta)
+                                                @endphp
+                                                @else
+                                                @php
+                                                    $ruta = route('modulo.index', ['modulo_id' => $menu->modulo_id]);  
+                                                @endphp
+                                                @endif
+
+                                                <a class="nav-link {{ Route::currentRouteName() === $menu->ruta ? 'active bg-gradient-' . $color : '' }}" href="{{ $ruta  }}">
                                                     <span class="text-black nav-link-text">{{ $menu->nombre }}</span>
                                                 </a>
                                             </li>

@@ -42,14 +42,13 @@ class SeccionController extends Controller
     public function store(Request $request)
     {
         $request->validate([
-            'titulo' => 'required|string|max:255 |not_regex:/<\s*script/i',
-            'icono' => 'required|string|max:255 |not_regex:/<\s*script/i',
+            'titulo' => 'required|string|max:255',
+            'icono' => 'required|string|max:255',
         ]);
 
         $this->menuRepository->CrearSeccion($request);
 
-
-        return redirect()->back()->with('success', 'Sección creada exitosamente.');
+        return redirect()->back()->with('status', 'Sección creada exitosamente.');
     }
     function cambiarSeccion(Request $request)
     {

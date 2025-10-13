@@ -46,7 +46,7 @@ class DatabaseSeeder extends Seeder
         $this->call(class: TipoVideosSeeder::class);
 */
 
-        $this->call(EstadosActivoInactivoSeeder::class);
+        // $this->call(EstadosActivoInactivoSeeder::class);
 
 
         // Seeders creados automaticamente 28-08-2025
@@ -58,14 +58,38 @@ class DatabaseSeeder extends Seeder
 
         // MENU
         // $this->call(Generado_SeederMenu_20250828::class);
-
+        // $this->call(Generado_SeederMenu_20251012::class);
         // FIN MENU
 
         // PERMISOS
         // $this->call(Generado_SeederPermisos_20250828::class);
+        // $this->call(Generado_SeederPermisos_20251012::class);
 
         // FIN PERMISOS
+
+
         // Fin Seeders creados automaticamente 28-08-2025
+
+
+        // SECCION
+
+        // FIN SECCION
+
+        // SECCION
+        $this->call(Generado_SeederSeccion_20251013::class);
+
+        // FIN SECCION
+
+        // MENU
+        $this->call(Generado_SeederMenu_20251013::class);
+
+        // FIN MENU
+
+        // PERMISOS
+        $this->call(Generado_SeederPermisos_20251013::class);
+
+        // FIN PERMISOS
+
     }
 
 

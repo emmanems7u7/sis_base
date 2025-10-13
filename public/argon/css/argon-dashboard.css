@@ -11347,6 +11347,10 @@ fieldset:disabled .btn {
   background-color: #344767 !important;
 }
 
+.bg-dark_code{
+  background-color: #282a36  !important;
+  
+}
 .bg-green_sidenav {
   background-color: #083263  !important;
 }

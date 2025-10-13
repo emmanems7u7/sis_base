@@ -97,7 +97,7 @@
                     @endforeach
                 </div>
                 <div class="d-flex justify-content-center">
-                    {{ $menus->links() }} <!-- Enlaces de paginación para los menús -->
+                    {{ $menus->links('pagination::bootstrap-4') }} <!-- Enlaces de paginación para los menús -->
                 </div>
             @endif
         </div>

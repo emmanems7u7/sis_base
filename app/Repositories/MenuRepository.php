@@ -9,6 +9,8 @@ use App\Models\Seccion;
 use App\Repositories\PermisoRepository;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+
+
 class MenuRepository extends BaseRepository implements MenuInterface
 {
     protected $permisoRepository;
@@ -20,14 +22,13 @@ class MenuRepository extends BaseRepository implements MenuInterface
     }
     public function CrearMenu($request)
     {
-
         $menu = Menu::create([
             'nombre' => $this->cleanHtml($request->input('nombre')),
             'orden' => $this->cleanHtml($request->input('orden', 0)),
             'padre_id' => $this->cleanHtml($request->input('padre_id')) ?: null,
             'seccion_id' => $this->cleanHtml($request->input('seccion_id')),
             'ruta' => $this->cleanHtml($request->input('ruta')),
-            'accion_usuario' => Auth::user()->na
+            'modulo_id' => $this->cleanHtml($request->input('modulo_id', null)),
         ]);
 
 
@@ -38,8 +39,8 @@ class MenuRepository extends BaseRepository implements MenuInterface
     protected function guardarEnSeederMenu(Menu $menu): void
     {
         $fecha = now()->format('Ymd');
-        $nombreSeeder = "SeederMenu_{$fecha}.php";
-        $nombreClase = "SeederMenu_{$fecha}";
+        $nombreSeeder = "Generado_SeederMenu_{$fecha}.php";
+        $nombreClase = "Generado_SeederMenu_{$fecha}";
 
         $rutaSeeder = database_path("seeders/{$nombreSeeder}");
 
@@ -49,7 +50,7 @@ class MenuRepository extends BaseRepository implements MenuInterface
         $padreId = $menu->padre_id !== null ? $menu->padre_id : 'null';
         $seccionId = (int) $menu->seccion_id;
         $ruta = addslashes($menu->ruta);
-        $accionUsuario = addslashes($menu->accion_usuario);
+        $modulo = addslashes($menu->modulo);
 
         $registro = <<<PHP
                                     [
@@ -59,7 +60,7 @@ class MenuRepository extends BaseRepository implements MenuInterface
                                         'padre_id' => {$padreId},
                                         'seccion_id' => {$seccionId},
                                         'ruta' => '{$ruta}',
-                                        'accion_usuario' => '{$accionUsuario}',
+                                        'modulo' => '{$modulo}',
                                     ],
                         PHP;
 
@@ -72,7 +73,7 @@ class MenuRepository extends BaseRepository implements MenuInterface
                         use Illuminate\Database\Seeder;
                         use App\Models\Menu;
                         
-                        class SeederMenu_{$fecha} extends Seeder
+                        class Generado_SeederMenu_{$fecha} extends Seeder
                         {
                             public function run(): void
                             {
@@ -98,30 +99,9 @@ class MenuRepository extends BaseRepository implements MenuInterface
             File::put($rutaSeeder, $contenido);
         }
 
-        $this->agregarSeederADatabaseSeeder($nombreClase, 'SEEDERS MENU');
+        $this->agregarSeederADatabaseSeeder($nombreClase);
     }
-    public function eliminarDeSeederMenu(Menu $menu): void
-    {
-        $fecha = now()->format('Ymd');
-        $nombreSeeder = "SeederMenu_{$fecha}.php";
-        $rutaSeeder = database_path("seeders/{$nombreSeeder}");
 
-        if (!File::exists($rutaSeeder)) {
-            return;
-        }
-
-        $nombreEscapado = preg_quote($menu->nombre, '/');
-        $contenido = File::get($rutaSeeder);
-
-        // Regex robusto para encontrar un array que contenga 'nombre' => 'el_nombre'
-        $pattern = "/[ \t]*\[\s*'nombre'\s*=>\s*'{$nombreEscapado}'(?:.*?\n)*?\s*\],\s*/";
-
-        $contenidoModificado = preg_replace($pattern, '', $contenido, 1);
-
-        if ($contenidoModificado !== null && $contenidoModificado !== $contenido) {
-            File::put($rutaSeeder, $contenidoModificado);
-        }
-    }
     public function CrearSeccion($request)
     {
 
@@ -136,6 +116,7 @@ class MenuRepository extends BaseRepository implements MenuInterface
             ]
         );
         $this->guardarEnSeederSeccion($seccion);
+
         $this->permisoRepository->Store_Permiso($seccion->titulo, 'seccion', $seccion->id);
 
     }
@@ -143,8 +124,8 @@ class MenuRepository extends BaseRepository implements MenuInterface
     protected function guardarEnSeederSeccion(Seccion $seccion): void
     {
         $fecha = now()->format('Ymd');
-        $nombreSeeder = "SeederSeccion_{$fecha}.php";
-        $nombreClase = "SeederSeccion_{$fecha}";
+        $nombreSeeder = "Generado_SeederSeccion_{$fecha}.php";
+        $nombreClase = "Generado_SeederSeccion_{$fecha}";
         $rutaSeeder = database_path("seeders/{$nombreSeeder}");
 
         // Preparar los valores
@@ -172,7 +153,7 @@ class MenuRepository extends BaseRepository implements MenuInterface
                     use Illuminate\Database\Seeder;
                     use App\Models\Seccion;
                     
-                    class SeederSeccion_{$fecha} extends Seeder
+                    class Generado_SeederSeccion_{$fecha} extends Seeder
                     {
                         public function run(): void
                         {
@@ -198,7 +179,7 @@ class MenuRepository extends BaseRepository implements MenuInterface
             $contenido = str_replace('        $secciones = [', "        \$secciones = [\n{$registro}", $contenido);
             File::put($rutaSeeder, $contenido);
         }
-        $this->agregarSeederADatabaseSeeder($nombreClase, 'SEEDERS SECCION');
+        $this->agregarSeederADatabaseSeeder($nombreClase);
     }
 
 
@@ -208,4 +189,67 @@ class MenuRepository extends BaseRepository implements MenuInterface
         $menus = Menu::Where('seccion_id', $seccion_id)->orderBy('orden')->get();
         return $menus;
     }
+
+    function eliminarSeccionDeSeeder(int $id)
+    {
+        $seeders = File::files(database_path('seeders'));
+
+        foreach ($seeders as $seeder) {
+            // Solo buscamos los seeders de secciones generados
+            if (!Str::startsWith($seeder->getFilename(), 'Generado_SeederSeccion_')) {
+                continue;
+            }
+
+            $contenido = File::get($seeder->getRealPath());
+
+            // Patrón para eliminar cualquier array que tenga el 'id' de la sección
+            $pattern = "/\s*\[\s*'id'\s*=>\s*" . preg_quote($id, '/') . "[^\]]*\],?\s*/";
+
+            $contenidoNuevo = preg_replace($pattern, '', $contenido, 1);
+
+            // Guardamos si hubo cambios
+            if ($contenido !== $contenidoNuevo) {
+                File::put($seeder->getRealPath(), $contenidoNuevo);
+                break; // ya lo encontramos
+            }
+        }
+    }
+
+
+
+    public function eliminarMenuDeSeeders(Menu $menu): array
+    {
+        $archivosModificados = [];
+        $seeders = File::files(database_path('seeders'));
+
+        foreach ($seeders as $seeder) {
+            if (!Str::startsWith($seeder->getFilename(), 'Generado_SeederMenu_')) {
+                continue;
+            }
+
+            $contenido = File::get($seeder->getRealPath());
+            $contenidoOriginal = $contenido;
+
+            // 1️⃣ Intentar eliminar por 'id'
+            $patternId = "/\s*\[\s*'id'\s*=>\s*['\"]?" . preg_quote($menu->id, '/') . "['\"]?[^\]]*\],?\s*/";
+            $contenido = preg_replace($patternId, '', $contenido, 1);
+
+            // 2️⃣ Si no se eliminó nada por id, intentar por 'nombre'
+            if ($contenido === $contenidoOriginal) {
+                $nombreEscapado = preg_quote($menu->nombre, '/');
+                $patternNombre = "/[ \t]*\[\s*'nombre'\s*=>\s*'{$nombreEscapado}'(?:.*?\n)*?\s*\],\s*/";
+                $contenido = preg_replace($patternNombre, '', $contenido, 1);
+            }
+
+            // 3️⃣ Guardar si hubo cambios
+            if ($contenido !== $contenidoOriginal) {
+                File::put($seeder->getRealPath(), $contenido);
+                $archivosModificados[] = $seeder->getFilename();
+            }
+        }
+
+        return $archivosModificados; // Array con los seeders modificados
+    }
+
+
 }

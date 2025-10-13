@@ -10,16 +10,23 @@ use App\Models\Formulario;
 use Illuminate\Support\Facades\DB;
 use App\Models\Catalogo;
 use App\Interfaces\CatalogoInterface;
+use App\Interfaces\FormularioInterface;
+use Illuminate\Support\Facades\Validator;
+use Jenssegers\Agent\Agent;
 
 class RespuestasFormController extends Controller
 {
 
 
     protected $CatalogoRepository;
-    public function __construct(CatalogoInterface $catalogoInterface)
+    protected $FormularioRepository;
+
+    public function __construct(CatalogoInterface $catalogoInterface, FormularioInterface $formularioInterface)
     {
 
         $this->CatalogoRepository = $catalogoInterface;
+        $this->FormularioRepository = $formularioInterface;
+
 
     }
     public function index()
@@ -39,6 +46,8 @@ class RespuestasFormController extends Controller
             ['name' => 'Respuestas ', 'url' => route('formularios.index')],
         ];
 
+        $agent = new Agent();
+        $isMobile = $agent->isMobile();
         $formulario = Formulario::with('campos.opciones_catalogo')->findOrFail($form);
 
         $query = $formulario->respuestas()->with('camposRespuestas.campo', 'actor');
@@ -52,9 +61,9 @@ class RespuestasFormController extends Controller
         }
 
         // Paginación
-        $respuestas = $query->orderBy('created_at', 'desc')->paginate(5)->withQueryString();
+        $respuestas = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
 
-        return view('formularios.respuestas_formulario', compact('formulario', 'respuestas', 'breadcrumb'));
+        return view('formularios.respuestas_formulario', compact('isMobile', 'formulario', 'respuestas', 'breadcrumb'));
     }
 
     public function create($form)
@@ -81,87 +90,28 @@ class RespuestasFormController extends Controller
 
     public function store(Request $request, $form)
     {
-        // 1️⃣ Obtener los campos del formulario
         $campos = CamposForm::where('form_id', $form)->get();
 
-
-        // 2️⃣ Construir reglas dinámicas
         $rules = $this->validacion($campos);
-
-
-        // 3️⃣ Validar los datos
         $validatedData = $request->validate($rules);
 
-        // 4️⃣ Validar que las opciones enviadas existan en el catálogo
-        foreach ($campos as $campo) {
-            $tipo = strtolower($campo->campo_nombre);
-            $name = $campo->nombre;
+        $errores = $this->FormularioRepository->validarOpcionesCatalogo($campos, $request);
 
-            if (in_array($tipo, ['checkbox', 'radio', 'selector']) && $request->has($name)) {
-                $valores = is_array($request->input($name)) ? $request->input($name) : [$request->input($name)];
-                $opcionesValidas = $campo->opciones_catalogo->pluck('catalogo_codigo')->toArray();
-
-                foreach ($valores as $v) {
-                    if (!in_array($v, $opcionesValidas)) {
-                        return redirect()->back()
-                            ->withErrors("El valor '$v' no es válido para el campo '{$campo->etiqueta}'.")
-                            ->withInput();
-                    }
-                }
-            }
+        if (!empty($errores)) {
+            return redirect()->back()->withErrors($errores)->withInput();
         }
 
-        // 5️⃣ Guardar todo dentro de una transacción
         DB::beginTransaction();
         try {
-            $respuesta = RespuestasForm::create([
-                'form_id' => $form,
-                'actor_id' => auth()->id() ?? null,
-            ]);
+            $respuesta = $this->FormularioRepository->crearRespuesta($form);
 
             foreach ($campos as $campo) {
-                $name = $campo->nombre;
-                $tipo = strtolower($campo->campo_nombre);
-                $valor = null;
-
-                // 📁 Manejo de archivos (imagen, video, archivo)
-                if (in_array($tipo, ['imagen', 'video', 'archivo']) && $request->hasFile($name)) {
-                    $file = $request->file($name);
-                    $filename = uniqid($tipo . '_') . '.' . $file->getClientOriginalExtension();
-                    $path = match ($tipo) {
-                        'imagen' => public_path("archivos/formulario_{$form}/imagenes"),
-                        'video' => public_path("archivos/formulario_{$form}/videos"),
-                        'archivo' => public_path("archivos/formulario_{$form}/archivos"),
-                    };
-                    if (!file_exists($path))
-                        mkdir($path, 0777, true);
-                    $file->move($path, $filename);
-                    $valor = $filename;
-                } elseif ($request->has($name)) {
-                    $valor = $request->input($name);
-                }
-
-                // 📌 Guardado en base de datos
-                if ($valor !== null) {
-                    if (is_array($valor)) {
-                        foreach ($valor as $v) {
-                            RespuestasCampo::create([
-                                'respuesta_id' => $respuesta->id,
-                                'cf_id' => $campo->id,
-                                'valor' => $v,
-                            ]);
-                        }
-                    } else {
-                        RespuestasCampo::create([
-                            'respuesta_id' => $respuesta->id,
-                            'cf_id' => $campo->id,
-                            'valor' => $valor,
-                        ]);
-                    }
-                }
+                $this->FormularioRepository->guardarCampo($campo, $respuesta->id, $request, $form);
             }
 
             DB::commit();
+
+
             return redirect()->route('formularios.respuestas.formulario', $form)
                 ->with('status', 'Formulario enviado correctamente.');
 
@@ -170,6 +120,199 @@ class RespuestasFormController extends Controller
             return redirect()->back()->withErrors('Error al guardar el formulario: ' . $e->getMessage());
         }
     }
+
+
+    /**
+     * Carga masiva desde un archivo .txt separado por comas.
+     */
+    public function importarDesdeArchivo(Request $request, $form)
+    {
+        $request->validate([
+            'archivo' => 'required|file|mimes:txt,csv',
+        ]);
+
+        $path = $request->file('archivo')->getRealPath();
+        $lineas = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+
+        if (empty($lineas)) {
+            return back()->withErrors('El archivo está vacío.');
+        }
+
+        $campos = CamposForm::where('form_id', $form)->get();
+        $nombresCampos = $campos->pluck('nombre')->toArray();
+
+
+        // Validar primera línea: nombres de columnas
+        $primeraLinea = str_getcsv(array_shift($lineas), ',');
+        if ($primeraLinea !== $nombresCampos) {
+            return back()->withErrors('La primera fila del archivo no coincide con los nombres de los campos del formulario.');
+        }
+
+        $erroresImportacion = [];
+        $contadorLinea = 1; // primera fila de datos será la 2
+        $respuestasTemp = [];
+
+        // Filtrar líneas vacías
+        $lineas = array_filter($lineas, fn($l) => trim($l) !== '');
+
+        DB::beginTransaction();
+        try {
+            foreach ($lineas as $linea) {
+                $contadorLinea++;
+                $datos = str_getcsv($linea, ',');
+
+                // Validar cantidad de columnas
+                if (count($datos) !== count($campos)) {
+                    $erroresImportacion[] = "Línea {$contadorLinea}: La cantidad de columnas no coincide con la del formulario.";
+                    continue;
+                }
+
+                $dataAsociativa = [];
+                foreach ($campos as $index => $campo) {
+                    $dataAsociativa[$campo->nombre] = $datos[$index] ?? null;
+                }
+
+                $fakeRequest = new Request($dataAsociativa);
+
+                // Validar reglas del formulario
+                $rules = $this->validacion($campos, null, 'archivo');
+                $validator = Validator::make($fakeRequest->all(), $rules);
+
+                if ($validator->fails()) {
+                    $errores = $validator->errors()->all();
+                    foreach ($errores as $error) {
+                        $erroresImportacion[] = "Línea {$contadorLinea}: {$error}";
+                    }
+                    continue;
+                }
+                // Validar catálogo
+                $erroresCatalogo = $this->FormularioRepository->validarOpcionesCatalogo($campos, $fakeRequest);
+                if (!empty($erroresCatalogo)) {
+                    foreach ($erroresCatalogo as $error) {
+                        $erroresImportacion[] = "Línea {$contadorLinea}: {$error}";
+                    }
+                    continue;
+                }
+
+                $respuestasTemp[] = $dataAsociativa;
+            }
+
+            // Si hay errores, no hacemos commit
+            if (!empty($erroresImportacion)) {
+                DB::rollBack();
+                return back()
+                    ->with('erroresImportacion', $erroresImportacion)
+                    ->with('warning', 'La importación no se completó. Se detectaron errores en algunos registros.');
+            }
+
+            // Guardar respuestas válidas
+            $totalCargados = 0;
+            foreach ($respuestasTemp as $dataAsociativa) {
+                $respuesta = $this->FormularioRepository->crearRespuesta($form);
+                foreach ($campos as $index => $campo) {
+                    $valor = $dataAsociativa[$campo->nombre] ?? null;
+                    if ($valor === null)
+                        continue;
+
+                    $tipo = strtolower($campo->campo_nombre);
+                    if (in_array($tipo, ['imagen', 'video', 'archivo'])) {
+                        $this->FormularioRepository->guardarArchivoGenerico($campo, $respuesta->id, $form, $valor);
+                    } else {
+                        $this->FormularioRepository->guardarValorSimple($campo, $respuesta->id, $valor);
+                    }
+                }
+                $totalCargados++;
+            }
+
+            DB::commit();
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withErrors('Error durante la importación: ' . $e->getMessage());
+        }
+
+        return back()->with('status', "Importación masiva completada correctamente. Total de registros cargados: {$totalCargados}");
+    }
+
+
+
+
+    public function descargarPlantilla($form)
+    {
+        $campos = CamposForm::where('form_id', $form)->get();
+
+        if ($campos->isEmpty()) {
+            return back()->withErrors('No hay campos definidos para este formulario.');
+        }
+
+        $comentarios = "/* BORRA ESTO ANTES DE CARGAR INFORMACIÓN DE REFERENCIA */" . PHP_EOL;
+        $comentarios .= "/* Explicación de los campos: */" . PHP_EOL;
+
+        $columnas = [];
+        $ejemplo = [];
+
+        foreach ($campos as $campo) {
+            $nombre = $campo->nombre;
+            $tipo = strtolower($campo->campo_nombre);
+
+            // Comentario explicativo
+            $descTipo = match ($tipo) {
+                'text', 'textarea' => "Texto libre",
+                'number' => "Número",
+                'checkbox', 'radio', 'selector' => "Selección de catálogo",
+                'imagen' => "Ruta de imagen",
+                'video' => "Ruta de video",
+                'archivo' => "Ruta de archivo",
+                'color' => "Color hexadecimal",
+                'email' => "Correo electrónico",
+                'password' => "Contraseña",
+                'enlace' => "URL",
+                'fecha' => "Fecha (YYYY-MM-DD)",
+                'hora' => "Hora (HH:MM)",
+                default => "Valor"
+            };
+
+            $comentarios .= "/* {$nombre}: Tipo {$tipo} -> {$descTipo} */" . PHP_EOL;
+
+            // Nombres de columnas
+            $columnas[] = $nombre;
+
+            // Valores de ejemplo
+            $valorEjemplo = match ($tipo) {
+                'text', 'textarea' => 'Ejemplo de texto',
+                'number' => '123',
+                'checkbox' => 'opcion1|opcion2',
+                'radio', 'selector' => $campo->opciones_catalogo->first()->catalogo_codigo ?? 'opcion1',
+                'imagen' => 'ruta/imagen.jpg',
+                'video' => 'ruta/video.mp4',
+                'archivo' => 'ruta/documento.pdf',
+                'color' => '#FF5733',
+                'email' => 'usuario@ejemplo.com',
+                'password' => 'MiClave123',
+                'enlace' => 'https://ejemplo.com',
+                'fecha' => now()->format('Y-m-d'),
+                'hora' => now()->format('H:i'),
+                default => 'valor'
+            };
+            $ejemplo[] = $valorEjemplo;
+        }
+        $comentarios .= "/* NO DEBEN EXISTIR ESPACIOS ARRIBA DEL NOMBRE DE LA COLUMNA */" . PHP_EOL;
+        $comentarios .= "/* BORRA HASTA ACA ANTES DE CARGAR INFORMACIÓN DE REFERENCIA */" . PHP_EOL;
+
+        // Crear contenido final
+        $contenido = $comentarios . PHP_EOL
+            . implode(',', $columnas) . PHP_EOL
+            . implode(',', $ejemplo);
+
+        $nombreArchivo = 'plantilla_formulario_' . $form . '.txt';
+
+        return response($contenido)
+            ->header('Content-Type', 'text/plain')
+            ->header('Content-Disposition', "attachment; filename={$nombreArchivo}");
+    }
+
+
+
 
     public function edit(RespuestasForm $respuesta)
     {
@@ -198,17 +341,17 @@ class RespuestasFormController extends Controller
     {
         $form = $respuesta->form_id;
 
-        // 1️⃣ Obtener los campos del formulario
+        // 1️ Obtener los campos del formulario
         $campos = CamposForm::where('form_id', $form)->get();
 
-        // 2️⃣ Construir reglas dinámicas
+        // 2️ Construir reglas dinámicas
         $rules = $this->validacion($campos, $respuesta->id);
-        // 3️⃣ Validar los datos
+        // 3️ Validar los datos
         //dd($request, $rules);
 
-        $validatedData = $request->validate($rules);
+        $validatedData = $request->validate($rules, $respuestaId = null, $modo = 'archivo');
 
-        // 4️⃣ Validar opciones de catálogo
+        // 4️ Validar opciones de catálogo
         foreach ($campos as $campo) {
             $tipo = strtolower($campo->campo_nombre);
             $name = $campo->nombre;
@@ -227,7 +370,7 @@ class RespuestasFormController extends Controller
             }
         }
 
-        // 5️⃣ Guardar dentro de transacción
+        // 5️ Guardar dentro de transacción
         DB::beginTransaction();
         try {
 
@@ -316,13 +459,18 @@ class RespuestasFormController extends Controller
             return redirect()->back()->withErrors('Error al actualizar la respuesta: ' . $e->getMessage());
         }
     }
-    public function validacion($campos, $respuestaId = null)
+    public function validacion($campos, $respuestaId = null, $modo = 'store')
     {
         $rules = [];
 
         foreach ($campos as $campo) {
             $tipo = strtolower($campo->campo_nombre);
             $required = $campo->requerido ? 'required' : 'nullable';
+
+            // Si es importación desde archivo, omitimos multimedia
+            if ($modo === 'archivo' && in_array($tipo, ['archivo', 'imagen', 'video'])) {
+                continue;
+            }
 
             switch ($tipo) {
                 case 'text':
@@ -336,8 +484,9 @@ class RespuestasFormController extends Controller
 
                 case 'checkbox':
                     $arrayRules = [$required, 'array'];
-                    if ($campo->requerido)
+                    if ($campo->requerido) {
                         $arrayRules[] = 'min:1';
+                    }
                     $rules[$campo->nombre] = $arrayRules;
                     break;
 
@@ -349,16 +498,21 @@ class RespuestasFormController extends Controller
                 case 'archivo':
                 case 'imagen':
                 case 'video':
+                    // Solo para store normal
+                    $extensiones_permitidas = $this->CatalogoRepository
+                        ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true);
 
-                    $extensiones_permitidas = $this->CatalogoRepository->obtenerCatalogosPorCategoriaID($campo->categoria_id, true);
-                    $extensiones = $extensiones_permitidas->pluck('catalogo_descripcion')->filter()->toArray();
+                    $extensiones = $extensiones_permitidas
+                        ->pluck('catalogo_descripcion')
+                        ->filter()
+                        ->toArray();
+
                     $extensionesStr = !empty($extensiones) ? implode(',', $extensiones) : '';
 
-                    $fileRules = [$required, 'file', 'max:50240']; // 10 MB
+                    $fileRules = [$required, 'file', 'max:50240']; // 50 MB aprox.
+
                     if (!empty($extensionesStr)) {
                         $fileRules[] = 'mimes:' . $extensionesStr;
-
-
                     }
 
                     $rules[$campo->nombre] = $fileRules;
@@ -395,10 +549,10 @@ class RespuestasFormController extends Controller
                     $rules[$campo->nombre] = [$required];
             }
         }
+
         return $rules;
-
-
     }
+
 
 
     public function destroy(RespuestasForm $respuesta)
@@ -429,5 +583,16 @@ class RespuestasFormController extends Controller
         return redirect()->back()->with('status', 'Respuesta eliminada correctamente.');
     }
 
+    public function CargaMasiva($form)
+    {
+        $breadcrumb = [
+            ['name' => 'Inicio', 'url' => route('home')],
+            ['name' => 'Formularios', 'url' => route('formularios.index')],
+            ['name' => 'Respuestas Formulario', 'url' => route('formularios.respuestas.formulario', $form)],
 
+            ['name' => 'Registrar Datos ', 'url' => route('permissions.index')],
+        ];
+
+        return view('formularios.carga_masiva', compact('breadcrumb', 'form'));
+    }
 }

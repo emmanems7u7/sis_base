@@ -24,4 +24,12 @@ class Formulario extends Model
 
         return $descripcion;
     }
+
+    public function modulos()
+    {
+        return $this->belongsToMany(Modulo::class, 'formulario_modulo')
+            ->withPivot(['configuracion', 'activo'])
+            ->withTimestamps();
+    }
+
 }

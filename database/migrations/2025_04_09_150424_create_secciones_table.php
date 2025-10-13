@@ -16,7 +16,7 @@ return new class extends Migration {
 
             $table->string('titulo')->nullable()
                 ->comment('Titulo de la sección de menu');
-            $table->string('icono', 20)
+            $table->string('icono', 100)
                 ->nullable()
                 ->comment('icono para identificar la seccion');
             $table->timestamps();

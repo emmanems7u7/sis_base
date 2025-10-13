@@ -20,6 +20,8 @@ use App\Http\Controllers\FormularioController;
 use App\Http\Controllers\CamposFormController;
 use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\RespuestasFormController;
+use App\Http\Controllers\ModuloController;
+use App\Http\Controllers\LogController;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -40,6 +42,14 @@ Route::middleware(['auth', 'can:ejecutar-artisan'])->group(function () {
 
     Route::post('/artisan/run', [ArtisanController::class, 'run'])->name('artisan.run');
 });
+
+
+//RUTAS LOGS
+
+// routes/web.php
+Route::get('/logs', [LogController::class, 'index'])->name('logs.index');
+Route::get('/logs/{filename}', [LogController::class, 'show'])->name('logs.show');
+
 
 Route::post('/guardar-color-sidebar', [UserPersonalizacionController::class, 'guardarSidebarColor'])->middleware('auth');
 Route::post('/user/personalizacion/sidebar-type', [UserPersonalizacionController::class, 'updateSidebarType'])->middleware('auth');
@@ -335,3 +345,29 @@ Route::delete('/respuestas/{respuesta}', [RespuestasFormController::class, 'dest
 Route::get('/formularios/{form}/export-pdf', [FormularioController::class, 'exportPdf'])
     ->name('formularios.exportPdf');
 Route::get('/formularios/{form}/export/excel', [FormularioController::class, 'exportExcel'])->name('formularios.exportExcel');
+
+
+Route::get('/formularios/{form}/carga', [RespuestasFormController::class, 'CargaMasiva'])
+    ->name('formularios.carga_masiva');
+
+Route::post('/formularios/importar/{form}', [RespuestasFormController::class, 'importarDesdeArchivo'])
+    ->name('formularios.importar');
+
+Route::get('/formularios/{form}/descargar-plantilla', [RespuestasFormController::class, 'descargarPlantilla'])
+    ->name('formularios.descargar.plantilla');
+
+
+Route::get('/modulos', [ModuloController::class, 'index'])->name('modulos.index');
+Route::get('/modulos/crear', [ModuloController::class, 'create'])->name('modulos.create');
+Route::post('/modulos', [ModuloController::class, 'store'])->name('modulos.store');
+Route::get('/modulos/{modulo}/editar', [ModuloController::class, 'edit'])->name('modulos.edit');
+Route::put('/modulos/{modulo}', [ModuloController::class, 'update'])->name('modulos.update');
+Route::delete('/modulos/{modulo}', [ModuloController::class, 'destroy'])->name('modulos.destroy');
+
+
+Route::get('/modulos/{modulo_id}', [ModuloController::class, 'ModulosIndex'])->name('modulo.index');
+
+
+// Ruta para verificar si el formulario ya está asociado
+Route::get('/modulos/formulario/check/{formulario_id}', [ModuloController::class, 'checkFormulario'])
+    ->name('modulos.formulario.check');
