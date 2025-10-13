@@ -17,7 +17,7 @@ class Generado_SeederMenu_20251013 extends Seeder
                 'padre_id' => null,
                 'seccion_id' => 17,
                 'ruta' => 'logs.index',
-                'modulo_id' => '',
+                'modulo_id' => null,
             ],
             [
                 'id' => '20',
@@ -37,6 +37,8 @@ class Generado_SeederMenu_20251013 extends Seeder
                 'padre_id' => null,
                 'seccion_id' => 10,
                 'ruta' => 'modulos.index',
+                'modulo_id' => null,
+
             ],
 
         ];
