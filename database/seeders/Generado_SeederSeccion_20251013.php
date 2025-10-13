@@ -15,8 +15,8 @@ class Generado_SeederSeccion_20251013 extends Seeder
                 'titulo' => 'Administración de Logs',
                 'icono' => 'fas fa-file-alt',
                 'posicion' => 6,
-                'accion_usuario' => '',
-            ],];
+            ],
+        ];
 
         foreach ($secciones as $data) {
             Seccion::firstOrCreate(

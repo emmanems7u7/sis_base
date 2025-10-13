@@ -112,7 +112,6 @@ class MenuRepository extends BaseRepository implements MenuInterface
                 'titulo' => $this->cleanHtml($request->input('titulo')),
                 'icono' => $this->cleanHtml($request->input('icono')),
                 'posicion' => $ultimaPosicion + 1,
-                'accion_usuario' => Auth::user()->name,
             ]
         );
         $this->guardarEnSeederSeccion($seccion);
@@ -132,7 +131,6 @@ class MenuRepository extends BaseRepository implements MenuInterface
         $titulo = addslashes($seccion->titulo);
         $icono = addslashes($seccion->icono);
         $posicion = (int) $seccion->posicion;
-        $accionUsuario = addslashes($seccion->accion_usuario);
 
         $registro = <<<PHP
                                 [
@@ -140,7 +138,6 @@ class MenuRepository extends BaseRepository implements MenuInterface
                                     'titulo' => '{$titulo}',
                                     'icono' => '{$icono}',
                                     'posicion' => {$posicion},
-                                    'accion_usuario' => '{$accionUsuario}',
                                 ],
                     PHP;
 
