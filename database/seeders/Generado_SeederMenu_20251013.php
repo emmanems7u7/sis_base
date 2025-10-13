@@ -17,15 +17,16 @@ class Generado_SeederMenu_20251013 extends Seeder
                 'padre_id' => null,
                 'seccion_id' => 17,
                 'ruta' => 'logs.index',
-                'modulo' => '',
-            ],[
+                'modulo_id' => '',
+            ],
+            [
                 'id' => '20',
                 'nombre' => 'Gestión de Inventario',
                 'orden' => 2,
                 'padre_id' => null,
                 'seccion_id' => 11,
                 'ruta' => 'modulo.index',
-                'modulo' => '',
+                'modulo_id' => 1,
             ],
 
 
@@ -36,7 +37,6 @@ class Generado_SeederMenu_20251013 extends Seeder
                 'padre_id' => null,
                 'seccion_id' => 10,
                 'ruta' => 'modulos.index',
-                'accion_usuario' => '',
             ],
 
         ];

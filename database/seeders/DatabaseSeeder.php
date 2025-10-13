@@ -76,7 +76,7 @@ class DatabaseSeeder extends Seeder
         // FIN SECCION
 
         // SECCION
-        $this->call(Generado_SeederSeccion_20251013::class);
+        //$this->call(Generado_SeederSeccion_20251013::class);
 
         // FIN SECCION
 
