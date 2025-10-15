@@ -366,23 +366,12 @@ class RespuestasFormController extends Controller
         $validatedData = $request->validate($rules);
 
         // 4️ Validar opciones de catálogo
-        foreach ($campos as $campo) {
-            $tipo = strtolower($campo->campo_nombre);
-            $name = $campo->nombre;
+        $errores = $this->FormularioRepository->validarOpcionesCatalogo($campos, $request);
 
-            if (in_array($tipo, ['checkbox', 'radio', 'selector']) && $request->has($name)) {
-                $valores = is_array($request->input($name)) ? $request->input($name) : [$request->input($name)];
-                $opcionesValidas = $campo->opciones_catalogo->pluck('catalogo_codigo')->toArray();
-
-                foreach ($valores as $v) {
-                    if (!in_array($v, $opcionesValidas)) {
-                        return redirect()->back()
-                            ->withErrors("El valor '$v' no es válido para el campo '{$campo->etiqueta}'.")
-                            ->withInput();
-                    }
-                }
-            }
+        if (!empty($errores)) {
+            return redirect()->back()->withErrors($errores)->withInput();
         }
+
 
         // 5️ Guardar dentro de transacción
         DB::beginTransaction();
