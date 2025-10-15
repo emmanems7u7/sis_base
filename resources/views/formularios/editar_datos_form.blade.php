@@ -23,7 +23,7 @@
                     @include('formularios._campos', ['campos' => $formulario->campos->sortBy('posicion'), 'valores' => $valores, 'form' => $formulario->id])
 
 
-                    <button type="submit" class="btn btn-primary">Actualizar Respuesta</button>
+                    <button type="submit" class="btn btn-primary mt-3">Actualizar Respuesta</button>
                 </form>
             </div>
         </div>

@@ -8,6 +8,7 @@ class CamposForm extends Model
 {
     protected $fillable = [
         'form_id',
+        'form_ref_id',
         'nombre',
         'etiqueta',
         'tipo',
@@ -44,4 +45,20 @@ class CamposForm extends Model
         return $this->hasMany(Catalogo::class, 'categoria_id', 'categoria_id');
     }
 
+
+    // Relación al formulario de referencia (de donde se obtienen las opciones)
+    public function formularioReferencia()
+    {
+        return $this->belongsTo(Formulario::class, 'form_ref_id');
+    }
+
+
+    // Si el campo está vinculado a otro formulario,
+    // obtener sus respuestas como opciones posibles
+    public function opcionesFormulario()
+    {
+        return $this->formularioReferencia
+            ? $this->formularioReferencia->respuestas()->with('camposRespuestas.campo')->get()
+            : collect();
+    }
 }

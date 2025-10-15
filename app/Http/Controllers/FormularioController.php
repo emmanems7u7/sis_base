@@ -11,16 +11,19 @@ use App\Exports\ExportPDF;
 use Carbon\Carbon;
 use App\Exports\ExportExcel;
 use Maatwebsite\Excel\Facades\Excel;
+use App\Interfaces\FormularioInterface;
 
 class FormularioController extends Controller
 {
 
+    protected $FormularioRepository;
 
     protected $CatalogoRepository;
-    public function __construct(CatalogoInterface $catalogoInterface)
+    public function __construct(CatalogoInterface $catalogoInterface, FormularioInterface $formularioInterface)
     {
 
         $this->CatalogoRepository = $catalogoInterface;
+        $this->FormularioRepository = $formularioInterface;
 
     }
     public function index()
@@ -103,13 +106,21 @@ class FormularioController extends Controller
 
     public function showCampos($id)
     {
-        $formulario = Formulario::with(['campos.opciones_catalogo'])->findOrFail($id);
+        $formulario = Formulario::with('campos')->findOrFail($id);
 
+        // Procesar los campos para agregar opciones de catálogo o de formulario referenciado
+        $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
+
+        // Asignar los campos procesados al formulario
+        $formulario->campos = $camposProcesados;
+
+        // Retornar JSON
         return response()->json([
             'nombre' => $formulario->nombre,
             'descripcion' => $formulario->descripcion,
             'campos' => $formulario->campos
         ]);
+
     }
 
 

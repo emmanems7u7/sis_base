@@ -151,34 +151,34 @@
         <div class="invalid-feedback d-block">{{ $message }}</div>
     @enderror
 </div>
-
-<table class="table table-bordered mt-3" id="tablaFormularios">
-    <thead class="table table-striped align-middle">
-        <tr>
-            <th>Nombre</th>
-            <th>Descripción</th>
-            <th class="text-center" style="width: 100px;">Acciones</th>
-        </tr>
-    </thead>
-    <tbody>
-        {{-- Formularios seleccionados --}}
-        @if(!empty($formulariosSeleccionados))
-            @foreach($formulariosSeleccionados as $f)
-                <tr data-id="{{ $f['id'] }}">
-                    <td>{{ $f['nombre'] }}</td>
-                    <td>{{ $f['descripcion'] }}</td>
-                    <td class="text-center">
-                        <button type="button" class="btn btn-sm btn-danger btnEliminarFormulario">
-                            <i class="fas fa-trash"></i>
-                        </button>
-                    </td>
-                    <input type="hidden" name="formularios[]" value="{{ $f['id'] }}">
-                </tr>
-            @endforeach
-        @endif
-    </tbody>
-</table>
-
+<div class="table-responsive">
+    <table class="table table-bordered mt-3" id="tablaFormularios">
+        <thead class="table table-striped align-middle">
+            <tr>
+                <th>Nombre</th>
+                <th>Descripción</th>
+                <th class="text-center" style="width: 100px;">Acciones</th>
+            </tr>
+        </thead>
+        <tbody>
+            {{-- Formularios seleccionados --}}
+            @if(!empty($formulariosSeleccionados))
+                @foreach($formulariosSeleccionados as $f)
+                    <tr data-id="{{ $f['id'] }}">
+                        <td>{{ $f['nombre'] }}</td>
+                        <td>{{ $f['descripcion'] }}</td>
+                        <td class="text-center">
+                            <button type="button" class="btn btn-sm btn-danger btnEliminarFormulario">
+                                <i class="fas fa-trash"></i>
+                            </button>
+                        </td>
+                        <input type="hidden" name="formularios[]" value="{{ $f['id'] }}">
+                    </tr>
+                @endforeach
+            @endif
+        </tbody>
+    </table>
+</div>
 <div class="form-check mb-3">
     <input class="form-check-input @error('activo') is-invalid @enderror" type="checkbox" name="activo" id="activo"
         value="1" @if((bool) $activoVal) checked @endif>

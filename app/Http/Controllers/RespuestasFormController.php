@@ -31,8 +31,6 @@ class RespuestasFormController extends Controller
     }
     public function index()
     {
-
-
         $respuestas = RespuestasForm::with(['camposRespuestas.campo', 'actor', 'formulario'])->get();
 
         return view('formularios.respuestas', compact('respuestas'));
@@ -48,7 +46,13 @@ class RespuestasFormController extends Controller
 
         $agent = new Agent();
         $isMobile = $agent->isMobile();
-        $formulario = Formulario::with('campos.opciones_catalogo')->findOrFail($form);
+        $formulario = Formulario::with('campos')->findOrFail($form);
+
+        // Procesar los campos para agregar opciones de catálogo o de formulario referenciado
+        $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
+        // Asignar los campos procesados al formulario
+        $formulario->campos = $camposProcesados;
+
 
         $query = $formulario->respuestas()->with('camposRespuestas.campo', 'actor');
 
@@ -81,6 +85,12 @@ class RespuestasFormController extends Controller
                 $q->orderBy('posicion');
             }
         ])->findOrFail($form);
+
+
+        // Procesar los campos para agregar opciones de catálogo o de formulario referenciado
+        $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
+        // Asignar los campos procesados al formulario
+        $formulario->campos = $camposProcesados;
 
         return view('formularios.registrar_datos_form', compact('formulario', 'breadcrumb'));
     }
@@ -333,6 +343,11 @@ class RespuestasFormController extends Controller
                 : collect([]);
             return $campo;
         });
+
+        // Procesar los campos para agregar opciones de catálogo o de formulario referenciado
+        $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
+        // Asignar los campos procesados al formulario
+        $formulario->campos = $camposProcesados;
 
         return view('formularios.editar_datos_form', compact('breadcrumb', 'respuesta', 'formulario', 'campos'));
     }

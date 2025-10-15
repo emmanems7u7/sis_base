@@ -6,16 +6,21 @@ use Illuminate\Http\Request;
 use App\Models\Formulario;
 use App\Models\CamposForm;
 use App\Interfaces\CatalogoInterface;
+use App\Interfaces\FormularioInterface;
+
 use App\Models\Categoria;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 class CamposFormController extends Controller
 {
     protected $CatalogoRepository;
+    protected $FormularioRepository;
 
-    public function __construct(CatalogoInterface $catalogoInterface)
+    public function __construct(CatalogoInterface $catalogoInterface, FormularioInterface $formularioInterface)
     {
         $this->CatalogoRepository = $catalogoInterface;
+        $this->FormularioRepository = $formularioInterface;
+
     }
 
     // Mostrar listado y formulario de creación/edición
@@ -33,17 +38,11 @@ class CamposFormController extends Controller
         $categorias = Categoria::all();
         $campos_formulario = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Campos Formulario', true);
 
-        // Cargar opciones de catálogo para cada campo con categoría
-        foreach ($campos as $campo) {
-            if ($campo->categoria_id) {
-                $campo->opciones_catalogo = $this->CatalogoRepository
-                    ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true);
-            } else {
-                $campo->opciones_catalogo = collect();
-            }
-        }
+        $campos = $this->FormularioRepository->CamposFormCat($campos);
 
-        return view('formularios.campos.index', compact('breadcrumb', 'formulario', 'campos', 'categorias', 'campos_formulario'));
+        $formularios = Formulario::where('id', '!=', $formulario->id)->get();
+
+        return view('formularios.campos.index', compact('breadcrumb', 'formulario', 'campos', 'categorias', 'campos_formulario', 'formularios'));
     }
 
     // Crear campo
@@ -73,6 +72,7 @@ class CamposFormController extends Controller
             'categoria_id' => $request->categoria_id ?: null,
             'posicion' => $posicion,
             'config' => $request->config ?? [],
+            'form_ref_id' => $request->formulario_id ?: null,
         ]);
 
         return redirect()->back()->with('status', 'Campo creado exitosamente.');
@@ -102,6 +102,7 @@ class CamposFormController extends Controller
             'requerido' => $request->requerido ? 1 : 0,
             'categoria_id' => $request->categoria_id ?: null,
             'config' => $request->config ?? $campo->config,
+            'form_ref_id' => $request->formulario_id ?: null,
         ]);
         return redirect()->back()->with('status', 'Campo editado exitosamente.');
 

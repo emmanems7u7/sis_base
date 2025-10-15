@@ -26,14 +26,14 @@
     </script>
     <div class="container">
         <div class="row">
-            <div class="col-md-6">
+            <div class="col-md-6 mt-2">
                 <div class="card">
                     <div class="card-body">
                         <h5>Logs del sistema</h5>
                     </div>
                 </div>
             </div>
-            <div class="col-md-6">
+            <div class="col-md-6 mt-2">
                 <div class="card">
                     <div class="card-body">
                         <p class="text-muted mb-2">
@@ -51,8 +51,8 @@
             </div>
         </div>
 
-        <div class="row mt-2">
-            <div class="col-md-3">
+        <div class="row">
+            <div class="col-md-3  mt-2">
                 <div class="card">
                     <div class="card-body">
                         @foreach($logs as $log)
@@ -76,7 +76,7 @@
                 </div>
             </div>
 
-            <div class="col-md-9">
+            <div class="col-md-9 mt-2">
                 <div class="card">
                     <div class="card-body">
                         @if(isset($filename))

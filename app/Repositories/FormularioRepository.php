@@ -3,6 +3,8 @@
 namespace App\Repositories;
 
 use App\Interfaces\FormularioInterface;
+use App\Interfaces\CatalogoInterface;
+use App\Models\CamposForm;
 use App\Models\Formulario;
 use App\Models\RespuestasCampo;
 use App\Models\RespuestasForm;
@@ -11,11 +13,14 @@ use Illuminate\Http\Request;
 class FormularioRepository implements FormularioInterface
 {
     protected $model;
+    protected $CatalogoRepository;
 
-    public function __construct(Formulario $model)
+    public function __construct(Formulario $model, CatalogoInterface $catalogoInterface)
     {
         $this->model = $model;
+        $this->CatalogoRepository = $catalogoInterface;
     }
+
 
     public function all()
     {
@@ -124,13 +129,35 @@ class FormularioRepository implements FormularioInterface
             $tipo = strtolower($campo->campo_nombre);
             $name = $campo->nombre;
 
+            // Solo validar si el request tiene datos para ese campo
             if (in_array($tipo, ['checkbox', 'radio', 'selector']) && $request->has($name)) {
-                $valores = is_array($request->input($name)) ? $request->input($name) : [$request->input($name)];
-                $opcionesValidas = $campo->opciones_catalogo->pluck('catalogo_codigo')->toArray();
 
-                foreach ($valores as $v) {
-                    if (!in_array($v, $opcionesValidas)) {
-                        $errores[] = "El valor '$v' no es válido para el campo '{$campo->etiqueta}'.";
+                $valores = is_array($request->input($name))
+                    ? $request->input($name)
+                    : [$request->input($name)];
+
+                //Caso 1: campo con categoria_id
+                if ($campo->categoria_id) {
+                    $opcionesValidas = $campo->opciones_catalogo->pluck('catalogo_codigo')->toArray();
+
+                    foreach ($valores as $v) {
+                        if (!in_array($v, $opcionesValidas)) {
+                            $errores[] = "El valor '$v' no es válido para el campo '{$campo->etiqueta}'.";
+                        }
+                    }
+                }
+
+                //Caso 2: campo que referencia otro formulario
+                elseif ($campo->form_ref_id) {
+                    // Obtener los ids de respuestas del formulario referenciado
+                    $respuestasValidas = $campo->formularioReferencia
+                        ? $campo->formularioReferencia->respuestas->pluck('id')->toArray()
+                        : [];
+
+                    foreach ($valores as $v) {
+                        if (!in_array($v, $respuestasValidas)) {
+                            $errores[] = "El valor '$v' no es válido para el campo '{$campo->etiqueta}' (formulario referenciado).";
+                        }
                     }
                 }
             }
@@ -138,4 +165,53 @@ class FormularioRepository implements FormularioInterface
 
         return $errores;
     }
+
+    public function CamposFormCat($campos)
+    {
+        $resultado = collect();
+
+        foreach ($campos as $campo) {
+
+            if ($campo->categoria_id) {
+                // 🔹 Caso 1: el campo tiene una categoría asociada
+                $campo->opciones_catalogo = $this->CatalogoRepository
+                    ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true);
+
+            } elseif ($campo->form_ref_id) {
+                // 🔹 Caso 2: el campo hace referencia a otro formulario
+
+                // Obtener el campo con menor posición (posición 1) del formulario referenciado
+                $campoReferencia = CamposForm::where('form_id', $campo->form_ref_id)
+                    ->orderBy('posicion', 'asc')
+                    ->first();
+
+                if ($campoReferencia) {
+                    // Mapear las respuestas del formulario referenciado
+                    $campo->opciones_catalogo = $campo->opcionesFormulario()->map(function ($respuesta) use ($campoReferencia) {
+
+                        // Buscar la respuesta del campo con menor posición
+                        $valorCampo = $respuesta->camposRespuestas
+                            ->firstWhere('cf_id', $campoReferencia->id);
+
+                        return (object) [
+                            'catalogo_codigo' => $respuesta->id,
+                            'catalogo_descripcion' => $valorCampo->valor ?? 'Sin nombre',
+                        ];
+                    });
+                } else {
+                    $campo->opciones_catalogo = collect();
+                }
+
+            } else {
+                // 🔹 Caso 3: sin categoría ni referencia
+                $campo->opciones_catalogo = collect();
+            }
+
+            // Agregamos cada campo con sus opciones al resultado final
+            $resultado->push($campo);
+        }
+
+        return $resultado;
+    }
+
 }

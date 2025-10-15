@@ -16,5 +16,6 @@ interface FormularioInterface
     public function guardarArchivoGenerico($campo, $respuestaId, $form, $ruta);
     public function guardarValorSimple($campo, $respuestaId, $valor);
     public function validarOpcionesCatalogo($campos, $request);
+    public function CamposFormCat($campos);
 
 }

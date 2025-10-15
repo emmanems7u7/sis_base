@@ -98,17 +98,52 @@
                     </div>
 
                     <!-- Categoría -->
-                    <div class="col-md-3" id="ContenedorCategoria" style="display:none;">
-                        <label for="categoriaCampo" class="form-label">Categoría</label> <i
-                            class="fas fa-question-circle text-primary" data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Seleccione una categoría que se utilizará para completar el tipo seleccionado."></i>
-                        <select id="categoriaCampo" name="categoria_id" class="form-select">
-                            <option value="">-- Seleccionar categoría --</option>
-                            @foreach($categorias as $categoria)
-                                <option value="{{ $categoria->id }}">{{ $categoria->nombre }}</option>
-                            @endforeach
-                        </select>
+                    <div id="ContenedorCategoria" style="display:none;">
+                        <div class="row">
+
+                            <div class="col-md-3" id="categorias_cont">
+                                <label for="categoriaCampo" class="form-label">Categoría</label> <i
+                                    class="fas fa-question-circle text-primary" data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="Seleccione una categoría que se utilizará para completar el tipo seleccionado."></i>
+                                <select id="categoriaCampo" name="categoria_id" class="form-select">
+                                    <option value="">-- Seleccionar categoría --</option>
+                                    @foreach($categorias as $categoria)
+                                        <option value="{{ $categoria->id }}">{{ $categoria->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+                            <div class="col-md-3" id="formularios_cont">
+                                <label for="formularioCampo" class="form-label">Formulario</label> <i
+                                    class="fas fa-question-circle text-primary" data-bs-toggle="tooltip"
+                                    data-bs-placement="top"
+                                    title="Seleccione una categoría que se utilizará para completar el tipo seleccionado."></i>
+                                <select id="formularioCampo" name="formulario_id" class="form-select">
+                                    <option value="">-- Seleccionar formulario --</option>
+                                    @foreach($formularios as $form)
+                                        <option value="{{ $form->id }}">{{ $form->nombre }}</option>
+                                    @endforeach
+                                </select>
+                            </div>
+
+
+                            <!-- Formulario -->
+                            <div class="col-md-6  d-flex align-items-center ">
+                                <div class="form-check d-flex align-items-center gap-1">
+                                    <input type="checkbox" id="formulario_campo" name="formulario" class="form-check-input">
+                                    <label class="form-check-label mb-0" for="formulario_campo">Seleccionar un
+                                        formulario</label>
+                                    <i class="fas fa-question-circle text-primary" data-bs-toggle="tooltip"
+                                        data-bs-placement="top"
+                                        title="Marca la casilla si deseas que el campo sean registros de un formulario"></i>
+                                </div>
+                            </div>
+                        </div>
+
+
                     </div>
+
 
                     <!-- Botones -->
                     <div class="col-md-12 d-flex gap-2 mt-2">
@@ -161,6 +196,41 @@
 
 
     @include('formularios.campos.modal_visor')
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const chkFormulario = document.getElementById('formulario_campo');
+            const contCategorias = document.getElementById('categorias_cont');
+            const contFormularios = document.getElementById('formularios_cont');
+
+
+
+            // evento al cambiar el checkbox
+            chkFormulario.addEventListener('change', actualizarVisibilidad);
+
+            // establecer estado inicial
+            actualizarVisibilidad();
+        });
+
+        // función para actualizar visibilidad
+        function actualizarVisibilidad() {
+            const chkFormulario = document.getElementById('formulario_campo');
+            const contCategorias = document.getElementById('categorias_cont');
+            const contFormularios = document.getElementById('formularios_cont');
+
+            if (chkFormulario.checked) {
+                contFormularios.style.display = 'block';
+                contCategorias.style.display = 'none';
+            } else {
+                contFormularios.style.display = 'none';
+                contCategorias.style.display = 'block';
+            }
+        }
+    </script>
+
+
+
     <script>
         // Drag & Drop
 
@@ -203,7 +273,6 @@
 
             const tipoTexto = this.options[this.selectedIndex].textContent.trim();
             if (['Radio', 'Checkbox', 'Selector', 'Imagen', 'Video', 'Archivo'].includes(tipoTexto)) {
-
 
                 categoriaCampo.style.display = '';
                 document.getElementById('categoriaCampo').style.display = 'inline-block';
@@ -255,20 +324,26 @@
                     }
 
                     const campo = data.campo;
-
                     // Llenar form
                     document.getElementById('tipoCampo').value = campo.tipo;
                     document.getElementById('nombreCampo').value = campo.nombre;
                     document.getElementById('etiquetaCampo').value = campo.etiqueta;
                     document.getElementById('requeridoCampo').checked = campo.requerido;
+                    var catCampo = document.getElementById('ContenedorCategoria');
 
-                    const categoriaCampo = document.getElementById('categoriaCampo');
                     if (campo.categoria_id) {
-                        categoriaCampo.style.display = 'inline-block';
-                        categoriaCampo.value = campo.categoria_id;
-                    } else {
-                        categoriaCampo.style.display = 'none';
-                        categoriaCampo.value = '';
+
+                        catCampo.style.display = 'inline-block';
+                        catCampo.value = campo.categoria_id;
+
+                    } else if (campo.form_ref_id) {
+                        document.getElementById('formulario_campo').checked = true;
+                        catCampo.style.display = 'inline-block';
+                        actualizarVisibilidad();
+                    }
+                    else {
+                        catCampo.style.display = 'none';
+                        catCampo.value = '';
                     }
 
                     // Cambiar acción del form para edición

@@ -50,7 +50,7 @@ class MenuRepository extends BaseRepository implements MenuInterface
         $padreId = $menu->padre_id !== null ? $menu->padre_id : 'null';
         $seccionId = (int) $menu->seccion_id;
         $ruta = addslashes($menu->ruta);
-        $modulo = addslashes($menu->modulo);
+        $modulo = addslashes($menu->modulo_id) ?? 'null';
 
         $registro = <<<PHP
                                     [
@@ -60,7 +60,7 @@ class MenuRepository extends BaseRepository implements MenuInterface
                                         'padre_id' => {$padreId},
                                         'seccion_id' => {$seccionId},
                                         'ruta' => '{$ruta}',
-                                        'modulo' => '{$modulo}',
+                                        'modulo_id' => '{$modulo}',
                                     ],
                         PHP;
 

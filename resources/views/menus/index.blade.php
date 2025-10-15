@@ -21,36 +21,37 @@
                 <p>No hay secciones disponibles.</p>
             @else
                 <p>Lista de Secciones disponibles en el sistema.</p>
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Nª</th>
-                            <th>Título</th>
-
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($secciones as $seccion)
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
                             <tr>
-                                <td class="text-center">{{ $loop->iteration }}</td>
-                                <td>{{ $seccion->titulo }}</td>
+                                <th>Nª</th>
+                                <th>Título</th>
 
-                                <td>
-                                    <a href="{{ route('secciones.edit', $seccion->id) }}" class="btn btn-warning">Editar</a>
-                                    <form action="{{ route('secciones.destroy', $seccion->id) }}" method="POST"
-                                        id="delete-form-{{ $seccion->id }}" style="display:inline;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="button" class="btn btn-danger"
-                                            onclick="confirmarEliminacion('delete-form-{{ $seccion->id }}' , '¿Estás seguro de eliminar esta sección?')">Eliminar</button>
-                                    </form>
-                                </td>
+                                <th>Acciones</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @foreach($secciones as $seccion)
+                                <tr>
+                                    <td class="text-center">{{ $loop->iteration }}</td>
+                                    <td>{{ $seccion->titulo }}</td>
 
+                                    <td>
+                                        <a href="{{ route('secciones.edit', $seccion->id) }}" class="btn btn-warning">Editar</a>
+                                        <form action="{{ route('secciones.destroy', $seccion->id) }}" method="POST"
+                                            id="delete-form-{{ $seccion->id }}" style="display:inline;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="button" class="btn btn-danger"
+                                                onclick="confirmarEliminacion('delete-form-{{ $seccion->id }}' , '¿Estás seguro de eliminar esta sección?')">Eliminar</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            @endforeach
+                        </tbody>
+                    </table>
+                </div>
             @endif
         </div>
     </div>

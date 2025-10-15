@@ -81,12 +81,12 @@ class DatabaseSeeder extends Seeder
         // FIN SECCION
 
         // MENU
-        $this->call(Generado_SeederMenu_20251013::class);
+        // $this->call(Generado_SeederMenu_20251013::class);
 
         // FIN MENU
 
         // PERMISOS
-        $this->call(Generado_SeederPermisos_20251013::class);
+        // $this->call(Generado_SeederPermisos_20251013::class);
 
         // FIN PERMISOS
 
