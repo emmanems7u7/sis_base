@@ -363,8 +363,7 @@ class RespuestasFormController extends Controller
         $rules = $this->validacion($campos, $respuesta->id);
         // 3️ Validar los datos
         //dd($request, $rules);
-
-        $validatedData = $request->validate($rules, $respuestaId = null, $modo = 'archivo');
+        $validatedData = $request->validate($rules);
 
         // 4️ Validar opciones de catálogo
         foreach ($campos as $campo) {
