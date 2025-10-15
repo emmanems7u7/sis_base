@@ -1,11 +1,12 @@
 <div class="container my-3">
+   
     <div class="row g-3"> {{-- g-3 agrega espacio entre columnas --}}
         @foreach($formulariosConRespuestas as $item)
             @php
                 $formulario = $item['formulario'];
                 $respuestas = $item['respuestas'];
             @endphp
-
+ <h5 class="mt-4"><i class="fas fa-file-alt me-2"></i>{{ $formulario->nombre }}</h5>
             @forelse($respuestas as $respuesta)
                 <div class="col-12 col-md-6 col-lg-4"> {{-- RESPONSIVE COLUMNS --}}
                     <div class="card h-100 shadow-sm">
