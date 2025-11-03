@@ -55,10 +55,14 @@ class CamposForm extends Model
 
     // Si el campo está vinculado a otro formulario,
     // obtener sus respuestas como opciones posibles
-    public function opcionesFormulario()
+    public function opcionesFormularioQuery()
     {
         return $this->formularioReferencia
-            ? $this->formularioReferencia->respuestas()->with('camposRespuestas.campo')->get()
-            : collect();
+            ? $this->formularioReferencia->respuestas()->with('camposRespuestas.campo')
+            : collect(); // o mejor retornar un query vacío si es posible
     }
+
+
+
+
 }

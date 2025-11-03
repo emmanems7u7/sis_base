@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-
+use Illuminate\Support\Facades\Session;
 use Illuminate\Http\Request;
 use App\Models\RespuestasForm;
 use App\Models\RespuestasCampo;
@@ -11,6 +11,9 @@ use Illuminate\Support\Facades\DB;
 use App\Models\Catalogo;
 use App\Interfaces\CatalogoInterface;
 use App\Interfaces\FormularioInterface;
+use App\Interfaces\FormLogicInterface;
+use App\Models\FormLogicCondition;
+use App\Models\FormLogicRule;
 use Illuminate\Support\Facades\Validator;
 use Jenssegers\Agent\Agent;
 
@@ -20,12 +23,17 @@ class RespuestasFormController extends Controller
 
     protected $CatalogoRepository;
     protected $FormularioRepository;
+    protected $FormLogicInterface;
 
-    public function __construct(CatalogoInterface $catalogoInterface, FormularioInterface $formularioInterface)
-    {
+    public function __construct(
+        CatalogoInterface $catalogoInterface,
+        FormularioInterface $formularioInterface,
+        FormLogicInterface $formLogicInterface
+    ) {
 
         $this->CatalogoRepository = $catalogoInterface;
         $this->FormularioRepository = $formularioInterface;
+        $this->FormLogicInterface = $formLogicInterface;
 
 
     }
@@ -35,7 +43,6 @@ class RespuestasFormController extends Controller
 
         return view('formularios.respuestas', compact('respuestas'));
     }
-
     public function indexPorFormulario(Request $request, $form)
     {
         $breadcrumb = [
@@ -46,29 +53,39 @@ class RespuestasFormController extends Controller
 
         $agent = new Agent();
         $isMobile = $agent->isMobile();
+
         $formulario = Formulario::with('campos')->findOrFail($form);
 
-        // Procesar los campos para agregar opciones de catálogo o de formulario referenciado
-        $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
-        // Asignar los campos procesados al formulario
-        $formulario->campos = $camposProcesados;
-
-
+        // 📌 Primero, cargar las respuestas paginadas
         $query = $formulario->respuestas()->with('camposRespuestas.campo', 'actor');
 
-        // Filtro de búsqueda por nombre del actor
         if ($request->filled('search')) {
             $search = $request->input('search');
-            $query->whereHas('actor', function ($q) use ($search) {
-                $q->where('name', 'like', "%{$search}%");
-            });
+            $query->whereHas('actor', fn($q) => $q->where('name', 'like', "%{$search}%"));
         }
 
-        // Paginación
         $respuestas = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+
+        // 📌 Obtener solo los IDs de campos usados en las respuestas visibles
+        $camposIds = $respuestas->pluck('camposRespuestas')
+            ->flatten()
+            ->pluck('campo_id')
+            ->unique();
+
+        // 📌 Procesar solo los campos que aparecen en las respuestas paginadas
+        $camposFiltrados = $formulario->campos->whereIn('id', $camposIds);
+
+        $camposProcesados = $this->FormularioRepository->CamposFormCat($camposFiltrados);
+
+        // Asignar los campos procesados sin afectar los demás
+        $formulario->campos = $formulario->campos->map(function ($campo) use ($camposProcesados) {
+            return $camposProcesados->firstWhere('id', $campo->id) ?? $campo;
+        });
 
         return view('formularios.respuestas_formulario', compact('isMobile', 'formulario', 'respuestas', 'breadcrumb'));
     }
+
+
 
     public function create($form)
     {
@@ -87,19 +104,137 @@ class RespuestasFormController extends Controller
         ])->findOrFail($form);
 
 
+
+
         // Procesar los campos para agregar opciones de catálogo o de formulario referenciado
         $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
         // Asignar los campos procesados al formulario
-        $formulario->campos = $camposProcesados;
 
-        return view('formularios.registrar_datos_form', compact('formulario', 'breadcrumb'));
+
+        $formulario->campos = $camposProcesados;
+        // inicio
+        $rules = collect();
+        $campos = $formulario->campos;
+
+        foreach ($campos as $campo) {
+            $reglasCampo = FormLogicCondition::with([
+                'campoCondicion.formulario',
+                'campoValor.formulario',
+                'action.campoDestino.formulario'
+            ])->where('campo_condicion', $campo->id)->get();
+
+            $rules = $rules->merge($reglasCampo);
+        }
+
+        $humanRules = [];
+
+        foreach ($rules as $condicion) {
+            $campoCond = $condicion->campoCondicion;
+            $campoVal = $condicion->campoValor;
+
+            $formOrigen = $campoCond ? $campoCond->formulario->nombre ?? 'Formulario desconocido' : 'Campo desconocido';
+            $formValor = $campoVal ? $campoVal->formulario->nombre ?? 'Formulario desconocido' : null;
+
+            $valorTexto = $campoVal
+                ? "<strong>{$campoVal->etiqueta}</strong> del formulario <em>'{$formValor}'</em>"
+                : "<strong>{$condicion->valor}</strong>";
+
+            // Convertir operadores a texto entendible
+            $operadorTexto = match ($condicion->operador) {
+                '=' => '<strong> es igual a</strong>',
+                '!=' => '<strong> es distinto de</strong>',
+                '>' => '<strong> es mayor que</strong>',
+                '<' => '<strong> es menor que</strong>',
+                '>=' => '<strong> es mayor o igual que</strong>',
+                '<=' => '<strong> es menor o igual que</strong>',
+                'in' => '<strong> es contenido en</strong>',
+                default => "<strong>{$condicion->operador}</strong>"
+            };
+
+            $accionTexto = '<em>Sin acción definida</em>';
+            if ($condicion->action && $condicion->action->campoDestino) {
+                $campoAccion = $condicion->action->campoDestino;
+                $formAccion = $campoAccion->formulario ?? null;
+                $accionTexto = $formAccion
+                    ? "Aplicar acción <strong>'{$condicion->action->operacion}'</strong> al campo <strong>'{$campoAccion->etiqueta}'</strong> del formulario <em>'{$formAccion->nombre}'</em>"
+                    : "Aplicar acción <strong>'{$condicion->action->operacion}'</strong> al campo <strong>'{$campoAccion->etiqueta}'</strong>";
+            }
+
+            // Icono de contexto al inicio de la regla
+            $humanRules[] = "
+                <div class='mb-2'>
+                    <i class='fas fa-clipboard-list me-1'></i>
+                    Si el campo <strong>'{$campoCond->etiqueta}'</strong> del formulario <em>'{$formOrigen}'</em>  
+                     {$operadorTexto} {$valorTexto},<br>
+                    entonces {$accionTexto} <strong> caso contrario no proceder con el registro hasta cumplir con la regla.  </strong>
+                </div>
+            ";
+        }
+        // fin
+
+        return view('formularios.registrar_datos_form', compact('humanRules', 'formulario', 'breadcrumb'));
     }
 
 
 
+    function fila($request)
+    {
+        // Obtener todos los datos enviados
+        $datosFormulario = $request->all();
 
+        // Array para guardar filas completas seleccionadas
+        $filasSeleccionadas = [];
+
+        // Iterar sobre cada campo enviado
+        foreach ($datosFormulario as $nombreCampo => $valor) {
+
+
+            // Verificar si este campo es de tipo referencia a otro formulario
+            // Por ejemplo: si $valor es numérico y corresponde a un ID de RespuestasForm
+            if (is_numeric($valor)) {
+                $fila = RespuestasForm::with('camposRespuestas.campo')
+                    ->find($valor);
+
+
+
+                if ($fila) {
+
+                    $datos = [];
+                    foreach ($fila->camposRespuestas as $cr) {
+                        $datos[$cr->campo->nombre] = $cr->valor . ' - ' . $cr->id;
+                    }
+
+                    $filasSeleccionadas[$nombreCampo] = $datos;
+                }
+            }
+
+            // Si es checkbox múltiple
+            if (is_array($valor)) {
+                foreach ($valor as $id) {
+                    if (is_numeric($id)) {
+                        $fila = RespuestasForm::with('camposRespuestas.campo')
+                            ->find($id);
+
+                        if ($fila) {
+                            $datos = [];
+                            foreach ($fila->camposRespuestas as $cr) {
+                                $datos[$cr->campo->nombre] = $cr->valor . ' - ' . $cr->id;
+                            }
+
+                            $filasSeleccionadas[$nombreCampo][] = $datos;
+
+                        }
+                    }
+                }
+            }
+        }
+
+        return $filasSeleccionadas;
+    }
     public function store(Request $request, $form)
     {
+
+
         $campos = CamposForm::where('form_id', $form)->get();
 
         $rules = $this->validacion($campos);
@@ -115,9 +250,34 @@ class RespuestasFormController extends Controller
         try {
             $respuesta = $this->FormularioRepository->crearRespuesta($form);
 
+
             foreach ($campos as $campo) {
                 $this->FormularioRepository->guardarCampo($campo, $respuesta->id, $request, $form);
             }
+
+
+
+
+            $filasSeleccionadas = $this->fila($request);
+
+
+
+            $resultado = $this->FormLogicInterface->ejecutarLogica($respuesta, $filasSeleccionadas, 'on_create');
+
+            //Eliminar valores vacíos o nulos
+            $resultado = array_filter($resultado, fn($msg) => !empty(trim($msg)));
+
+            //Si hay mensajes de error, cancelar la transacción y retornar
+            if (!empty($resultado)) {
+                DB::rollBack();
+
+                $mensaje = implode('<br>', $resultado);
+
+                return back()
+                    ->withErrors(['logica' => $mensaje])
+                    ->withInput();
+            }
+
 
             DB::commit();
 
@@ -135,116 +295,139 @@ class RespuestasFormController extends Controller
     /**
      * Carga masiva desde un archivo .txt separado por comas.
      */
-    public function importarDesdeArchivo(Request $request, $form)
+
+
+    public function subirArchivo(Request $request)
     {
         $request->validate([
             'archivo' => 'required|file|mimes:txt,csv',
         ]);
 
-        $path = $request->file('archivo')->getRealPath();
-        $lineas = file($path, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        $archivo = $request->file('archivo');
 
-        if (empty($lineas)) {
-            return back()->withErrors('El archivo está vacío.');
+        if (!$archivo->isValid()) {
+            return response()->json(['error' => 'Archivo no válido.'], 400);
+        }
+
+        $nombre = time() . '_' . $archivo->getClientOriginalName();
+        $destino = storage_path('app/import_temp');
+
+        // Asegurarse que la carpeta exista
+        if (!file_exists($destino)) {
+            mkdir($destino, 0777, true);
+        }
+
+        try {
+            // Mover el archivo al destino
+            $archivo->move($destino, $nombre);
+            $path = "import_temp/$nombre";
+
+            // Contar las líneas totales
+            $lineasTotales = count(file(storage_path("app/$path")));
+
+            // Guardamos info en sesión
+            Session::put('import_file_path', $path);
+            Session::put('import_total_lines', $lineasTotales);
+            Session::put('import_last_line', 1); // empezamos después de la cabecera
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Archivo subido correctamente',
+                'total' => $lineasTotales
+            ]);
+        } catch (\Exception $e) {
+            return response()->json(['error' => 'No se pudo guardar el archivo: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function procesarChunk(Request $request)
+    {
+        $form = $request->form_id;
+        $chunkSize = 1000;
+
+        $path = Session::get('import_file_path');
+        $lastLine = Session::get('import_last_line', 1);
+
+        if (!$path) {
+            return response()->json(['error' => 'No hay archivo cargado.'], 400);
+        }
+
+        $handle = fopen(storage_path("app/$path"), 'r');
+        if (!$handle) {
+            return response()->json(['error' => 'No se pudo abrir el archivo.'], 500);
         }
 
         $campos = CamposForm::where('form_id', $form)->get();
-        $nombresCampos = $campos->pluck('nombre')->toArray();
-
-
-        // Validar primera línea: nombres de columnas
-        $primeraLinea = str_getcsv(array_shift($lineas), ',');
-        if ($primeraLinea !== $nombresCampos) {
-            return back()->withErrors('La primera fila del archivo no coincide con los nombres de los campos del formulario.');
+        if ($campos->isEmpty()) {
+            fclose($handle);
+            return response()->json(['error' => "No se encontraron campos para este formulario."], 400);
         }
 
-        $erroresImportacion = [];
-        $contadorLinea = 1; // primera fila de datos será la 2
-        $respuestasTemp = [];
+        $contador = 0;
+        $errores = [];
 
-        // Filtrar líneas vacías
-        $lineas = array_filter($lineas, fn($l) => trim($l) !== '');
+        // Saltamos hasta la última línea procesada
+        for ($i = 0; $i < $lastLine; $i++) {
+            fgetcsv($handle);
+        }
 
         DB::beginTransaction();
         try {
-            foreach ($lineas as $linea) {
-                $contadorLinea++;
-                $datos = str_getcsv($linea, ',');
+            while (($linea = fgetcsv($handle, 0, ',')) !== false && $contador < $chunkSize) {
+                $contador++;
+                $lastLine++;
 
-                // Validar cantidad de columnas
-                if (count($datos) !== count($campos)) {
-                    $erroresImportacion[] = "Línea {$contadorLinea}: La cantidad de columnas no coincide con la del formulario.";
+                if (count($linea) !== count($campos)) {
+                    $errores[] = "Línea {$lastLine}: columnas incorrectas.";
                     continue;
                 }
 
                 $dataAsociativa = [];
                 foreach ($campos as $index => $campo) {
-                    $dataAsociativa[$campo->nombre] = $datos[$index] ?? null;
+                    $dataAsociativa[$campo->nombre] = $linea[$index] ?? null;
                 }
 
-                $fakeRequest = new Request($dataAsociativa);
-
-                // Validar reglas del formulario
-                $rules = $this->validacion($campos, null, 'archivo');
-                $validator = Validator::make($fakeRequest->all(), $rules);
-
-                if ($validator->fails()) {
-                    $errores = $validator->errors()->all();
-                    foreach ($errores as $error) {
-                        $erroresImportacion[] = "Línea {$contadorLinea}: {$error}";
-                    }
-                    continue;
-                }
-                // Validar catálogo
-                $erroresCatalogo = $this->FormularioRepository->validarOpcionesCatalogo($campos, $fakeRequest);
-                if (!empty($erroresCatalogo)) {
-                    foreach ($erroresCatalogo as $error) {
-                        $erroresImportacion[] = "Línea {$contadorLinea}: {$error}";
-                    }
-                    continue;
-                }
-
-                $respuestasTemp[] = $dataAsociativa;
-            }
-
-            // Si hay errores, no hacemos commit
-            if (!empty($erroresImportacion)) {
-                DB::rollBack();
-                return back()
-                    ->with('erroresImportacion', $erroresImportacion)
-                    ->with('warning', 'La importación no se completó. Se detectaron errores en algunos registros.');
-            }
-
-            // Guardar respuestas válidas
-            $totalCargados = 0;
-            foreach ($respuestasTemp as $dataAsociativa) {
+                // Crear respuesta usando tu repositorio
                 $respuesta = $this->FormularioRepository->crearRespuesta($form);
-                foreach ($campos as $index => $campo) {
+
+                foreach ($campos as $campo) {
                     $valor = $dataAsociativa[$campo->nombre] ?? null;
                     if ($valor === null)
                         continue;
 
                     $tipo = strtolower($campo->campo_nombre);
+
                     if (in_array($tipo, ['imagen', 'video', 'archivo'])) {
                         $this->FormularioRepository->guardarArchivoGenerico($campo, $respuesta->id, $form, $valor);
                     } else {
                         $this->FormularioRepository->guardarValorSimple($campo, $respuesta->id, $valor);
                     }
                 }
-                $totalCargados++;
             }
 
             DB::commit();
-
         } catch (\Exception $e) {
             DB::rollBack();
-            return back()->withErrors('Error durante la importación: ' . $e->getMessage());
+            fclose($handle);
+            return response()->json(['error' => $e->getMessage()], 500);
+        } finally {
+            fclose($handle);
         }
 
-        return back()->with('status', "Importación masiva completada correctamente. Total de registros cargados: {$totalCargados}");
+        Session::put('import_last_line', $lastLine);
+
+        $total = Session::get('import_total_lines');
+        $progreso = min(100, round(($lastLine / $total) * 100));
+
+        $finalizado = $lastLine >= $total;
+
+        return response()->json([
+            'success' => true,
+            'progreso' => $progreso,
+            'finalizado' => $finalizado,
+            'errores' => $errores,
+        ]);
     }
-
-
 
 
     public function descargarPlantilla($form)

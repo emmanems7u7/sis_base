@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\Artisan;
 use App\Http\Controllers\RespuestasFormController;
 use App\Http\Controllers\ModuloController;
 use App\Http\Controllers\LogController;
+use App\Http\Controllers\FormLogicController;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -314,6 +315,15 @@ Route::delete('/campos/{campo}', [CamposFormController::class, 'destroy'])
 Route::put('/formularios/{formulario}/campos/reordenar', [CamposFormController::class, 'reordenar'])
     ->name('formularios.campos.reordenar');
 
+
+
+Route::get('/campos/{campo}/cargar-mas', [CamposFormController::class, 'cargarMasOpciones'])
+    ->name('campos.cargar_mas');
+
+
+Route::get('/campos/{campo}/buscar-opcion', [CamposFormController::class, 'buscarOpcion'])
+    ->name('campos.buscar-opcion');
+
 Route::get('/formulario/{id}/campos', [App\Http\Controllers\FormularioController::class, 'showCampos'])->name('formulario.campos');
 
 
@@ -357,17 +367,41 @@ Route::get('/formularios/{form}/descargar-plantilla', [RespuestasFormController:
     ->name('formularios.descargar.plantilla');
 
 
+Route::post('/import/subir', [RespuestasFormController::class, 'subirArchivo'])->name('import.subir');
+Route::post('/import/procesar', [RespuestasFormController::class, 'procesarChunk'])->name('import.procesar');
+
+
 Route::get('/modulos', [ModuloController::class, 'index'])->name('modulos.index');
 Route::get('/modulos/crear', [ModuloController::class, 'create'])->name('modulos.create');
 Route::post('/modulos', [ModuloController::class, 'store'])->name('modulos.store');
 Route::get('/modulos/{modulo}/editar', [ModuloController::class, 'edit'])->name('modulos.edit');
 Route::put('/modulos/{modulo}', [ModuloController::class, 'update'])->name('modulos.update');
 Route::delete('/modulos/{modulo}', [ModuloController::class, 'destroy'])->name('modulos.destroy');
-
-
 Route::get('/modulos/{modulo_id}', [ModuloController::class, 'ModulosIndex'])->name('modulo.index');
 
+Route::get('/modulo/{modulo_id}/administrar', [ModuloController::class, 'ModuloAdmin'])->name('modulo.administrar');
 
 // Ruta para verificar si el formulario ya está asociado
 Route::get('/modulos/formulario/check/{formulario_id}', [ModuloController::class, 'checkFormulario'])
     ->name('modulos.formulario.check');
+
+
+
+Route::prefix('admin/form-logic')->middleware(['auth'])->group(function () {
+    Route::get('/', [FormLogicController::class, 'index'])->name('form-logic.index');
+    Route::get('/create', [FormLogicController::class, 'create'])->name('form-logic.create');
+    Route::post('/store', [FormLogicController::class, 'store'])->name('form-logic.store');
+    Route::get('/{rule}/edit', [FormLogicController::class, 'edit'])->name('form-logic.edit');
+    Route::put('/{rule}/update', [FormLogicController::class, 'update'])->name('form-logic.update');
+    Route::delete('/{rule}/delete', [FormLogicController::class, 'destroy'])->name('form-logic.delete');
+});
+
+Route::get('/formularios/{id}/obtiene/campos', [FormularioController::class, 'obtenerCampos'])
+    ->name('formularios.campos');
+
+
+Route::get('/formularios/{form_id}/respuestas/{respuesta_id}', [FormularioController::class, 'obtenerFila'])
+    ->name('formularios.obtenerFila');
+
+
+

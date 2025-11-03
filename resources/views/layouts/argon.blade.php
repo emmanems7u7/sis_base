@@ -401,14 +401,34 @@
       
         @yield('content')
       
-          
+          <!-- Spinner y overlay -->
+        <div id="overlay-spinner" style="
+            display:none;
+            position:fixed;
+            top:0; left:0;
+            width:100%; height:100%;
+            background:rgba(0,0,0,0.5);
+            z-index:9999;
+            justify-content:center;
+            align-items:center;
+        ">
+            <div class="spinner-border text-light" role="status">
+                <span class="visually-hidden">Cargando...</span>
+            </div>
+        </div>
+
             
         </div>
 
   
     </main>
 
-
+<style>
+    /* Opcional: centrado con flex */
+#overlay-spinner {
+    display: flex;
+}
+</style>
     <div class="fixed-plugin">
         <a class="fixed-plugin-button text-dark position-fixed px-3 py-2">
             <i class="fa fa-cog py-2"> </i>
@@ -489,6 +509,25 @@
 
   
     <script>
+
+        // Sobrescribir fetch global
+        (function() {
+            const overlay = document.getElementById('overlay-spinner');
+            const originalFetch = window.fetch;
+
+            window.fetch = async function(...args) {
+                overlay.style.display = 'flex'; // mostrar overlay y spinner
+                try {
+                    const response = await originalFetch.apply(this, args);
+                    return response; // devolver la respuesta tal cual
+                } catch (err) {
+                    console.error(err);
+                    throw err; // mantener comportamiento original
+                } finally {
+                    overlay.style.display = 'none'; // ocultar siempre
+                }
+            };
+        })();
         function sidebarColor(a) {
           
             var parent = document.querySelector(".nav-link.active");

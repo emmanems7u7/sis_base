@@ -2,6 +2,7 @@
 
 @section('content')
 
+
     <div class="row">
         <div class="col-md-6">
             <div class="card">
@@ -193,8 +194,34 @@
             </div>
         @endforeach
     </div>
+    <!-- Modal de búsqueda -->
+    <div class="modal fade" id="modalBusqueda" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
+        data-bs-keyboard="false">
+        <div class="modal-dialog modal-sm modal-dialog-centered">
+            <div
+                class="modal-content {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }}">
+                <div class="modal-header">
+                    <h5 class="modal-title">Buscar opción</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="inputBusqueda" class="form-control" placeholder="Buscar...">
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-primary" id="btnBuscar">Buscar</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-
+    <style>
+        .option-nueva {
+            background-color: #d1ecf1;
+            /* color inicial */
+            transition: background-color 3s ease-in-out;
+            /* duración más larga y suavizado */
+        }
+    </style>
     @include('formularios.campos.modal_visor')
 
 
@@ -456,4 +483,208 @@
         }
 
     </script>
+
+
+    <script>
+        document.querySelectorAll('.tom-select').forEach(select => {
+            let offset = select.options.length;
+            const limit = 20;
+
+            const ts = new TomSelect(select, {
+                maxOptions: 100,
+                plugins: ['dropdown_input'],
+                render: {
+                    option: function (item, escape) {
+                        // Si el item tiene "nueva" lo marcamos
+                        const extraClass = item.nueva ? 'option-nueva' : '';
+                        return `<div class="${extraClass}">${escape(item.text)}</div>`;
+                    }
+                },
+                onDropdownOpen: function () {
+                    const dropdown = this.dropdown;
+
+                    if (!dropdown.querySelector('.ts-dropdown-ver-mas')) {
+                        const btnVerMas = document.createElement('div');
+                        btnVerMas.classList.add('ts-dropdown-ver-mas', 'text-center', 'p-1');
+                        btnVerMas.innerHTML = `<button type="button" class="btn btn-sm btn-outline-primary w-100">Ver más...</button>`;
+
+                        btnVerMas.querySelector('button').addEventListener('click', async () => {
+                            const campoId = select.dataset.campoId;
+                            const response = await fetch(`/campos/${campoId}/cargar-mas?offset=${offset}&limit=${limit}`);
+                            const data = await response.json();
+
+                            data.forEach(opcion => {
+                                // Marcamos la opción como nueva
+                                opcion.nueva = true;
+                                ts.addOption({ value: opcion.catalogo_codigo, text: opcion.catalogo_descripcion, nueva: true });
+                            });
+
+                            ts.refreshOptions(false);
+
+                            // Después de 2s eliminamos la marca de nueva
+                            setTimeout(() => {
+                                data.forEach(opcion => {
+                                    const opt = ts.getOption(opcion.catalogo_codigo);
+                                    if (opt) opt.classList.remove('option-nueva');
+                                });
+                            }, 1000);
+
+                            offset += data.length;
+                        });
+
+                        dropdown.appendChild(btnVerMas);
+                    }
+                }
+            });
+        });
+
+        const offsets = {}; // guardar offset por campo
+
+        document.querySelectorAll('.radio-container').forEach(container => {
+            const campoId = container.dataset.campoId;
+            const btnVerMas = container.querySelector('.btn-ver-mas');
+
+            // Inicializamos el offset con la cantidad de opciones cargadas inicialmente
+            offsets[campoId] = container.querySelectorAll('input[type="radio"]').length;
+
+            btnVerMas.addEventListener('click', async () => {
+                const offset = offsets[campoId]; // usar offset guardado
+                const limit = 20;
+
+                const response = await fetch(`/campos/${campoId}/cargar-mas?offset=${offset}&limit=${limit}`);
+                const data = await response.json();
+
+                // Si no hay más datos, opcional: desactivar botón
+                if (data.length === 0) {
+                    btnVerMas.disabled = true;
+                    btnVerMas.innerText = 'No hay más opciones';
+                    return;
+                }
+
+                data.forEach(opcion => {
+                    const div = document.createElement('div');
+                    div.classList.add('form-check', 'option-nueva');
+
+                    const input = document.createElement('input');
+                    input.type = 'radio';
+                    input.name = `campo_${campoId}`;
+                    input.value = opcion.catalogo_codigo;
+                    input.classList.add('form-check-input');
+                    input.id = `campo_${campoId}_${opcion.catalogo_codigo}`;
+
+                    const label = document.createElement('label');
+                    label.classList.add('form-check-label');
+                    label.htmlFor = input.id;
+                    label.innerText = opcion.catalogo_descripcion;
+
+                    div.appendChild(input);
+                    div.appendChild(label);
+                    container.insertBefore(div, btnVerMas);
+
+                    setTimeout(() => div.classList.remove('option-nueva'), 1000);
+                });
+
+                // Actualizar offset
+                offsets[campoId] += data.length;
+            });
+        });
+
+
+        document.querySelectorAll('.btn-ver-mas-checkbox').forEach(btn => {
+            let offsetMap = {}; // guarda el offset por campo
+
+            btn.addEventListener('click', async () => {
+                const campoId = btn.dataset.campoId;
+                const container = document.querySelector(`.opciones-container[data-campo-id="${campoId}"]`);
+
+                // Inicializamos offset si no existe
+                if (!offsetMap[campoId]) {
+                    offsetMap[campoId] = container.querySelectorAll('input[type="checkbox"]').length;
+                }
+
+                const limit = 20;
+                const response = await fetch(`/campos/${campoId}/cargar-mas?offset=${offsetMap[campoId]}&limit=${limit}`);
+                const data = await response.json();
+
+                data.forEach(opcion => {
+                    const div = document.createElement('div');
+                    div.classList.add('form-check', 'new-option');
+                    div.innerHTML = `
+                                                                                    <input type="checkbox" 
+                                                                                        name="${btn.dataset.campoNombre}[]" 
+                                                                                        value="${opcion.catalogo_codigo}" 
+                                                                                        class="form-check-input"
+                                                                                        id="${btn.dataset.campoNombre}_${opcion.catalogo_codigo}">
+                                                                                    <label class="form-check-label" for="${btn.dataset.campoNombre}_${opcion.catalogo_codigo}">
+                                                                                        ${opcion.catalogo_descripcion}
+                                                                                    </label>
+                                                                                `;
+                    container.appendChild(div);
+
+                    // Animación temporal
+                    div.style.transition = 'background 0.5s';
+                    div.style.background = '#d1ecf1';
+                    setTimeout(() => div.style.background = '', 1000);
+                });
+
+                // Actualizamos el offset solo con la cantidad de elementos nuevos
+                offsetMap[campoId] += data.length;
+            });
+        });
+
+
+
+
+        document.querySelectorAll('.btn-buscar-opcion').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const campoId = btn.dataset.campoId;
+                const modalBusqueda = new bootstrap.Modal(document.getElementById('modalBusqueda'));
+                modalBusqueda.show();
+
+                // Guardamos el campoId en el modal para usarlo al hacer la búsqueda
+                document.getElementById('btnBuscar').dataset.campoId = campoId;
+            });
+        });
+
+        document.getElementById('btnBuscar').addEventListener('click', async () => {
+            const termino = document.getElementById('inputBusqueda').value;
+            const campoId = document.getElementById('btnBuscar').dataset.campoId;
+
+            const response = await fetch(`/campos/${campoId}/buscar-opcion?termino=${encodeURIComponent(termino)}`);
+            const data = await response.json();
+
+            if (data.length) {
+                alertify.success('Opción encontrada y agregada al selector.');
+
+                const select = document.querySelector(`select[data-campo-id="${campoId}"]`);
+                const ts = select.tomselect; // instancia de Tom Select
+
+                // Agregar nueva opción
+                ts.addOption({ value: data[0].catalogo_codigo, text: data[0].catalogo_descripcion });
+
+                // Seleccionar la opción recién agregada
+                ts.setValue(data[0].catalogo_codigo);
+
+                // Cerrar modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalBusqueda'));
+                modal.hide();
+            } else {
+                alertify.warning('Atención, No se encontró ninguna opción.');
+            }
+        });
+
+
+
+
+
+
+
+
+
+
+    </script>
+
+
+
+
 @endsection

@@ -4,6 +4,9 @@ namespace App\Http\Controllers;
 
 use App\Models\Categoria;
 use App\Models\Formulario;
+use App\Models\RespuestasForm;
+
+
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
 use App\Interfaces\CatalogoInterface;
@@ -12,6 +15,8 @@ use Carbon\Carbon;
 use App\Exports\ExportExcel;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Interfaces\FormularioInterface;
+
+use function Laravel\Prompts\form;
 
 class FormularioController extends Controller
 {
@@ -237,4 +242,44 @@ class FormularioController extends Controller
         return $datos;
 
     }
+
+    public function obtenerCampos($id)
+    {
+        $formulario = Formulario::with('campos')->findOrFail($id);
+
+        // Si usas el servicio CamposFormCat:
+        $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
+
+        return response()->json($camposProcesados->map(function ($campo) {
+            return [
+                'id' => $campo->id,
+                'nombre' => $campo->nombre,
+            ];
+        }));
+    }
+    public function obtenerFila($form_id, $respuesta_id)
+    {
+        $respuesta = RespuestasForm::with(['camposRespuestas.campo'])
+            ->where('form_id', $form_id)
+            ->where('id', $respuesta_id)
+            ->first();
+
+        if (!$respuesta) {
+            return response()->json(['error' => 'No se encontró la respuesta'], 404);
+        }
+
+        $datos = [];
+        foreach ($respuesta->camposRespuestas as $cr) {
+            $datos[$cr->campo->nombre] = $cr->valor;
+        }
+        $formulario = Formulario::find($form_id);
+
+        return response()->json([
+            'id' => $respuesta->id,
+            'form_id' => $respuesta->form_id,
+            'nombre' => $formulario->nombre,
+            'datos' => $datos
+        ]);
+    }
+
 }

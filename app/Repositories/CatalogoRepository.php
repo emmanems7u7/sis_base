@@ -285,18 +285,28 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
             ->value('catalogo_descripcion') ?? 'No encontrado';
     }
 
-    public function obtenerCatalogosPorCategoriaID($id, $soloActivos = false)
+    public function obtenerCatalogosPorCategoriaID($id, $soloActivos = false, $limit = null, $offset = 0)
     {
         $categoria = Categoria::find($id);
 
         if (!$categoria) {
-            return collect(); // Retorna colección vacía si no existe
+            return collect();
         }
 
         $query = Catalogo::where('categoria_id', $categoria->id);
 
         if ($soloActivos) {
             $query->where('catalogo_estado', 1);
+        }
+
+        $query->orderBy('catalogo_descripcion');
+
+        if ($offset) {
+            $query->offset($offset); // empiece desde el offset
+        }
+
+        if ($limit) {
+            $query->limit($limit); // máximo de registros
         }
 
         return $query->get();

@@ -25,6 +25,7 @@
         @break
 
     @case('checkbox')
+        <div class="opciones-container" data-campo-id="{{ $campo->id }}">
         @foreach($campo->opciones_catalogo as $opcion)
             <div class="form-check">
                 <input type="checkbox" 
@@ -37,9 +38,15 @@
                 </label>
             </div>
         @endforeach
+    </div>
+
+    <button type="button" class="btn btn-sm btn-primary mt-2 btn-ver-mas-checkbox" data-campo-id="{{ $campo->id }}">
+        Ver más...
+    </button>
         @break
 
     @case('radio')
+    <div class="radio-container" data-campo-id="{{ $campo->id }}">
         @foreach($campo->opciones_catalogo as $opcion)
             <div class="form-check">
                 <input type="radio" 
@@ -52,17 +59,37 @@
                 </label>
             </div>
         @endforeach
+
+        <button type="button" class="btn btn-sm btn-primary btn-ver-mas mt-2">
+            Ver más...
+        </button>
+    </div>
         @break
 
     @case('selector')
-        <select name="{{ $campo->nombre }}" class="form-select" {{ $campo->requerido ? 'required' : '' }}>
-            <option value="">Seleccione una opción</option>
-            @foreach($campo->opciones_catalogo as $opcion)
-                <option value="{{ $opcion->catalogo_codigo }}">
-                    {{ $opcion->catalogo_descripcion }}
-                </option>
-            @endforeach
-        </select>
+   
+
+<div class="d-flex align-items-center gap-2">
+    <select name="{{ $campo->nombre }}" 
+            class="form-select tom-select campo-dinamico" 
+            data-campo-id="{{ $campo->id }}">
+        <option value="">Seleccione...</option>
+        @foreach($campo->opciones_catalogo as $opcion)
+            <option value="{{ $opcion->catalogo_codigo }}">
+                {{ $opcion->catalogo_descripcion }}
+            </option>
+        @endforeach
+    </select>
+
+
+    <!-- Botón de lupa para abrir modal -->
+    <button type="button" class="btn btn-outline-secondary btn-sm btn-buscar-opcion" 
+            data-bs-toggle="modal" 
+            data-bs-target="#modalBuscarOpcion"
+            data-campo-id="{{ $campo->id }}">
+        <i class="fas fa-search"></i>
+    </button>
+</div>
         @break
 
     @case('imagen')
@@ -128,3 +155,4 @@
     @default
         <input type="text" name="{{ $campo->nombre }}" class="form-control">
 @endswitch
+

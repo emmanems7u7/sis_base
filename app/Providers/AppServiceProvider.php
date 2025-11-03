@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Providers;
+use App\Interfaces\FormLogicInterface;
+use App\Repositories\FormLogicRepository;
 use App\Interfaces\FormularioInterface;
 use App\Repositories\FormularioRepository;
 use App\Interfaces\IAInterface;
@@ -36,6 +38,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(PermisoInterface::class, PermisoRepository::class);
         $this->app->bind(IAInterface::class, IARepository::class);
         $this->app->bind(FormularioInterface::class, FormularioRepository::class);
+        $this->app->bind(FormLogicInterface::class, FormLogicRepository::class);
+
 
 
 

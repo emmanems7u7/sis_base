@@ -26551,7 +26551,9 @@ p {
 .dark-version .bg-gradient-dark {
   background-image: linear-gradient(195deg, #323a54, #1a2035);
 }
-
+.dark-version .nav-link{
+  color:white;
+} 
 .dark-version .card,
 .dark-version .swal2-popup,
 .dark-version .dropdown .dropdown-menu,

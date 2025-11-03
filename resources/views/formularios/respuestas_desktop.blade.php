@@ -3,6 +3,7 @@
         <thead class="table-dark">
             <tr>
                 <th>#</th>
+
                 <th>Quién llenó</th>
                 @foreach($formulario->campos->sortBy('posicion') as $campo)
                     <th>{{ $campo->etiqueta }}</th>
@@ -15,9 +16,11 @@
             @forelse($respuestas as $respuesta)
                 <tr>
                     <td>{{ $loop->iteration }}</td>
+
                     <td>{{ $respuesta->actor->name ?? 'Anonimo' }}</td>
 
                     @foreach($formulario->campos->sortBy('posicion') as $campo)
+
                         @php
                             $valores = $respuesta->camposRespuestas
                                 ->where('cf_id', $campo->id)

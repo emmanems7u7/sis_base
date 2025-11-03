@@ -165,53 +165,45 @@ class FormularioRepository implements FormularioInterface
 
         return $errores;
     }
-
-    public function CamposFormCat($campos)
+    public function CamposFormCat($campos, $limit = 20, $offset = 0)
     {
         $resultado = collect();
 
         foreach ($campos as $campo) {
 
             if ($campo->categoria_id) {
-                // 🔹 Caso 1: el campo tiene una categoría asociada
                 $campo->opciones_catalogo = $this->CatalogoRepository
-                    ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true);
-
+                    ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true, $limit, $offset);
             } elseif ($campo->form_ref_id) {
-                // 🔹 Caso 2: el campo hace referencia a otro formulario
-
-                // Obtener el campo con menor posición (posición 1) del formulario referenciado
                 $campoReferencia = CamposForm::where('form_id', $campo->form_ref_id)
                     ->orderBy('posicion', 'asc')
                     ->first();
 
                 if ($campoReferencia) {
-                    // Mapear las respuestas del formulario referenciado
-                    $campo->opciones_catalogo = $campo->opcionesFormulario()->map(function ($respuesta) use ($campoReferencia) {
+                    $campo->opciones_catalogo = $campo->opcionesFormularioQuery() // esto devuelve query builder
+                        ->offset($offset)
+                        ->limit($limit)
+                        ->get()
+                        ->map(function ($respuesta) use ($campoReferencia) {
+                            $valorCampo = $respuesta->camposRespuestas
+                                ->firstWhere('cf_id', $campoReferencia->id);
 
-                        // Buscar la respuesta del campo con menor posición
-                        $valorCampo = $respuesta->camposRespuestas
-                            ->firstWhere('cf_id', $campoReferencia->id);
-
-                        return (object) [
-                            'catalogo_codigo' => $respuesta->id,
-                            'catalogo_descripcion' => $valorCampo->valor ?? 'Sin nombre',
-                        ];
-                    });
+                            return (object) [
+                                'catalogo_codigo' => $respuesta->id,
+                                'catalogo_descripcion' => $valorCampo->valor ?? 'Sin nombre',
+                            ];
+                        });
                 } else {
                     $campo->opciones_catalogo = collect();
                 }
 
             } else {
-                // 🔹 Caso 3: sin categoría ni referencia
                 $campo->opciones_catalogo = collect();
             }
 
-            // Agregamos cada campo con sus opciones al resultado final
             $resultado->push($campo);
         }
 
         return $resultado;
     }
-
 }

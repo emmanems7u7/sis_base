@@ -6,6 +6,22 @@
         @include('formularios.contenedor_superior', ['formulario' => $formulario])
 
 
+        <div class="card">
+            <div class="card-body">
+                <h5>Reglas y Acciones para el registro</h5>
+                @if(!empty($humanRules))
+                    <div class="list-group">
+                        @foreach($humanRules as $rule)
+                            <div class="list-group-item">{!! $rule !!}</div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="text-muted">No hay reglas de lógica configuradas para este formulario.</p>
+                @endif
+
+            </div>
+        </div>
+
         <div class="card mt-3 shadow-lg">
             <div class="card-body">
                 <form action="{{ route('formularios.responder', $formulario->id) }}" method="POST"

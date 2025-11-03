@@ -40,28 +40,38 @@
         <div class="col-md-6">
             <div class="card shadow-lg">
                 <div class="card-body">
-                    <form action="{{ route('formularios.importar', $form) }}" method="POST" enctype="multipart/form-data">
-                        @csrf
-                        <div class="mb-3">
-                            <label for="archivo" class="form-label fw-bold">
-                                <i class="fas fa-file-upload me-2 text-primary"></i> Carga masiva de datos
-                            </label>
+                    <div class="mb-3">
+                        <label for="archivoImport" class="form-label fw-bold">
+                            <i class="fas fa-file-upload me-2"></i>Selecciona archivo (.txt/.csv)
+                        </label>
+                        <input type="file" id="archivoImport" class="form-control form-control-lg" accept=".txt,.csv">
+                    </div>
 
-                            <input type="file" name="archivo" id="archivo" class="form-control form-control-sm"
-                                accept=".txt,.csv" required>
+                    <button id="btnImport" class="btn btn-primary btn-lg mb-3">
+                        <i class="fas fa-upload me-2"></i>Importar
+                    </button>
+
+                    <div class="progress rounded-pill" style="height: 25px;">
+                        <div class="progress-bar bg-gradient-success fw-bold text-dark" role="progressbar"
+                            style="width: 0%;" id="barraProgreso">0%</div>
+                    </div>
 
 
-                        </div>
-
-                        <div class="text-end">
-                            <button type="submit" class="btn btn-sm btn-success">
-                                <i class="fas fa-upload me-1"></i> Importar
-                            </button>
-                        </div>
-                    </form>
                 </div>
             </div>
 
+            <style>
+                #erroresImport {
+                    max-height: 250px;
+                    overflow-y: auto;
+                    border: 1px solid #f0f0f0;
+                    border-radius: .375rem;
+                    padding: 10px;
+                    background-color: #fff3f3;
+                    color: #c82333;
+                    font-size: 0.9rem;
+                }
+            </style>
         </div>
         <div class="col-md-6">
             <div class="card shadow-lg mt-3">
@@ -70,23 +80,63 @@
                         <i class="fas fa-exclamation-circle me-2"></i>Errores encontrados:
                     </h5>
 
-                    @if (session('erroresImportacion'))
-                        <div class="border rounded p-3 bg-light" style="max-height: 250px; overflow-y: auto;">
-                            <ul class="mb-0 text-danger small">
-                                @foreach (session('erroresImportacion') as $error)
-                                    <li class="mb-1">{!! $error !!}</li>
-                                @endforeach
-                            </ul>
-                        </div>
-                    @else
-                        <p class="text-muted small mb-0">
-                            <i class="fas fa-info-circle me-1"></i>No se detectaron errores durante la importación.
-                        </p>
-                    @endif
+                    <div id="erroresImport" class="mt-3">
+
+                    </div>
                 </div>
             </div>
 
         </div>
     </div>
 
+
+
+    <script>
+        document.getElementById('btnImport').addEventListener('click', async () => {
+            const archivo = document.getElementById('archivoImport').files[0];
+            if (!archivo) return alert('Selecciona un archivo.');
+
+            const formData = new FormData();
+            formData.append('archivo', archivo);
+
+            // 1️⃣ Subir archivo
+            const resSubir = await fetch("{{ route('import.subir') }}", {
+                method: 'POST',
+                body: formData,
+                headers: { 'X-CSRF-TOKEN': '{{ csrf_token() }}' }
+            });
+            const dataSubir = await resSubir.json();
+            if (!dataSubir.success) return alert(dataSubir.message);
+
+            // 2️⃣ Procesar por chunks
+            const erroresTotales = [];
+            let finalizado = false;
+            while (!finalizado) {
+                const resChunk = await fetch("{{ route('import.procesar') }}", {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ form_id: {{ $form }} })
+                });
+                const dataChunk = await resChunk.json();
+
+                if (dataChunk.errores.length > 0) {
+                    erroresTotales.push(...dataChunk.errores);
+                }
+
+                document.getElementById('barraProgreso').style.width = dataChunk.progreso + '%';
+                document.getElementById('barraProgreso').innerText = dataChunk.progreso + '%';
+
+                finalizado = dataChunk.finalizado;
+            }
+
+            if (erroresTotales.length > 0) {
+                document.getElementById('erroresImport').innerHTML = erroresTotales.join('<br>');
+            } else {
+                alert('Importación completada sin errores.');
+            }
+        });
+    </script>
 @endsection

@@ -11,6 +11,6 @@ interface CatalogoInterface
     public function EditarCategoria($request, $categoria);
     public function obtenerCatalogosPorCategoria($nombreCategoria, $soloActivos = false);
 
-    public function obtenerCatalogosPorCategoriaID($id, $soloActivos = false);
+    public function obtenerCatalogosPorCategoriaID($id, $soloActivos = false, $limit = null, $offset = 0);
 
 }

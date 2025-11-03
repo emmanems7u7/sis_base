@@ -2,29 +2,41 @@
 
 @section('content')
 
+    <div class="row">
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
 
-    <div class="card">
-        <div class="card-body">
-            <div class="d-flex justify-content-between align-items-center mb-3">
-                <h5 class="mb-0">Listado de Módulos</h5>
-                <a href="{{ route('modulos.create') }}" class="btn btn-primary">
-                    <i class="fas fa-plus"></i> Nuevo Módulo
-                </a>
+                    <h5 class="mb-0">Listado de Módulos</h5>
+                    <div class="mt-2">
+                        <a href="{{ route('modulos.create') }}" class="btn btn-primary">
+                            <i class="fas fa-plus"></i> Nuevo Módulo
+                        </a>
+                    </div>
 
-            </div>
-
-            <div class="row">
-                <div class="col-12 d-flex justify-content-end">
-                    <form method="GET" action="{{ route('modulos.index') }}" class="mb-3 w-100 w-md-auto">
-                        <div class="input-group" style="min-width: 300px;">
-                            <input type="text" name="search" class="form-control" placeholder="Buscar módulo..."
-                                value="{{ $search ?? '' }}">
-                            <button class="btn btn-primary" type="submit">Buscar</button>
+                    <div class="row">
+                        <div class="col-12 ">
+                            <form method="GET" action="{{ route('modulos.index') }}" class="mb-3 w-100 w-md-auto">
+                                <div class="input-group" style="min-width: 300px;">
+                                    <input type="text" name="search" class="form-control" placeholder="Buscar módulo..."
+                                        value="{{ $search ?? '' }}">
+                                    <button class="btn btn-primary" type="submit">Buscar</button>
+                                </div>
+                            </form>
                         </div>
-                    </form>
+                    </div>
+
                 </div>
             </div>
 
+
+        </div>
+        <div class="col-md-6">
+            <div class="card">
+                <div class="card-body">
+
+                </div>
+            </div>
         </div>
     </div>
 
@@ -57,6 +69,11 @@
                                     @endforeach
                                 </td>
                                 <td class="text-end">
+
+                                    <a href="{{ route('modulo.administrar', $modulo->id) }}" class="btn btn-sm btn-info">
+                                        <i class="fas fa-cog"></i>
+                                    </a>
+
                                     <a href="{{ route('modulos.edit', $modulo->id) }}" class="btn btn-sm btn-warning">
                                         <i class="fas fa-edit"></i>
                                     </a>

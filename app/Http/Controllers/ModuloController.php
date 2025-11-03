@@ -206,4 +206,17 @@ class ModuloController extends Controller
 
         return view('modulosDinamicos.index', compact('isMobile', 'formulariosConRespuestas', 'modulo', 'breadcrumb'));
     }
+
+    public function ModuloAdmin($modulo)
+    {
+        $modulo = Modulo::find($modulo);
+        $breadcrumb = [
+            ['name' => 'Inicio', 'url' => route('home')],
+            ['name' => 'Módulos', 'url' => route('modulos.index')],
+            ['name' => 'Administrar Modulo', 'url' => route('modulos.index')],
+
+        ];
+        return view('modulos.administrar', compact('modulo', 'breadcrumb'));
+
+    }
 }
