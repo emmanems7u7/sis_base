@@ -83,7 +83,8 @@
                     </a>
 
                     <!-- Botón para abrir el modal -->
-                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal_busqueda">
+                    <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
+                        data-bs-target="#modal_busqueda">
                         <i class="fas fa-search"></i> Buscar
                     </button>
 
