@@ -389,10 +389,10 @@ Route::get('/modulos/formulario/check/{formulario_id}', [ModuloController::class
 
 Route::prefix('admin/form-logic')->middleware(['auth'])->group(function () {
     Route::get('/', [FormLogicController::class, 'index'])->name('form-logic.index');
-    Route::get('/create', [FormLogicController::class, 'create'])->name('form-logic.create');
-    Route::post('/store', [FormLogicController::class, 'store'])->name('form-logic.store');
-    Route::get('/{rule}/edit', [FormLogicController::class, 'edit'])->name('form-logic.edit');
-    Route::put('/{rule}/update', [FormLogicController::class, 'update'])->name('form-logic.update');
+    Route::get('/create/{modulo}', [FormLogicController::class, 'create'])->name('form-logic.create');
+    Route::post('/store/{modulo}', [FormLogicController::class, 'store'])->name('form-logic.store');
+    Route::get('/{rule}/edit/{modulo}', [FormLogicController::class, 'edit'])->name('form-logic.edit');
+    Route::put('/{rule}/update/{modulo}', [FormLogicController::class, 'update'])->name('form-logic.update');
     Route::delete('/{rule}/delete', [FormLogicController::class, 'destroy'])->name('form-logic.delete');
 });
 
@@ -403,5 +403,8 @@ Route::get('/formularios/{id}/obtiene/campos', [FormularioController::class, 'ob
 Route::get('/formularios/{form_id}/respuestas/{respuesta_id}', [FormularioController::class, 'obtenerFila'])
     ->name('formularios.obtenerFila');
 
+
+Route::get('/form-destino/info/{formDestinoId}', [FormularioController::class, 'getInfo'])
+    ->name('form-destino.info');
 
 

@@ -8,8 +8,23 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Jenssegers\Agent\Agent;
+use App\Interfaces\CatalogoInterface;
+use App\Models\FormLogicRule;
+
 class ModuloController extends Controller
 {
+
+    protected $CatalogoRepository;
+    protected $isMobile;
+    protected $agent;
+
+    public function __construct(CatalogoInterface $catalogoInterface, )
+    {
+        $this->agent = new Agent();
+        $this->isMobile = $this->agent->isMobile();
+        $this->CatalogoRepository = $catalogoInterface;
+
+    }
     public function index(Request $request)
     {
         $breadcrumb = [
@@ -167,8 +182,7 @@ class ModuloController extends Controller
     }
     public function ModulosIndex(Request $request, $modulo_id)
     {
-        $agent = new Agent();
-        $isMobile = $agent->isMobile();
+
 
 
         $modulo = Modulo::with('formularios.campos')->findOrFail($modulo_id);
@@ -209,14 +223,27 @@ class ModuloController extends Controller
 
     public function ModuloAdmin($modulo)
     {
-        $modulo = Modulo::find($modulo);
+
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
             ['name' => 'Módulos', 'url' => route('modulos.index')],
             ['name' => 'Administrar Modulo', 'url' => route('modulos.index')],
 
         ];
-        return view('modulos.administrar', compact('modulo', 'breadcrumb'));
+        // Supongamos que $moduloId tiene el ID del módulo
+        $modulo = Modulo::with('formularios')->find($modulo);
+
+
+        // Obtenemos los IDs de los formularios asociados
+        $formIds = $modulo->formularios->pluck('id');
+
+        // Ahora filtramos las reglas solo de esos formularios
+        $rules = FormLogicRule::with(['formulario', 'actions.formularioDestino'])
+            ->whereIn('form_id', $formIds)
+            ->get();
+        $isMobile = $this->isMobile;
+        $rules->operacion = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Operaciones de Campo', true);
+        return view('modulos.administrar', compact('isMobile', 'rules', 'modulo', 'breadcrumb'));
 
     }
 }

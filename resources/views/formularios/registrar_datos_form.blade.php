@@ -31,7 +31,7 @@
 
                     <a href="{{ route('formularios.index') }}" class="btn btn-secondary mt-3"><i
                             class="fas fa-arrow-left me-1"></i>Volver</a>
-                    <button type="submit" class="btn btn-primary mt-3">Enviar formulario</button>
+                    <button type="submit" class="btn btn-primary mt-3">Registrar</button>
                 </form>
             </div>
         </div>

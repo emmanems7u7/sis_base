@@ -171,9 +171,12 @@ class FormularioRepository implements FormularioInterface
 
         foreach ($campos as $campo) {
 
+
             if ($campo->categoria_id) {
                 $campo->opciones_catalogo = $this->CatalogoRepository
                     ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true, $limit, $offset);
+
+
             } elseif ($campo->form_ref_id) {
                 $campoReferencia = CamposForm::where('form_id', $campo->form_ref_id)
                     ->orderBy('posicion', 'asc')
@@ -205,5 +208,42 @@ class FormularioRepository implements FormularioInterface
         }
 
         return $resultado;
+    }
+
+
+
+    public function convertirValorParaFiltro($campo, $valorUsuario)
+    {
+        // Si es categoría
+        if ($campo->categoria_id) {
+            // Buscamos el catalogo correspondiente al valor ingresado
+            $catalogo = $this->CatalogoRepository
+                ->buscarPorDescripcion($campo->categoria_id, $valorUsuario);
+
+            return $catalogo ? $catalogo->catalogo_codigo : null;
+
+            // Si es formulario de referencia
+        } elseif ($campo->form_ref_id) {
+            // Obtenemos el primer campo del formulario de referencia
+            $campoReferencia = CamposForm::where('form_id', $campo->form_ref_id)
+                ->orderBy('posicion', 'asc')
+                ->first();
+
+            if (!$campoReferencia)
+                return null;
+
+            // Buscamos la respuesta en el formulario de referencia donde el primer campo coincida con el valor
+            $respuesta = RespuestasForm::where('form_id', $campo->form_ref_id)
+                ->whereHas('camposRespuestas', function ($q) use ($campoReferencia, $valorUsuario) {
+                    $q->where('cf_id', $campoReferencia->id)
+                        ->where('valor', 'like', "%{$valorUsuario}%");
+                })
+                ->first();
+
+            return $respuesta ? $respuesta->id : null;
+        }
+
+        // Para otros tipos (text, number, textarea, etc.) devolvemos el valor directo
+        return $valorUsuario;
     }
 }

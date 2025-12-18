@@ -312,5 +312,10 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
         return $query->get();
     }
 
-
+    public function buscarPorDescripcion($categoriaId, $descripcion)
+    {
+        return Catalogo::where('categoria_id', $categoriaId)
+            ->where('catalogo_descripcion', 'like', "%{$descripcion}%")
+            ->first();
+    }
 }

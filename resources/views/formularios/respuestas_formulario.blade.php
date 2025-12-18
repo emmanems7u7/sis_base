@@ -1,6 +1,45 @@
 @extends('layouts.argon')
 
+
 @section('content')
+
+
+    <!-- Modal -->
+    <div class="modal fade" id="modal_busqueda" tabindex="-1" role="dialog" aria-labelledby="modal_busquedaLabel"
+        aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+        <div class="modal-dialog modal-dialog-centered" role="document">
+            <div
+                class="modal-content  {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }}">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal_busquedaLabel"><i class="fas fa-filter"></i> Filtrar Resultados</h5>
+                    <button type="button" class="btn-close txt-black" data-bs-dismiss="modal" aria-label="Close">
+                        <span aria-hidden="true"></span>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="row">
+                        <div class="col-12">
+
+                            <form action="{{ route('formularios.respuestas.formulario', $formulario->id) }}" method="GET">
+                                <div class="input-group">
+
+                                    @include('formularios._campos', ['cols' => 1, 'requerido' => 0])
+
+
+                                </div>
+
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn bg-gradient-secondary" data-bs-dismiss="modal">Cerrar</button>
+                    <button type="submit" class="btn bg-gradient-primary">Filtrar</button>
+                </div>
+                </form>
+
+            </div>
+        </div>
+    </div>
 
 
     <div class="row">
@@ -43,19 +82,11 @@
                         <i class="fas fa-plus"></i> Carga Masiva
                     </a>
 
-                    <div class="row mb-2">
-                        <div class="col-md-12">
-                            <form action="{{ route('formularios.respuestas.formulario', $formulario->id) }}" method="GET">
-                                <div class="input-group">
-                                    <input type="text" name="search" class="form-control" placeholder="Buscar por nombre"
-                                        value="{{ request('search') }}">
-                                    <button class="btn btn-primary" type="submit">
-                                        <i class="fas fa-search"></i> Buscar
-                                    </button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
+                    <!-- Botón para abrir el modal -->
+                    <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#modal_busqueda">
+                        <i class="fas fa-search"></i> Buscar
+                    </button>
+
                 </div>
             </div>
         </div>

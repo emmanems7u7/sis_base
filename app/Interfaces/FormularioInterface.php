@@ -17,5 +17,6 @@ interface FormularioInterface
     public function guardarValorSimple($campo, $respuestaId, $valor);
     public function validarOpcionesCatalogo($campos, $request);
     public function CamposFormCat($campos, $limit = 100);
+    public function convertirValorParaFiltro($campo, $valorUsuario);
 
 }

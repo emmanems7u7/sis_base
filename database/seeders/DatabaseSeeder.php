@@ -45,6 +45,8 @@ class DatabaseSeeder extends Seeder
         $this->call(class: TipoImagenesSeeder::class);
         $this->call(class: TipoVideosSeeder::class);
           $this->call(class: OperacionesCampoSeeder::class);
+        $this->call(class: TipoAccionSeeder::class);
+
 */
 
 

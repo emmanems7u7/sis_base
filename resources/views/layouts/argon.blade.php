@@ -512,22 +512,29 @@
 
         // Sobrescribir fetch global
         (function() {
-            const overlay = document.getElementById('overlay-spinner');
-            const originalFetch = window.fetch;
+                const overlay = document.getElementById('overlay-spinner');
+                const originalFetch = window.fetch;
+                let activeFetches = 0; // Contador de fetch activos
 
-            window.fetch = async function(...args) {
-                overlay.style.display = 'flex'; // mostrar overlay y spinner
-                try {
-                    const response = await originalFetch.apply(this, args);
-                    return response; // devolver la respuesta tal cual
-                } catch (err) {
-                    console.error(err);
-                    throw err; // mantener comportamiento original
-                } finally {
-                    overlay.style.display = 'none'; // ocultar siempre
-                }
-            };
-        })();
+                window.fetch = async function(...args) {
+                    activeFetches++;
+                    overlay.style.display = 'flex'; // mostrar overlay
+
+                    try {
+                        const response = await originalFetch.apply(this, args);
+                        return response;
+                    } catch (err) {
+                        console.error(err);
+                        throw err;
+                    } finally {
+                        activeFetches--;
+                        if (activeFetches <= 0) {
+                            overlay.style.display = 'none'; // solo ocultar si no hay fetch activos
+                            activeFetches = 0; // prevenir negativos
+                        }
+                    }
+                };
+            })();
         function sidebarColor(a) {
           
             var parent = document.querySelector(".nav-link.active");

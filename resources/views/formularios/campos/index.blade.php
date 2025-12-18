@@ -14,9 +14,7 @@
                     <a href="{{ route('formularios.index') }}" class="btn btn-secondary btn-sm"><i
                             class="fas fa-arrow-left me-1"></i>Volver a Formularios</a>
 
-                    <button class="btn btn-primary ms-2 btn-sm ver-formulario" data-id="{{ $formulario->id }}">
-                        <i class="fas fa-eye"></i> Ver Formulario
-                    </button>
+
                 </div>
             </div>
         </div>
@@ -194,25 +192,8 @@
             </div>
         @endforeach
     </div>
-    <!-- Modal de búsqueda -->
-    <div class="modal fade" id="modalBusqueda" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
-        data-bs-keyboard="false">
-        <div class="modal-dialog modal-sm modal-dialog-centered">
-            <div
-                class="modal-content {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }}">
-                <div class="modal-header">
-                    <h5 class="modal-title">Buscar opción</h5>
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <input type="text" id="inputBusqueda" class="form-control" placeholder="Buscar...">
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-primary" id="btnBuscar">Buscar</button>
-                </div>
-            </div>
-        </div>
-    </div>
+
+    @include('formularios.campos.modal_busqueda')
 
     <style>
         .option-nueva {
@@ -222,7 +203,6 @@
             /* duración más larga y suavizado */
         }
     </style>
-    @include('formularios.campos.modal_visor')
 
 
     <script>
@@ -610,15 +590,15 @@
                     const div = document.createElement('div');
                     div.classList.add('form-check', 'new-option');
                     div.innerHTML = `
-                                                                                    <input type="checkbox" 
-                                                                                        name="${btn.dataset.campoNombre}[]" 
-                                                                                        value="${opcion.catalogo_codigo}" 
-                                                                                        class="form-check-input"
-                                                                                        id="${btn.dataset.campoNombre}_${opcion.catalogo_codigo}">
-                                                                                    <label class="form-check-label" for="${btn.dataset.campoNombre}_${opcion.catalogo_codigo}">
-                                                                                        ${opcion.catalogo_descripcion}
-                                                                                    </label>
-                                                                                `;
+                                                                                                    <input type="checkbox" 
+                                                                                                        name="${btn.dataset.campoNombre}[]" 
+                                                                                                        value="${opcion.catalogo_codigo}" 
+                                                                                                        class="form-check-input"
+                                                                                                        id="${btn.dataset.campoNombre}_${opcion.catalogo_codigo}">
+                                                                                                    <label class="form-check-label" for="${btn.dataset.campoNombre}_${opcion.catalogo_codigo}">
+                                                                                                        ${opcion.catalogo_descripcion}
+                                                                                                    </label>
+                                                                                                `;
                     container.appendChild(div);
 
                     // Animación temporal

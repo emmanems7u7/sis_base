@@ -282,4 +282,30 @@ class FormularioController extends Controller
         ]);
     }
 
+
+    public function getInfo($formDestinoId)
+    {
+        $formulario = Formulario::with('campos')->find($formDestinoId);
+
+        if (!$formulario) {
+            return response()->json(['error' => 'Formulario no encontrado'], 404);
+        }
+
+        // Procesar campos con catálogos o referencias
+        $formulario->campos = $this->FormularioRepository->CamposFormCat($formulario->campos);
+
+        // Formularios relacionados
+        $camposConReferencia = $formulario->campos->filter(fn($campo) => $campo->form_ref_id !== null);
+        $formIdsRelacionados = $camposConReferencia->pluck('form_ref_id')->unique();
+
+        $formulariosRelacionados = Formulario::with('campos')
+            ->whereIn('id', $formIdsRelacionados)
+            ->get();
+
+        return response()->json([
+            'formulario' => $formulario,
+            'formulariosRelacionados' => $formulariosRelacionados
+        ]);
+    }
+
 }

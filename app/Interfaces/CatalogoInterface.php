@@ -10,7 +10,9 @@ interface CatalogoInterface
     public function GuardarCategoria($request);
     public function EditarCategoria($request, $categoria);
     public function obtenerCatalogosPorCategoria($nombreCategoria, $soloActivos = false);
+    public function getNombreCatalogo($catalogo_codigo);
 
     public function obtenerCatalogosPorCategoriaID($id, $soloActivos = false, $limit = null, $offset = 0);
+    public function buscarPorDescripcion($categoriaId, $descripcion);
 
 }

@@ -2,131 +2,231 @@
 
 <div class="row g-4">
 @foreach($campos as $campo)
-    @php
-        $colClass = strtolower($campo->campo_nombre) === 'textarea' ? 'col-12' : 'col-md-6';
-        $valoresCampo = $valores[$campo->nombre] ?? [];
-    @endphp
+@php
+    /* ===============================
+       COLUMNAS
+    =============================== */
+    $cols = $cols ?? 2;
+    $colSize = intval(12 / max(1, min(12, $cols)));
+
+    if (strtolower($campo->campo_nombre) === 'textarea') {
+        $colClass = 'col-12';
+    } else {
+        $colClass = "col-md-{$colSize}";
+    }
+
+    /* ===============================
+       REQUERIDO (sobrescribible)
+    =============================== */
+    // si se envía por include → manda
+    // si no → usa el valor del campo
+    $esRequerido = isset($requerido)
+        ? (bool) $requerido
+        : (bool) $campo->requerido;
+
+    /* ===============================
+       VALOR
+    =============================== */
+    $valoresCampo = $valores[$campo->nombre] ?? [];
+    $valor = old($campo->nombre, $valoresCampo[0] ?? '');
+@endphp
+
 
     <div class="{{ $colClass }}">
         <label class="form-label fw-bold">
             {{ $campo->etiqueta }}
-            @if($campo->requerido) <span class="text-danger">*</span> @endif
+            @if($esRequerido)
+                <span class="text-danger">*</span>
+            @endif
         </label>
 
         @switch(strtolower($campo->campo_nombre))
+
+            {{-- TEXTO --}}
             @case('text')
-                <input type="text" 
-                    name="{{ $campo->nombre }}" 
+                <input type="text" name="{{ $campo->nombre }}"
                     class="form-control"
+                    value="{{ $valor }}"
                     placeholder="{{ $campo->config['placeholder'] ?? '' }}"
-                    value="{{ old($campo->nombre, $valoresCampo[0] ?? '') }}"
-                    {{ $campo->requerido ? 'required' : '' }}>
+                   {{ $esRequerido ? 'required' : '' }}>
             @break
 
+            {{-- NUMBER --}}
             @case('number')
-                <input type="number" 
-                    name="{{ $campo->nombre }}" 
+                <input type="number" name="{{ $campo->nombre }}"
                     class="form-control"
+                    value="{{ $valor }}"
                     placeholder="{{ $campo->config['placeholder'] ?? '' }}"
-                    value="{{ old($campo->nombre, $valoresCampo[0] ?? '') }}"
-                    {{ $campo->requerido ? 'required' : '' }}>
+                   {{ $esRequerido ? 'required' : '' }}>
             @break
 
+            {{-- TEXTAREA --}}
             @case('textarea')
-                <textarea name="{{ $campo->nombre }}" 
+                <textarea name="{{ $campo->nombre }}"
                     class="form-control"
                     placeholder="{{ $campo->config['placeholder'] ?? '' }}"
-                    {{ $campo->requerido ? 'required' : '' }}>{{ old($campo->nombre, $valoresCampo[0] ?? '') }}</textarea>
+                   {{ $esRequerido ? 'required' : '' }}>{{ $valor }}</textarea>
             @break
 
+            {{-- CHECKBOX --}}
             @case('checkbox')
-                @foreach($campo->opciones_catalogo as $opcion)
-                    @php
-                        $checkedValues = old($campo->nombre, $valoresCampo);
-                    @endphp
-                    <div class="form-check">
-                        <input type="checkbox"
-                            name="{{ $campo->nombre }}[]"
-                            value="{{ $opcion->catalogo_codigo }}"
-                            class="form-check-input campo-formulario"
-                            data-form-id="{{ $campo->form_ref_id ?? '' }}"
-                            data-nombre="{{ $campo->nombre }}"
-                            id="{{ $campo->nombre }}_{{ $opcion->catalogo_codigo }}"
-                            {{ in_array($opcion->catalogo_codigo, (array)$checkedValues) ? 'checked' : '' }}>
-                        <label class="form-check-label"
-                            for="{{ $campo->nombre }}_{{ $opcion->catalogo_codigo }}">
-                            {{ $opcion->catalogo_descripcion }}
-                        </label>
-                    </div>
-                @endforeach
-            @break
+                @php
+                    $checkedValues = (array) old($campo->nombre, $valoresCampo);
+                @endphp
 
-            @case('radio')
-                @foreach($campo->opciones_catalogo as $opcion)
-                    <div class="form-check">
-                        <input type="radio"
-                            name="{{ $campo->nombre }}"
-                            value="{{ $opcion->catalogo_codigo }}"
-                            class="form-check-input campo-formulario"
-                            data-form-id="{{ $campo->form_ref_id ?? '' }}"
-                            data-nombre="{{ $campo->nombre }}"
-                            id="{{ $campo->nombre }}_{{ $opcion->catalogo_codigo }}"
-                            {{ old($campo->nombre, $valoresCampo[0] ?? '') == $opcion->catalogo_codigo ? 'checked' : '' }}>
-                        <label class="form-check-label"
-                            for="{{ $campo->nombre }}_{{ $opcion->catalogo_codigo }}">
-                            {{ $opcion->catalogo_descripcion }}
-                        </label>
-                    </div>
-                @endforeach
-            @break
-
-            @case('selector')
-                <select 
-                    name="{{ $campo->nombre }}" 
-                    class="form-select campo-formulario"
-                    data-form-id="{{ $campo->form_ref_id ?? '' }}"
-                    data-nombre="{{ $campo->nombre }}"
-                    {{ $campo->requerido ? 'required' : '' }}>
-                    <option value="">Seleccione una opción</option>
+                <div class="opciones-container" data-campo-id="{{ $campo->id }}">
                     @foreach($campo->opciones_catalogo as $opcion)
-                        <option value="{{ $opcion->catalogo_codigo }}"
-                            {{ old($campo->nombre, $valoresCampo[0] ?? '') == $opcion->catalogo_codigo ? 'selected' : '' }}>
-                            {{ $opcion->catalogo_descripcion }}
-                        </option>
+                        <div class="form-check">
+                            <input type="checkbox"
+                                name="{{ $campo->nombre }}[]"
+                                value="{{ $opcion->catalogo_codigo }}"
+                                class="form-check-input campo-formulario"
+                                id="{{ $campo->nombre }}_{{ $opcion->catalogo_codigo }}"
+                                {{ in_array($opcion->catalogo_codigo, $checkedValues) ? 'checked' : '' }}>
+                            <label class="form-check-label"
+                                for="{{ $campo->nombre }}_{{ $opcion->catalogo_codigo }}">
+                                {{ $opcion->catalogo_descripcion }}
+                            </label>
+                        </div>
                     @endforeach
-                </select>
+                </div>
+
+                <button type="button"
+                    class="btn btn-sm btn-primary mt-2 btn-ver-mas-checkbox"
+                    data-campo-id="{{ $campo->id }}">
+                    Ver más...
+                </button>
             @break
 
+            {{-- RADIO --}}
+            @case('radio')
+                <div class="radio-container" data-campo-id="{{ $campo->id }}">
+                    @foreach($campo->opciones_catalogo as $opcion)
+                        <div class="form-check">
+                            <input type="radio"
+                                name="{{ $campo->nombre }}"
+                                value="{{ $opcion->catalogo_codigo }}"
+                                class="form-check-input campo-formulario"
+                                id="{{ $campo->nombre }}_{{ $opcion->catalogo_codigo }}"
+                                {{ $valor == $opcion->catalogo_codigo ? 'checked' : '' }}>
+                            <label class="form-check-label"
+                                for="{{ $campo->nombre }}_{{ $opcion->catalogo_codigo }}">
+                                {{ $opcion->catalogo_descripcion }}
+                            </label>
+                        </div>
+                    @endforeach
+
+                    <button type="button" class="btn btn-sm btn-primary btn-ver-mas mt-2">
+                        Ver más...
+                    </button>
+                </div>
+            @break
+
+            {{-- SELECTOR --}}
+            @case('selector')
+                <div class="d-flex align-items-center gap-2">
+                    <select name="{{ $campo->nombre }}"
+                        class="form-select tom-select campo-dinamico"
+                        data-campo-id="{{ $campo->id }}"
+                       {{ $esRequerido ? 'required' : '' }}>
+                        <option value="">Seleccione...</option>
+                        @foreach($campo->opciones_catalogo as $opcion)
+                            <option value="{{ $opcion->catalogo_codigo }}"
+                                {{ $valor == $opcion->catalogo_codigo ? 'selected' : '' }}>
+                                {{ $opcion->catalogo_descripcion }}
+                            </option>
+                        @endforeach
+                    </select>
+
+                    <button type="button"
+                        class="btn btn-outline-secondary btn-sm btn-buscar-opcion"
+                        data-bs-toggle="modal"
+                        data-bs-target="#modalBuscarOpcion"
+                        data-campo-id="{{ $campo->id }}">
+                        <i class="fas fa-search"></i>
+                    </button>
+                </div>
+            @break
+
+            {{-- EMAIL --}}
             @case('email')
-                <input type="email" 
-                    name="{{ $campo->nombre }}" 
+                <input type="email" name="{{ $campo->nombre }}"
                     class="form-control"
-                    value="{{ old($campo->nombre, $valoresCampo[0] ?? '') }}"
+                    value="{{ $valor }}"
                     placeholder="{{ $campo->config['placeholder'] ?? '' }}"
-                    {{ $campo->requerido ? 'required' : '' }}>
+                   {{ $esRequerido ? 'required' : '' }}>
             @break
 
+            {{-- PASSWORD --}}
+            @case('password')
+                <input type="password" name="{{ $campo->nombre }}"
+                    class="form-control"
+                    placeholder="{{ $campo->config['placeholder'] ?? '' }}"
+                   {{ $esRequerido ? 'required' : '' }}>
+            @break
+
+            {{-- FECHA --}}
             @case('fecha')
-                <input type="date" 
-                    name="{{ $campo->nombre }}" 
+                <input type="date" name="{{ $campo->nombre }}"
                     class="form-control"
-                    value="{{ old($campo->nombre, isset($valoresCampo[0]) ? \Carbon\Carbon::parse($valoresCampo[0])->format('Y-m-d') : '') }}"
-                    {{ $campo->requerido ? 'required' : '' }}>
+                    value="{{ $valor ? \Carbon\Carbon::parse($valor)->format('Y-m-d') : '' }}"
+                   {{ $esRequerido ? 'required' : '' }}>
             @break
 
+            {{-- HORA --}}
             @case('hora')
-                <input type="time" 
-                    name="{{ $campo->nombre }}" 
+                <input type="time" name="{{ $campo->nombre }}"
                     class="form-control"
-                    value="{{ old($campo->nombre, isset($valoresCampo[0]) ? \Carbon\Carbon::parse($valoresCampo[0])->format('H:i') : '') }}"
-                    {{ $campo->requerido ? 'required' : '' }}>
+                    value="{{ $valor ? \Carbon\Carbon::parse($valor)->format('H:i') : '' }}"
+                   {{ $esRequerido ? 'required' : '' }}>
             @break
+
+            {{-- ARCHIVO --}}
+            @case('archivo')
+                <input type="file" name="{{ $campo->nombre }}"
+                    class="form-control"
+                   {{ $esRequerido ? 'required' : '' }}>
+            @break
+
+            {{-- IMAGEN --}}
+            @case('imagen')
+                <input type="file" name="{{ $campo->nombre }}"
+                    accept="image/*"
+                    class="form-control"
+                   {{ $esRequerido ? 'required' : '' }}>
+            @break
+
+            {{-- VIDEO --}}
+            @case('video')
+                <input type="file" name="{{ $campo->nombre }}"
+                    accept="video/*"
+                    class="form-control"
+                   {{ $esRequerido ? 'required' : '' }}>
+            @break
+
+            {{-- ENLACE --}}
+            @case('enlace')
+                <input type="url" name="{{ $campo->nombre }}"
+                    class="form-control"
+                    value="{{ $valor }}"
+                    placeholder="https://..."
+                   {{ $esRequerido ? 'required' : '' }}>
+            @break
+
+            {{-- COLOR --}}
+            @case('color')
+                <input type="color" name="{{ $campo->nombre }}"
+                    class="form-control form-control-color"
+                    value="{{ $valor }}"
+                   {{ $esRequerido ? 'required' : '' }}>
+            @break
+
         @endswitch
     </div>
 @endforeach
 
 </div>
-
+@include('formularios.campos.modal_busqueda')
 <script>
 document.addEventListener('DOMContentLoaded', () => {
 
@@ -249,3 +349,481 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 </script>
+
+
+
+
+
+
+
+
+
+<style>
+        .option-nueva {
+            background-color: #d1ecf1;
+            /* color inicial */
+            transition: background-color 3s ease-in-out;
+            /* duración más larga y suavizado */
+        }
+    </style>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const chkFormulario = document.getElementById('formulario_campo');
+            const contCategorias = document.getElementById('categorias_cont');
+            const contFormularios = document.getElementById('formularios_cont');
+
+
+
+            // evento al cambiar el checkbox
+            chkFormulario.addEventListener('change', actualizarVisibilidad);
+
+            // establecer estado inicial
+            actualizarVisibilidad();
+        });
+
+        // función para actualizar visibilidad
+        function actualizarVisibilidad() {
+            const chkFormulario = document.getElementById('formulario_campo');
+            const contCategorias = document.getElementById('categorias_cont');
+            const contFormularios = document.getElementById('formularios_cont');
+
+            if (chkFormulario.checked) {
+                contFormularios.style.display = 'block';
+                contCategorias.style.display = 'none';
+            } else {
+                contFormularios.style.display = 'none';
+                contCategorias.style.display = 'block';
+            }
+        }
+    </script>
+
+
+
+    <script>
+        // Drag & Drop
+
+
+        const lista = document.getElementById('listaCampos');
+
+        new Sortable(lista, {
+            animation: 150,
+            handle: '.drag-handle', // solo arrastrable desde el ícono
+            draggable: '.col-md-6', // cada columna arrastrable
+            onEnd: function () {
+                let orden = [...lista.querySelectorAll('.col-md-6')].map(item => item.dataset.id);
+
+                fetch("{{ route('formularios.campos.reordenar', $formulario) }}", {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ orden })
+                })
+                    .then(r => r.json())
+                    .then(data => {
+                        if (data.success) {
+                            alertify.success('Orden guardado correctamente');
+                        } else {
+                            alertify.error('Error al guardar el orden');
+                        }
+                    });
+            }
+        });
+
+        let editId = null;
+
+        // Mostrar selector de categoría según tipo
+        const tipoCampo = document.getElementById('tipoCampo');
+        const categoriaCampo = document.getElementById('ContenedorCategoria');
+
+        tipoCampo.addEventListener('change', function () {
+
+            const tipoTexto = this.options[this.selectedIndex].textContent.trim();
+            if (['Radio', 'Checkbox', 'Selector', 'Imagen', 'Video', 'Archivo'].includes(tipoTexto)) {
+
+                categoriaCampo.style.display = '';
+                document.getElementById('categoriaCampo').style.display = 'inline-block';
+            } else {
+
+
+                categoriaCampo.style.display = 'none';
+                categoriaCampo.value = '';
+            }
+        });
+
+
+
+        // Cancelar edición
+        document.getElementById('btnCancelarEdicion').addEventListener('click', function () {
+            alertify.error("Edición cancelada");
+            editId = null;
+            document.getElementById('tipoCampo').value = '';
+            document.getElementById('nombreCampo').value = '';
+            document.getElementById('etiquetaCampo').value = '';
+            document.getElementById('requeridoCampo').checked = false;
+            categoriaCampo.style.display = 'none';
+            categoriaCampo.value = '';
+            this.style.display = 'none';
+            document.getElementById('btnAgregarCampo').textContent = 'Agregar campo';
+            const form = document.getElementById('formCampo');
+            form.action = "{{ route('campos.store', $formulario) }}";
+            form.querySelector('input[name="_method"]')?.remove();
+
+        });
+
+        // Editar campo
+
+
+        // Función para cargar los datos del campo en el formulario
+        function cargarCampo(editId) {
+            fetch(`/campos/${editId}`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+                .then(res => res.json())
+                .then(data => {
+                    if (!data.success) {
+                        alertify.error('No se pudo cargar el campo');
+                        return;
+                    }
+
+                    const campo = data.campo;
+                    // Llenar form
+                    document.getElementById('tipoCampo').value = campo.tipo;
+                    document.getElementById('nombreCampo').value = campo.nombre;
+                    document.getElementById('etiquetaCampo').value = campo.etiqueta;
+                    document.getElementById('requeridoCampo').checked = campo.requerido;
+                    var catCampo = document.getElementById('ContenedorCategoria');
+
+                    if (campo.categoria_id) {
+
+                        catCampo.style.display = 'inline-block';
+                        catCampo.value = campo.categoria_id;
+
+                    } else if (campo.form_ref_id) {
+                        document.getElementById('formulario_campo').checked = true;
+                        catCampo.style.display = 'inline-block';
+                        actualizarVisibilidad();
+                    }
+                    else {
+                        catCampo.style.display = 'none';
+                        catCampo.value = '';
+                    }
+
+                    // Cambiar acción del form para edición
+                    const form = document.getElementById('formCampo');
+                    form.action = `/campos/${editId}`;
+                    form.method = 'POST';
+
+                    // Agregar hidden para PUT
+                    let inputMethod = form.querySelector('input[name="_method"]');
+                    if (!inputMethod) {
+                        inputMethod = document.createElement('input');
+                        inputMethod.type = 'hidden';
+                        inputMethod.name = '_method';
+                        form.appendChild(inputMethod);
+                    }
+                    inputMethod.value = 'PUT';
+
+                    // Cambiar texto de botón y mostrar cancelar
+                    document.getElementById('btnAgregarCampo').textContent = 'Actualizar campo';
+                    document.getElementById('btnCancelarEdicion').style.display = 'inline-block';
+                    alertify.success("Ahora puede editar el campo seleccionado");
+
+                })
+                .catch(() => alertify.error('Error al cargar el campo'));
+        }
+
+        // Editar campo
+        document.querySelectorAll('.btnEditarCampo').forEach(btn => {
+            btn.addEventListener('click', function () {
+                const editId = this.getAttribute('data-id');
+
+                // Verificar si el formulario tiene respuestas antes de permitir editar
+                fetch(`/campos/${editId}/check-respuestas`, {
+                    method: 'GET',
+                    headers: {
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                        'Accept': 'application/json'
+                    }
+                })
+                    .then(res => res.json())
+                    .then(check => {
+                        if (check.tiene_respuestas) {
+                            alertify.confirm(
+                                'Advertencia',
+                                'Este campo pertenece a un formulario que ya tiene respuestas. ¿Seguro que quieres editarlo?',
+                                function () {
+                                    // Confirmó: cargar campo
+                                    cargarCampo(editId);
+                                },
+                                function () {
+                                    // Canceló
+                                    alertify.error('Edición cancelada');
+                                }
+                            );
+                        } else {
+                            // No hay respuestas, cargar campo directamente
+                            cargarCampo(editId);
+                        }
+                    })
+                    .catch(() => alertify.error('Error al verificar respuestas del formulario'));
+            });
+        });
+
+
+        //eliminar campo
+        function eliminarCampo(id, campo) {
+            // Verificar si el formulario tiene respuestas antes de permitir editar
+            fetch(`/campos/${campo}/check-respuestas`, {
+                method: 'GET',
+                headers: {
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                }
+            })
+                .then(res => res.json())
+                .then(check => {
+                    if (check.tiene_respuestas) {
+                        alertify.confirm(
+                            'Advertencia',
+                            'Este campo pertenece a un formulario que ya tiene respuestas. ¿Seguro que quieres eliminarlo?',
+                            function () {
+                                document.getElementById(id).submit();
+
+                                confirmarEliminacion(id, '¿Estás seguro de que deseas eliminar este Campo?')
+
+                            },
+                            function () {
+                                // Canceló
+                                alertify.error('Eliminación cancelada');
+                            }
+                        );
+                    } else {
+                        alertify.confirm(
+                            'Confirmar eliminación',
+                            '¿Estás seguro de que deseas eliminar este Campo?',
+                            function () {
+                                document.getElementById(id).submit();
+
+                            },
+                            function () {
+
+                                alertify.error('Eliminación cancelada');
+                            }
+                        );
+
+
+                    }
+                })
+                .catch(() => alertify.error('Error al verificar respuestas del formulario'));
+        }
+
+    </script>
+
+
+    <script>
+        document.querySelectorAll('.tom-select').forEach(select => {
+            let offset = select.options.length;
+            const limit = 20;
+
+            const ts = new TomSelect(select, {
+                maxOptions: 100,
+                plugins: ['dropdown_input'],
+                render: {
+                    option: function (item, escape) {
+                        // Si el item tiene "nueva" lo marcamos
+                        const extraClass = item.nueva ? 'option-nueva' : '';
+                        return `<div class="${extraClass}">${escape(item.text)}</div>`;
+                    }
+                },
+                onDropdownOpen: function () {
+                    const dropdown = this.dropdown;
+
+                    if (!dropdown.querySelector('.ts-dropdown-ver-mas')) {
+                        const btnVerMas = document.createElement('div');
+                        btnVerMas.classList.add('ts-dropdown-ver-mas', 'text-center', 'p-1');
+                        btnVerMas.innerHTML = `<button type="button" class="btn btn-sm btn-outline-primary w-100">Ver más...</button>`;
+
+                        btnVerMas.querySelector('button').addEventListener('click', async () => {
+                            const campoId = select.dataset.campoId;
+                            const response = await fetch(`/campos/${campoId}/cargar-mas?offset=${offset}&limit=${limit}`);
+                            const data = await response.json();
+
+                            data.forEach(opcion => {
+                                // Marcamos la opción como nueva
+                                opcion.nueva = true;
+                                ts.addOption({ value: opcion.catalogo_codigo, text: opcion.catalogo_descripcion, nueva: true });
+                            });
+
+                            ts.refreshOptions(false);
+
+                            // Después de 2s eliminamos la marca de nueva
+                            setTimeout(() => {
+                                data.forEach(opcion => {
+                                    const opt = ts.getOption(opcion.catalogo_codigo);
+                                    if (opt) opt.classList.remove('option-nueva');
+                                });
+                            }, 1000);
+
+                            offset += data.length;
+                        });
+
+                        dropdown.appendChild(btnVerMas);
+                    }
+                }
+            });
+        });
+
+        const offsets = {}; // guardar offset por campo
+
+        document.querySelectorAll('.radio-container').forEach(container => {
+            const campoId = container.dataset.campoId;
+            const btnVerMas = container.querySelector('.btn-ver-mas');
+
+            // Inicializamos el offset con la cantidad de opciones cargadas inicialmente
+            offsets[campoId] = container.querySelectorAll('input[type="radio"]').length;
+
+            btnVerMas.addEventListener('click', async () => {
+                const offset = offsets[campoId]; // usar offset guardado
+                const limit = 20;
+
+                const response = await fetch(`/campos/${campoId}/cargar-mas?offset=${offset}&limit=${limit}`);
+                const data = await response.json();
+
+                // Si no hay más datos, opcional: desactivar botón
+                if (data.length === 0) {
+                    btnVerMas.disabled = true;
+                    btnVerMas.innerText = 'No hay más opciones';
+                    return;
+                }
+
+                data.forEach(opcion => {
+                    const div = document.createElement('div');
+                    div.classList.add('form-check', 'option-nueva');
+
+                    const input = document.createElement('input');
+                    input.type = 'radio';
+                    input.name = `campo_${campoId}`;
+                    input.value = opcion.catalogo_codigo;
+                    input.classList.add('form-check-input');
+                    input.id = `campo_${campoId}_${opcion.catalogo_codigo}`;
+
+                    const label = document.createElement('label');
+                    label.classList.add('form-check-label');
+                    label.htmlFor = input.id;
+                    label.innerText = opcion.catalogo_descripcion;
+
+                    div.appendChild(input);
+                    div.appendChild(label);
+                    container.insertBefore(div, btnVerMas);
+
+                    setTimeout(() => div.classList.remove('option-nueva'), 1000);
+                });
+
+                // Actualizar offset
+                offsets[campoId] += data.length;
+            });
+        });
+
+
+        document.querySelectorAll('.btn-ver-mas-checkbox').forEach(btn => {
+            let offsetMap = {}; // guarda el offset por campo
+
+            btn.addEventListener('click', async () => {
+                const campoId = btn.dataset.campoId;
+                const container = document.querySelector(`.opciones-container[data-campo-id="${campoId}"]`);
+
+                // Inicializamos offset si no existe
+                if (!offsetMap[campoId]) {
+                    offsetMap[campoId] = container.querySelectorAll('input[type="checkbox"]').length;
+                }
+
+                const limit = 20;
+                const response = await fetch(`/campos/${campoId}/cargar-mas?offset=${offsetMap[campoId]}&limit=${limit}`);
+                const data = await response.json();
+
+                data.forEach(opcion => {
+                    const div = document.createElement('div');
+                    div.classList.add('form-check', 'new-option');
+                    div.innerHTML = `
+                                                                                            <input type="checkbox" 
+                                                                                                name="${btn.dataset.campoNombre}[]" 
+                                                                                                value="${opcion.catalogo_codigo}" 
+                                                                                                class="form-check-input"
+                                                                                                id="${btn.dataset.campoNombre}_${opcion.catalogo_codigo}">
+                                                                                            <label class="form-check-label" for="${btn.dataset.campoNombre}_${opcion.catalogo_codigo}">
+                                                                                                ${opcion.catalogo_descripcion}
+                                                                                            </label>
+                                                                                        `;
+                    container.appendChild(div);
+
+                    // Animación temporal
+                    div.style.transition = 'background 0.5s';
+                    div.style.background = '#d1ecf1';
+                    setTimeout(() => div.style.background = '', 1000);
+                });
+
+                // Actualizamos el offset solo con la cantidad de elementos nuevos
+                offsetMap[campoId] += data.length;
+            });
+        });
+
+
+
+
+        document.querySelectorAll('.btn-buscar-opcion').forEach(btn => {
+            btn.addEventListener('click', () => {
+                const campoId = btn.dataset.campoId;
+                const modalBusqueda = new bootstrap.Modal(document.getElementById('modalBusqueda'));
+                modalBusqueda.show();
+
+                // Guardamos el campoId en el modal para usarlo al hacer la búsqueda
+                document.getElementById('btnBuscar').dataset.campoId = campoId;
+            });
+        });
+
+        document.getElementById('btnBuscar').addEventListener('click', async () => {
+            const termino = document.getElementById('inputBusqueda').value;
+            const campoId = document.getElementById('btnBuscar').dataset.campoId;
+
+            const response = await fetch(`/campos/${campoId}/buscar-opcion?termino=${encodeURIComponent(termino)}`);
+            const data = await response.json();
+
+            if (data.length) {
+                alertify.success('Opción encontrada y agregada al selector.');
+
+                const select = document.querySelector(`select[data-campo-id="${campoId}"]`);
+                const ts = select.tomselect; // instancia de Tom Select
+
+                // Agregar nueva opción
+                ts.addOption({ value: data[0].catalogo_codigo, text: data[0].catalogo_descripcion });
+
+                // Seleccionar la opción recién agregada
+                ts.setValue(data[0].catalogo_codigo);
+
+                // Cerrar modal
+                const modal = bootstrap.Modal.getInstance(document.getElementById('modalBusqueda'));
+                modal.hide();
+            } else {
+                alertify.warning('Atención, No se encontró ninguna opción.');
+            }
+        });
+
+
+
+
+
+
+
+
+
+
+    </script>
+

@@ -43,47 +43,120 @@ class RespuestasFormController extends Controller
 
         return view('formularios.respuestas', compact('respuestas'));
     }
+
+
+
     public function indexPorFormulario(Request $request, $form)
     {
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
             ['name' => 'Formularios', 'url' => route('formularios.index')],
-            ['name' => 'Respuestas ', 'url' => route('formularios.index')],
+            ['name' => 'Respuestas', 'url' => route('formularios.index')],
         ];
 
         $agent = new Agent();
         $isMobile = $agent->isMobile();
 
+        // Obtener formulario con campos
         $formulario = Formulario::with('campos')->findOrFail($form);
 
-        // 📌 Primero, cargar las respuestas paginadas
-        $query = $formulario->respuestas()->with('camposRespuestas.campo', 'actor');
+        // ================================
+        // QUERY BASE DE RESPUESTAS
+        // ================================
+        $query = RespuestasForm::where('form_id', $formulario->id)
+            ->with('camposRespuestas.campo');
 
-        if ($request->filled('search')) {
-            $search = $request->input('search');
-            $query->whereHas('actor', fn($q) => $q->where('name', 'like', "%{$search}%"));
+        // ================================
+        // MAPEAR CAMPOS POR NOMBRE
+        // ================================
+        $camposPorNombre = $formulario->campos->keyBy('nombre');
+
+        // ================================
+        // FILTROS DINÁMICOS (POR NOMBRE)
+        // ================================
+        $inputs = collect($request->all())
+            ->except(['_token', 'page'])
+            ->filter(fn($v) => $v !== null && $v !== '');
+
+        foreach ($inputs as $nombreCampo => $valorEnviado) {
+
+            // Ignorar inputs que no pertenecen al formulario
+            if (!$camposPorNombre->has($nombreCampo)) {
+                continue;
+            }
+
+            $campo = $camposPorNombre->get($nombreCampo);
+
+            // ================================
+            // FILTRO SEGÚN TIPO DE CAMPO
+            // ================================
+            $query->whereHas('camposRespuestas', function ($q) use ($campo, $valorEnviado) {
+
+                $q->where('cf_id', $campo->id);
+
+                switch ($campo->campo_nombre) {
+
+                    case 'text':
+                    case 'textarea':
+                    case 'email':
+                    case 'password':
+                    case 'enlace':
+                        // Búsqueda flexible: devuelve coincidencias parciales
+                        $q->where('valor', 'like', "%{$valorEnviado}%");
+                        break;
+
+                    case 'checkbox':
+                        $q->whereJsonContains('valor', $valorEnviado);
+                        break;
+
+                    case 'selector':
+                    case 'radio':
+                        // Campos que usan form_ref_id o categoria_id: comparación exacta
+                        $q->where('valor', $valorEnviado);
+                        break;
+
+                    default:
+                        // Para number, fecha, hora u otros campos exactos
+                        $q->where('valor', $valorEnviado);
+                        break;
+                }
+            });
         }
 
-        $respuestas = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
+        // ================================
+        // PAGINACIÓN
+        // ================================
+        $respuestas = $query
+            ->orderBy('created_at', 'desc')
+            ->paginate(15)
+            ->withQueryString();
 
-        // 📌 Obtener solo los IDs de campos usados en las respuestas visibles
-        $camposIds = $respuestas->pluck('camposRespuestas')
-            ->flatten()
-            ->pluck('campo_id')
-            ->unique();
+        // ================================
+        // CAMPOS ORDENADOS Y PROCESADOS
+        // ================================
+        $formulario = Formulario::with([
+            'campos' => function ($q) {
+                $q->orderBy('posicion');
+            }
+        ])->findOrFail($form);
 
-        // 📌 Procesar solo los campos que aparecen en las respuestas paginadas
-        $camposFiltrados = $formulario->campos->whereIn('id', $camposIds);
+        $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
+        $formulario->campos = $camposProcesados;
 
-        $camposProcesados = $this->FormularioRepository->CamposFormCat($camposFiltrados);
+        $campos = $formulario->campos;
 
-        // Asignar los campos procesados sin afectar los demás
-        $formulario->campos = $formulario->campos->map(function ($campo) use ($camposProcesados) {
-            return $camposProcesados->firstWhere('id', $campo->id) ?? $campo;
-        });
-
-        return view('formularios.respuestas_formulario', compact('isMobile', 'formulario', 'respuestas', 'breadcrumb'));
+        // ================================
+        // RETORNO A LA VISTA
+        // ================================
+        return view('formularios.respuestas_formulario', compact(
+            'isMobile',
+            'formulario',
+            'respuestas',
+            'breadcrumb',
+            'campos'
+        ));
     }
+
 
 
 
@@ -115,6 +188,8 @@ class RespuestasFormController extends Controller
         // inicio
         $rules = collect();
         $campos = $formulario->campos;
+
+
 
         foreach ($campos as $campo) {
             $reglasCampo = FormLogicCondition::with([
@@ -234,7 +309,6 @@ class RespuestasFormController extends Controller
     public function store(Request $request, $form)
     {
 
-
         $campos = CamposForm::where('form_id', $form)->get();
 
         $rules = $this->validacion($campos);
@@ -283,7 +357,7 @@ class RespuestasFormController extends Controller
 
 
             return redirect()->route('formularios.respuestas.formulario', $form)
-                ->with('status', 'Formulario enviado correctamente.');
+                ->with('status', 'Registro creado correctamente.');
 
         } catch (\Exception $e) {
             DB::rollBack();
