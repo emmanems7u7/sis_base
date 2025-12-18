@@ -184,6 +184,8 @@ class ModuloController extends Controller
     {
 
 
+        $agent = new Agent();
+        $isMobile = $agent->isMobile();
 
         $modulo = Modulo::with('formularios.campos')->findOrFail($modulo_id);
 
