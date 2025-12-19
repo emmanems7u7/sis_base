@@ -106,11 +106,20 @@ class RespuestasFormController extends Controller
                         break;
 
                     case 'checkbox':
-                        $q->whereJsonContains('valor', $valorEnviado);
+                        foreach ($valorEnviado as $valor) {
+                            $q->whereExists(function ($sub) use ($campo, $valor) {
+                                $sub->select(DB::raw(1))
+                                    ->from('respuestas_campos as cr2')
+                                    ->whereColumn('cr2.respuesta_id', 'respuestas_campos.respuesta_id')
+                                    ->where('cr2.cf_id', $campo->id)
+                                    ->where('cr2.valor', $valor);
+                            });
+                        }
                         break;
 
                     case 'selector':
                     case 'radio':
+
                         // Campos que usan form_ref_id o categoria_id: comparación exacta
                         $q->where('valor', $valorEnviado);
                         break;
