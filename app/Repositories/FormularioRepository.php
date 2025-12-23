@@ -246,4 +246,47 @@ class FormularioRepository implements FormularioInterface
         // Para otros tipos (text, number, textarea, etc.) devolvemos el valor directo
         return $valorUsuario;
     }
+
+
+    /**
+     * Obtiene el valor real para reemplazo o filtrado según el tipo de campo.
+     *
+     * @param CamposForm $campo
+     * @param mixed $valorUsuario
+     * @return mixed
+     */
+    public function obtenerValorReal(CamposForm $campo, $valorUsuario)
+    {
+
+        // 1️⃣ Si el campo tiene categoría (catalogo)
+        if (!empty($campo->categoria_id)) {
+            $catalogo = $this->CatalogoRepository->buscarPorDescripcion($campo->categoria_id, $valorUsuario);
+            return $catalogo ? $catalogo->catalogo_codigo : null;
+        }
+        if (!empty($campo->form_ref_id)) {
+
+
+            // Obtener el primer campo del formulario referenciado
+            $campoReferencia = CamposForm::where('form_id', $campo->form_ref_id)
+                ->orderBy('posicion', 'asc')
+                ->first();
+
+            if (!$campoReferencia) {
+                return null;
+            }
+
+
+            // Obtener la respuesta (objeto) primero
+            $respuestaCampo = RespuestasCampo::where('respuesta_id', $valorUsuario)
+                ->where('cf_id', $campoReferencia->id)
+                ->first();
+
+            // Obtener valor si existe
+            $valor = optional($respuestaCampo)->valor;
+
+            return $valor; // devuelve el valor directo, no intenta acceder a $id
+        }
+        // 3️⃣ Si no tiene ni categoria_id ni form_ref_id, devolvemos el valor tal cual
+        return $valorUsuario;
+    }
 }

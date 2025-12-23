@@ -62,7 +62,7 @@ Auth::routes();
 
 Route::get('/home', [App\Http\Controllers\HomeController::class, 'index'])->name('home');
 
-
+Route::get('/email/campos-usuario', [UserController::class, 'camposUsuario']);
 
 Route::middleware(['auth', 'can:Administración de Usuarios'])->group(function () {
 
@@ -134,24 +134,26 @@ Route::middleware(['auth', 'can:Configuración'])->group(function () {
     Route::post('/configuracion/correo/guardar', [ConfCorreoController::class, 'store'])
         ->name('configuracion.correo.store')
         ->middleware('can:configuracion_correo.actualizar');
-    Route::put('configuracion_correo', [ConfCorreoController::class, 'update'])->name('configuracion_correo.update')->middleware('can:configuracion_correo.actualizar');
 
+    Route::put('configuracion_correo', [ConfCorreoController::class, 'update'])->name('configuracion_correo.update')->middleware('can:configuracion_correo.actualizar');
 
     Route::get('/correo/prueba', [ConfCorreoController::class, 'enviarPrueba'])
         ->name('correo.prueba');
 
-    Route::get('/correos/plantillas', [CorreoController::class, 'index'])
-        ->name('correos.index')
-        ->middleware('can:plantillas.ver');
-
-    Route::put('/editar/plantilla/{id}', [CorreoController::class, 'update_plantilla'])
-        ->name('plantilla.update')
-        ->middleware('can:plantillas.actualizar');
-
-    Route::get('/obtener/plantilla/{id}', [CorreoController::class, 'GetPlantilla'])
-        ->name('obtener.correo');
 
 });
+
+
+
+
+Route::get('/plantillas', [CorreoController::class, 'index'])->name('plantillas.index');
+Route::get('/plantillas/crear', [CorreoController::class, 'create'])->name('plantillas.create');
+Route::post('/plantillas', [CorreoController::class, 'store'])->name('plantillas.store');
+
+Route::get('/plantillas/{plantilla}/editar', [CorreoController::class, 'edit'])->name('plantillas.edit');
+Route::put('/plantillas/{plantilla}', [CorreoController::class, 'update'])->name('plantillas.update');
+
+Route::delete('/plantillas/{plantilla}', [CorreoController::class, 'destroy'])->name('plantillas.destroy');
 
 
 //cambio de contraseña

@@ -6,6 +6,7 @@ interface CorreoInterface
 {
     public function EditarPlantillaCorreo($request, $email);
 
-    public function EditarConfCorreo($email);
+    public function EditarConfCorreo($correoId, $request);
+
 
 }

@@ -10,17 +10,24 @@ use App\Models\RespuestasCampo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Interfaces\CatalogoInterface;
+use App\Models\ConfCorreo;
 use App\Models\Formulario;
+use App\Models\PlantillaCorreo;
+use App\Models\User;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\HtmlString;
 
+use App\Services\DynamicMailer;
 class FormLogicRepository implements FormLogicInterface
 {
     protected $CatalogoRepository;
-
+    protected $FormularioRepository;
     public function __construct(
         CatalogoInterface $catalogoInterface,
+        FormularioRepository $formularioRepository,
 
     ) {
-
+        $this->FormularioRepository = $formularioRepository;
         $this->CatalogoRepository = $catalogoInterface;
 
 
@@ -73,6 +80,7 @@ class FormLogicRepository implements FormLogicInterface
                 $mensajes[] = $this->ejecutarAccion($respuesta, $filasSeleccionadas, $action);
             }
         }
+
         return $mensajes;
 
 
@@ -88,11 +96,7 @@ class FormLogicRepository implements FormLogicInterface
 
         $tipoAccion = $action->tipo_accion;
 
-        if (!$formDestino) {
-            $mensaje = "No existe formulario destino para la acción {$action->id}";
-            Log::warning($mensaje);
-            return $mensaje;
-        }
+
 
         $mensaje = '';
 
@@ -100,7 +104,16 @@ class FormLogicRepository implements FormLogicInterface
 
         switch ($tipoAccion) {
 
-            case 'TAC-001': // modificar_campo
+            case 'TAC-001':
+                /*
+
+  if (!$formDestino) {
+            $mensaje = "No existe formulario destino para la acción {$action->id}";
+            Log::warning($mensaje);
+            return $mensaje;
+        }
+
+                // modificar_campo
                 $CampoDestinoId = $parametros['campo_ref_id'] ?? null;
                 $CampoDestino = CamposForm::find($CampoDestinoId);
 
@@ -261,10 +274,16 @@ class FormLogicRepository implements FormLogicInterface
 
                 });
 
-
+*/
                 break;
 
             case 'TAC-005': // crear_registros
+
+                if (!$formDestino) {
+                    $mensaje = "No existe formulario destino para la acción {$action->id}";
+                    Log::warning($mensaje);
+                    return $mensaje;
+                }
 
                 $mensaje = '';
 
@@ -404,6 +423,173 @@ class FormLogicRepository implements FormLogicInterface
 
 
                 break;
+
+            case 'TAC-003': // enviar_email dinámico
+
+                $mensaje = '';
+
+                // Estructura esperada en $parametros
+                $subject = $parametros['email_subject'] ?? null;
+                $bodyBase = $parametros['email_body'] ?? null;
+                $templateId = $parametros['email_template'] ?? null;
+                $usuariosIds = $parametros['email_usuarios'] ?? [];
+                $rolesIds = $parametros['email_roles'] ?? [];
+
+                // 1️⃣ Validaciones básicas
+                if (!$subject) {
+                    $mensaje = "TAC-003: El asunto del correo es obligatorio (Action {$action->id})";
+                    Log::warning($mensaje);
+                    return $mensaje;
+                }
+
+                if (!$bodyBase && !$templateId) {
+                    $mensaje = "TAC-003: Debe existir mensaje o plantilla (Action {$action->id})";
+                    Log::warning($mensaje);
+                    return $mensaje;
+                }
+
+                if (empty($usuariosIds) && empty($rolesIds)) {
+                    $mensaje = "TAC-003: No se definieron destinatarios (Action {$action->id})";
+                    Log::warning($mensaje);
+                    return $mensaje;
+                }
+
+                // 2️⃣ Obtener destinatarios
+                $usuariosDestino = collect();
+
+                if (!empty($usuariosIds)) {
+                    $usuariosDestino = $usuariosDestino->merge(
+                        User::whereIn('id', $usuariosIds)->get()
+                    );
+                }
+
+                if (!empty($rolesIds)) {
+                    $usuariosDestino = $usuariosDestino->merge(
+                        User::whereHas('roles', function ($q) use ($rolesIds) {
+                            $q->whereIn('id', $rolesIds);
+                        })->get()
+                    );
+                }
+
+                $usuariosDestino = $usuariosDestino->unique('id')->values();
+
+                if ($usuariosDestino->isEmpty()) {
+                    $mensaje = "TAC-003: No se encontraron usuarios destino (Action {$action->id})";
+                    Log::warning($mensaje);
+                    return $mensaje;
+                }
+
+                // 3️⃣ Cargar plantilla si existe
+                $htmlPlantilla = null;
+                if ($templateId) {
+                    $plantilla = PlantillaCorreo::find($templateId);
+
+                    if (!$plantilla || !$plantilla->estado) {
+                        $mensaje = "TAC-003: Plantilla no válida o inactiva (Action {$action->id})";
+                        Log::warning($mensaje);
+                        return $mensaje;
+                    }
+
+                    $ruta = public_path('plantillas_correos/' . $plantilla->archivo);
+
+                    if (!file_exists($ruta)) {
+                        $mensaje = "TAC-003: Archivo de plantilla no encontrado ({$plantilla->archivo})";
+                        Log::warning($mensaje);
+                        return $mensaje;
+                    }
+
+                    $htmlPlantilla = file_get_contents($ruta);
+                }
+
+                // 4️⃣ Obtener configuración de correo
+                $conf = ConfCorreo::first();
+                if (!$conf) {
+                    $mensaje = "TAC-003: Configuración de correo no encontrada";
+                    Log::warning($mensaje);
+                    return $mensaje;
+                }
+
+                $mailer = new DynamicMailer($conf);
+
+                // 5️⃣ Envío de correo por cada usuario
+                foreach ($usuariosDestino as $userDestino) {
+
+                    // 5.1 Construir cuerpo del correo
+                    $body = $bodyBase;
+
+                    if ($htmlPlantilla) {
+                        libxml_use_internal_errors(true);
+                        $dom = new \DOMDocument('1.0', 'UTF-8');
+                        $dom->loadHTML(mb_convert_encoding($htmlPlantilla, 'HTML-ENTITIES', 'UTF-8'));
+
+                        $xpath = new \DOMXPath($dom);
+                        $contenedor = $xpath->query("//*[@id='contenido']")->item(0);
+
+                        if (!$contenedor) {
+                            Log::warning("TAC-003: No se encontró div #contenido en la plantilla (Action {$action->id})");
+                            continue;
+                        }
+
+                        while ($contenedor->firstChild) {
+                            $contenedor->removeChild($contenedor->firstChild);
+                        }
+
+                        $fragment = $dom->createDocumentFragment();
+                        $fragment->appendXML($bodyBase ?? '');
+                        $contenedor->appendChild($fragment);
+
+                        $body = $dom->saveHTML();
+                    }
+
+                    // 5.2 Reemplazo de variables [campo]
+                    preg_match_all('/\[(.*?)\]/', $body, $matches);
+                    $variables = $matches[1] ?? [];
+
+                    foreach ($variables as $variable) {
+
+                        // Buscamos el campo correspondiente
+                        $campo = CamposForm::where('nombre', $variable)->first();
+
+                        // Inicializamos valor vacío
+                        $valor = '';
+
+                        if ($campo) {
+                            // Obtenemos el valor original del usuario/respuesta
+                            $valorUsuario = $respuestaOrigen->camposRespuestas()
+                                ->where('cf_id', $campo->id)
+                                ->value('valor');
+                            // Solo si tiene categoria_id o form_ref_id hacemos la búsqueda
+                            // Solo buscamos valor real si el campo tiene categoria_id o form_ref_id
+                            if (!empty($campo->categoria_id) || !empty($campo->form_ref_id)) {
+                                $valor = $this->FormularioRepository->obtenerValorReal($campo, $valorUsuario);
+                            } else {
+                                $valor = $valorUsuario; // Directamente
+                            }
+                        }
+
+
+                        // Si no existe el campo, intentamos usar propiedad del usuario
+                        if ($valor === '' && in_array($variable, $userDestino->getFillable())) {
+                            $valor = $userDestino->{$variable} ?? '';
+                        }
+
+                        $body = str_replace("[$variable]", $valor, $body);
+                    }
+
+                    // 5.3 Enviar correo usando DynamicMailer
+                    try {
+                        $mailer->send($conf->from_address, new \App\Mail\CorreoDinamico($subject, $body, $userDestino->email));
+                        Log::info("TAC-003 ejecutado | Action {$action->id} | Correo enviado a: {$userDestino->email}");
+                    } catch (\Throwable $e) {
+                        $mensaje = "TAC-003 Error al enviar correo (Action {$action->id}) a {$userDestino->email}: " . $e->getMessage();
+                        Log::error($mensaje);
+                        return $mensaje;
+                    }
+                }
+
+                break;
+
+
 
             // Agregar más acciones según sea necesario
         }

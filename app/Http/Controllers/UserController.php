@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 use App\Exports\ExportExcel;
 use App\Exports\ExportPDF;
-
+use Illuminate\Support\Facades\Schema;
 use Maatwebsite\Excel\Facades\Excel;
 class UserController extends Controller
 {
@@ -142,6 +142,47 @@ class UserController extends Controller
         $users = User::all();
 
         return ExportPDF::exportPdf('usuarios.export_usuarios', ['users' => $users, 'export' => 'Usuarios'], 'usuarios', false);
+    }
+
+    public function camposUsuario()
+    {
+        // columnas reales de la tabla users
+        $columnas = Schema::getColumnListing((new User)->getTable());
+
+        // columnas que NO quieres exponer
+        $excluir = [
+            'id',
+            'password',
+            'remember_token',
+            'created_at',
+            'updated_at',
+            'email_verified_at',
+            'name',
+            'foto_perfil',
+            'usuario_fecha_ultimo_acceso',
+            'usuario_fecha_ultimo_password',
+            'accion_fecha',
+            'accion_usuario',
+            'usuario_activo',
+            'email_verified_at',
+            'two_factor_expires_at',
+        ];
+
+
+
+        $campos = collect($columnas)
+            ->diff($excluir)
+            ->map(function ($columna) {
+                return [
+                    'nombre' => $columna,
+                    'label' => ucfirst(str_replace('_', ' ', $columna))
+                ];
+            })
+            ->values();
+
+        return response()->json([
+            'data' => $campos
+        ]);
     }
 
 }

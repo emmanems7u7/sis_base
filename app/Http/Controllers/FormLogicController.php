@@ -9,7 +9,9 @@ use App\Models\FormLogicCondition;
 use Illuminate\Http\Request;
 use App\Interfaces\CatalogoInterface;
 use App\Models\Modulo;
-
+use App\Models\PlantillaCorreo;
+use App\Models\User;
+use Spatie\Permission\Models\Role;
 class FormLogicController extends Controller
 {
 
@@ -28,7 +30,7 @@ class FormLogicController extends Controller
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
             ['name' => 'Administrar Módulo', 'url' => route('modulo.administrar', $modulo->id)],
-            ['name' => 'Logica de Negocio', 'url' => route('correos.index')],
+            ['name' => 'Logica de Negocio', 'url' => ''],
         ];
 
 
@@ -37,12 +39,26 @@ class FormLogicController extends Controller
         $operaciones = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Operaciones de Campo', true);
         $tipo_acciones = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Tipos de Acción', true);
 
-        return view('form_logic.create', compact('modulo', 'tipo_acciones', 'operaciones', 'formularios', 'breadcrumb'));
+
+        $usuarios = User::select('id', 'name', 'email')->get();
+        $roles = Role::select('id', 'name')->get();
+        $plantillas = PlantillaCorreo::where('estado', '1')->get();
+
+        return view('form_logic.create', compact(
+            'modulo',
+            'tipo_acciones',
+            'operaciones',
+            'formularios',
+            'breadcrumb',
+            'usuarios',
+            'roles',
+            'plantillas'
+        ));
     }
 
     public function store(Request $request, Modulo $modulo)
     {
-
+        // dd($request);
         $request->validate([
             'nombre' => 'required|string|max:255',
             'formulario_id' => 'required|exists:formularios,id',
@@ -265,21 +281,36 @@ class FormLogicController extends Controller
                     ];
                     break;
 
-                case 'enviar_email':
+                case 'TAC-003': // enviar_email
                     $parametrosExtra = [
-                        'email_to' => $actionData['email_to'] ?? null,
+
                         'email_subject' => $actionData['email_subject'] ?? null,
                         'email_body' => $actionData['email_body'] ?? null,
+                        'email_template' => $actionData['email_template'] ?? null,
+
+                        // destinatarios
+                        'email_usuarios' => $actionData['email_usuarios'] ?? [],
+                        'email_roles' => $actionData['email_roles'] ?? [],
+
+                        // detalle preparado en frontend
+                        //'email_detalle' => $actionData['email_detalle'] ?? [],
+
+                        // condiciones propias de la acción
                         'condiciones' => $actionData['condiciones'] ?? [],
+
+
                     ];
                     break;
-
                 default:
                     // Para otros tipos de acción simplemente guardamos todo el actionData
                     $parametrosExtra = $actionData;
                     break;
             }
-            //dump($actionData);
+
+
+            if ($actionData['form_ref_id'] == '') {
+                $actionData['form_ref_id'] = null;
+            }
             // Creamos el registro en FormLogicAction
             $action = FormLogicAction::create([
                 'rule_id' => $rule->id,

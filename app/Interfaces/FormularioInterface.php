@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Interfaces;
+
+use App\Models\CamposForm;
 use Illuminate\Http\Request;
 
 interface FormularioInterface
@@ -18,5 +20,9 @@ interface FormularioInterface
     public function validarOpcionesCatalogo($campos, $request);
     public function CamposFormCat($campos, $limit = 100);
     public function convertirValorParaFiltro($campo, $valorUsuario);
+
+    public function obtenerValorReal(CamposForm $campo, $valorUsuario);
+
+
 
 }

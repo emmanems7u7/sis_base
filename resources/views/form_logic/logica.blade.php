@@ -22,7 +22,15 @@
         }
     }
 </style>
-
+<style>
+    .campo-btn {
+        padding: 2px 6px;
+        font-size: 11px;
+        line-height: 1.2;
+        border-radius: 10px;
+        white-space: nowrap;
+    }
+</style>
 <hr>
 <h5>Acciones</h5>
 <div id="acciones-list" class=" row mb-3"></div>
@@ -201,7 +209,7 @@
                     break;
                 case 'TAC-003':
                     document.getElementById('modal-email-block').classList.remove('d-none');
-
+                    cargarCamposOrigenParaEmail();
                     break;
                 case 'TAC-004':
                     break;
@@ -274,6 +282,8 @@
 
 
         function cargarCamposConCache(formId, selectElement, tipo = 'origen', placeholder = '-- Seleccione --') {
+
+
             if (!formId || !selectElement) return Promise.resolve();
             if (camposCache[tipo][formId]) {
                 let opciones = `<option value="">${placeholder}</option>`;
@@ -491,7 +501,6 @@
                                 radiosContainer.style.display = 'none';
                                 inputCantidad.disabled = false;
                                 getInfoForm();
-                                console.log(3)
                                 // Desbloquear todas las filas
                                 document.querySelectorAll('#contenedor-campos-form .row[data-form-ref-id]').forEach(fila => {
                                     fila.querySelectorAll('input, select, textarea').forEach(el => el.disabled = false);
@@ -655,7 +664,7 @@
                     }
                 } else if (editData.tipo === 'enviar_email') {
                     document.getElementById('modal-email-block').classList.remove('d-none');
-                    document.getElementById('modal-email-to').value = editData.to;
+                    //document.getElementById('modal-email-to').value = editData.to;
                     document.getElementById('modal-email-subject').value = editData.subject;
                     document.getElementById('modal-email-body').value = editData.body;
                 }
@@ -680,7 +689,7 @@
             document.getElementById('modal-tipo-valor').value = 'static';
             document.getElementById('modal-valor-estatico').value = '';
             document.getElementById('modal-valor-campo').innerHTML = '<option value="">-- Seleccionar campo --</option>';
-            document.getElementById('modal-email-to').value = '';
+            //document.getElementById('modal-email-to').value = '';
             document.getElementById('modal-email-subject').value = '';
             document.getElementById('modal-email-body').value = '';
         }
@@ -828,6 +837,7 @@
         // 🔹 Función para capturar datos del modal
         function capturarDatosModal() {
             const tipoAccion_id = document.getElementById('modal-tipo-accion').value;
+
             var form_ref_id = document.getElementById('modal-form-ref_crear_registros').value;
             const accionObj = {
                 tipo_accion_id: tipoAccion_id,
@@ -920,10 +930,62 @@
                 accionObj.tipo_accion_text = document.getElementById('modal-tipo-accion').options[document.getElementById('modal-tipo-accion').selectedIndex]?.text || '';
             }
 
-            if (tipoAccion_id === 'enviar_email') {
-                accionObj.email_to = document.getElementById('modal-email-to').value.trim();
+            // ===== TAC-003 / enviar_email =====
+            if (tipoAccion_id === 'TAC-003' || tipoAccion_id === 'enviar_email') {
+                // Asunto, mensaje y plantilla
                 accionObj.email_subject = document.getElementById('modal-email-subject').value.trim();
                 accionObj.email_body = document.getElementById('modal-email-body').value.trim();
+                accionObj.email_template = document.getElementById('email-template')?.value || null;
+
+                // Usuarios seleccionados (IDs)
+                const usuariosSeleccionados = document.getElementById('usuarios-hidden').value
+                    .split(',')
+                    .filter(u => u);
+                accionObj.email_usuarios = usuariosSeleccionados;
+
+                // Textos de usuarios seleccionados
+                const usuariosTextos = Array.from(document.querySelectorAll('#user-list li'))
+                    .filter((li, i) => usuariosSeleccionados.includes(li.dataset.id)) // solo los seleccionados
+                    .map(li => li.textContent.trim());
+
+                // Roles seleccionados (IDs) y textos
+                const rolesInputs = Array.from(document.querySelectorAll('#modal-email-block input[name="roles[]"]:checked'));
+                const rolesSeleccionados = rolesInputs.map(input => input.value);
+                const rolesTextos = rolesInputs.map(input => {
+                    const label = document.querySelector(`label[for="${input.id}"]`);
+                    return label ? label.textContent.trim() : '';
+                });
+
+                accionObj.email_roles = rolesSeleccionados;
+
+                // Campos seleccionados en el email
+                const camposSeleccionados = [];
+                document.querySelectorAll('#email-campos-origen button.selected').forEach(btn => {
+                    camposSeleccionados.push({
+                        tipo: 'origen',
+                        nombre: btn.textContent,
+                        valorPlantilla: `[${btn.dataset.nombreCampo || btn.textContent}]`
+                    });
+                });
+                document.querySelectorAll('#email-campos-usuarios button.selected').forEach(btn => {
+                    camposSeleccionados.push({
+                        tipo: 'usuario',
+                        nombre: btn.textContent,
+                        valorPlantilla: `[${btn.dataset.nombreCampo}]`
+                    });
+                });
+                accionObj.tipo_accion_text = document.getElementById('modal-tipo-accion').options[document.getElementById('modal-tipo-accion').selectedIndex]?.text || '';
+
+                accionObj.email_detalle = {
+                    to: usuariosSeleccionados,
+                    to_text: usuariosTextos,
+                    roles: rolesSeleccionados,
+                    roles_text: rolesTextos,
+                    subject: accionObj.email_subject,
+                    body: accionObj.email_body,
+                    plantilla: accionObj.email_template,
+                    camposUsados: camposSeleccionados
+                };
             }
 
             // Condiciones
@@ -1038,12 +1100,54 @@
                 }
             }
 
+            // ===== TAC-003 / enviar_email =====
+            if (tipoAccion === 'TAC-003' || tipoAccion === 'enviar_email') {
 
-            if (tipoAccion === 'enviar_email') {
-                if (!accionObj.email_to || !accionObj.email_subject || !accionObj.email_body) {
-                    alertify.warning('Complete todos los campos obligatorios para la acción "Enviar Email".');
+
+                const plantilla = document.getElementById('email-template').value;
+                // 1️⃣ Usuarios seleccionados
+                const usuariosHidden = document.getElementById('usuarios-hidden').value;
+                const usuarios = usuariosHidden ? usuariosHidden.split(',') : [];
+
+                // 2️⃣ Roles seleccionados
+                const roles = Array.from(
+                    document.querySelectorAll('input[name="roles[]"]:checked')
+                ).map(r => r.value);
+
+                // 3️⃣ Asunto y mensaje
+                const subject = document.getElementById('modal-email-subject').value.trim();
+                const body = document.getElementById('modal-email-body').value.trim();
+
+                /* ================= VALIDACIONES ================= */
+
+                // Usuarios o roles (al menos uno)
+                if (usuarios.length === 0 && roles.length === 0) {
+                    alertify.warning('Seleccione al menos un usuario o un rol.');
                     return;
                 }
+
+                // Asunto obligatorio
+                if (!subject) {
+                    alertify.warning('El asunto del correo es obligatorio.');
+                    document.getElementById('modal-email-subject').focus();
+                    return;
+                }
+
+                // Mensaje obligatorio
+                if (!body) {
+                    alertify.warning('El mensaje del correo es obligatorio.');
+                    document.getElementById('modal-email-body').focus();
+                    return;
+                }
+
+
+                // Plantilla obligatoria
+                if (!plantilla) {
+                    alertify.warning('Debe seleccionar una plantilla.');
+                    document.getElementById('email-template').focus();
+                    return false;
+                }
+
             }
 
             let condicionesInvalidas = accionObj.condiciones.some(c => !c.campo_condicion_origen || !c.operador || !c.campo_condicion_destino);
@@ -1066,13 +1170,12 @@
             modal.hide();
 
 
-            console.log(accionesArray)
         });
 
         // 🔹 Crear card visual
         function crearCardVisual(accionObj, index) {
             let cardWrapper;
-
+            console.log(accionObj);
             if (editingIndex !== null) {
                 // Si estamos editando, reemplazamos el card existente
                 cardWrapper = accionesList.children[editingIndex];
@@ -1121,12 +1224,30 @@
                 cardHTML += `</p>`;
             }
 
-            if (accionObj.tipo_accion_id === 'enviar_email') {
+            if (accionObj.tipo_accion_id === 'TAC-003' || accionObj.tipo_accion_id === 'enviar_email') {
+                const usuariosText = (accionObj.email_detalle?.to_text || []).join(', ') || 'Ninguno';
+                const rolesText = (accionObj.email_detalle?.roles_text || []).join(', ') || 'Ninguno';
+                const asunto = accionObj.email_subject || '';
+                const mensaje = accionObj.email_body || '';
+                const plantilla = accionObj.email_template ? accionObj.email_template : '';
+
                 cardHTML += `<p>
-                            <strong>Para:</strong> ${accionObj.email_to}<br>
-                            <strong>Asunto:</strong> ${accionObj.email_subject}<br>
-                            <strong>Mensaje:</strong> ${accionObj.email_body}
-                            </p>`;
+        <strong>Usuarios:</strong> ${usuariosText}<br>
+        <strong>Roles:</strong> ${rolesText}<br>
+        <strong>Asunto:</strong> ${asunto}<br>
+        <strong>Mensaje:</strong> ${mensaje}<br>
+        ${plantilla ? `<strong>Plantilla:</strong> ${plantilla}<br>` : ''}
+    </p>`;
+
+                // Campos usados en el email
+                if (accionObj.email_detalle?.camposUsados && accionObj.email_detalle.camposUsados.length) {
+                    cardHTML += `<p><strong>Campos usados:</strong><br>`;
+                    accionObj.email_detalle.camposUsados.forEach(campo => {
+                        const tipoCampo = campo.tipo === 'origen' ? 'Formulario origen' : 'Usuario';
+                        cardHTML += `- ${tipoCampo}: <strong>${campo.nombre}</strong> (Plantilla: ${campo.valorPlantilla})<br>`;
+                    });
+                    cardHTML += `</p>`;
+                }
             }
 
             if (accionObj.condiciones.length) {
@@ -1200,7 +1321,7 @@
             }
 
             if (accion.tipo_accion === 'enviar_email') {
-                document.getElementById('modal-email-to').value = accion.email_to;
+                //document.getElementById('modal-email-to').value = accion.email_to;
                 document.getElementById('modal-email-subject').value = accion.email_subject;
                 document.getElementById('modal-email-body').value = accion.email_body;
             }
@@ -1218,5 +1339,100 @@
 
             modal.show();
         }
-    }); 
+
+
+        async function obtenerCamposUsuario() {
+            const res = await fetch('/email/campos-usuario');
+            const json = await res.json();
+            return json.data || [];
+        }
+
+
+
+        async function cargarCamposOrigenParaEmail() {
+            const formOrigenId = formularioPrincipal.value;
+            const contenedor = document.getElementById('email-campos-origen');
+            const textarea = document.getElementById('modal-email-body');
+
+            if (!formOrigenId || !contenedor) return;
+
+            contenedor.innerHTML = '<span class="text-muted small">Cargando campos...</span>';
+            const contenedor_usuarios = document.getElementById('email-campos-usuarios');
+
+
+            contenedor_usuarios.innerHTML = '';
+            var camposUsuario = await obtenerCamposUsuario();
+
+            /* =========================
+                CAMPOS DE USUARIO
+             ========================= */
+
+            camposUsuario.forEach(campo => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-outline-secondary btn-xs campo-btn';
+                btn.textContent = campo.label;
+
+                btn.addEventListener('click', () => {
+                    insertarTextoEnTextarea(textarea, `[${campo.nombre}]`);
+                });
+
+                contenedor_usuarios.appendChild(btn);
+            });
+
+
+
+
+
+
+            // Reutiliza cache existente
+            await cargarCamposCached(formOrigenId, document.createElement('select'), '--');
+
+            const campos = camposCache[formOrigenId] || [];
+            contenedor.innerHTML = '';
+
+
+
+            if (!campos.length) {
+                contenedor.innerHTML = '<span class="text-muted small">Sin campos disponibles</span>';
+                return;
+            }
+
+            campos.forEach(campo => {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-outline-secondary btn-xs campo-btn';
+                btn.textContent = campo.nombre;
+
+                btn.addEventListener('click', () => {
+                    insertarTextoEnTextarea(textarea, `[${campo.nombre}]`);
+                });
+
+                contenedor.appendChild(btn);
+            });
+        }
+
+        function insertarTextoEnTextarea(textarea, texto) {
+            const start = textarea.selectionStart;
+            const end = textarea.selectionEnd;
+
+            textarea.value =
+                textarea.value.substring(0, start) +
+                texto +
+                textarea.value.substring(end);
+
+            textarea.focus();
+            textarea.selectionStart = textarea.selectionEnd = start + texto.length;
+        }
+
+
+    });
+
+
+</script>
+
+
+<script>
+
+
 </script>
