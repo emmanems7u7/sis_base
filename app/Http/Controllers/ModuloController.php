@@ -177,7 +177,7 @@ class ModuloController extends Controller
                 'modulo' => $moduloAsociado->nombre
             ]);
         }
-
+        DB::disconnect();
         return response()->json(['exists' => false]);
     }
     public function ModulosIndex(Request $request, $modulo_id)

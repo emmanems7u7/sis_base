@@ -68,7 +68,7 @@ class LoginController extends Controller
             if ($sesiones >= $limite) {
                 return false;           // Se bloquea el login
             }
-
+            DB::disconnect();
             return Auth::attempt($credentials, $request->filled('remember'));
         }
 

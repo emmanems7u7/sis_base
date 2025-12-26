@@ -156,7 +156,7 @@ class RespuestasFormController extends Controller
         $formulario->campos = $camposProcesados;
 
         $campos = $formulario->campos;
-
+        DB::disconnect();
         // ================================
         // RETORNO A LA VISTA
         // ================================
@@ -385,14 +385,16 @@ class RespuestasFormController extends Controller
 
             DB::commit();
 
-
+            DB::disconnect();
             return redirect()->route('formularios.respuestas.formulario', $form)
                 ->with('status', 'Registro creado correctamente.');
 
         } catch (\Exception $e) {
             DB::rollBack();
+            DB::disconnect();
             return redirect()->back()->withErrors('Error al guardar el formulario: ' . $e->getMessage());
         }
+
     }
 
 
@@ -511,8 +513,10 @@ class RespuestasFormController extends Controller
             }
 
             DB::commit();
+            DB::disconnect();
         } catch (\Exception $e) {
             DB::rollBack();
+            DB::disconnect();
             fclose($handle);
             return response()->json(['error' => $e->getMessage()], 500);
         } finally {
@@ -742,11 +746,13 @@ class RespuestasFormController extends Controller
 
 
             DB::commit();
+            DB::disconnect();
             return redirect()->route('formularios.respuestas.formulario', $form)
                 ->with('status', 'Respuesta actualizada correctamente.');
 
         } catch (\Exception $e) {
             DB::rollBack();
+            DB::disconnect();
             return redirect()->back()->withErrors('Error al actualizar la respuesta: ' . $e->getMessage());
         }
     }

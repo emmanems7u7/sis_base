@@ -81,7 +81,7 @@ class ImportarFormularioJob implements ShouldQueue
             // Aquí podrías guardar progreso en BD
             // Progress::update($totalCargados);
         }
-
+        DB::disconnect();
         Log::info("Importación completada. Total registros cargados: {$totalCargados}");
     }
 }
