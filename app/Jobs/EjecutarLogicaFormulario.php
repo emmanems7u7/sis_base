@@ -26,13 +26,14 @@ class EjecutarLogicaFormulario implements ShouldQueue
     protected $filasSeleccionadas;
     protected $evento;
     protected $usuario;
-
-    public function __construct(RespuestasForm $respuesta, array $filasSeleccionadas, string $evento, $usuario)
+    protected $url;
+    public function __construct(RespuestasForm $respuesta, array $filasSeleccionadas, string $evento, $usuario, $url)
     {
         $this->respuesta = $respuesta;
         $this->filasSeleccionadas = $filasSeleccionadas;
         $this->evento = $evento;
         $this->usuario = $usuario;
+        $this->url = $url;
     }
     public function handle(FormLogicInterface $formLogic)
     {
@@ -57,19 +58,21 @@ class EjecutarLogicaFormulario implements ShouldQueue
                     'errores' => $accion['errores'] ?? [],
                     'ok' => $accion['ok'] ?? false,
                 ];
+                // 🧾 Auditoría general del evento
+                $auditoria = AuditoriaAccion::create([
+                    'action_id' => null,
+                    'tipo_accion' => 'LOGICA_FORMULARIO',
+                    'usuario_id' => $this->usuario,
+                    'estado' => $accion['ok'] ? 'success' : 'error',
+                    'mensaje' => $accion['mensaje'],
+                    'detalle' => $accion,
+                    'errores' => $accion['errores'],
+                ]);
+                $ruta = $this->url . '/formulario/logica/detalle/' . $auditoria->id;
 
-                $user->notify(new LogicaFormularioFinalizada($detalle));
+                $user->notify(instance: new LogicaFormularioFinalizada($detalle, $ruta));
             }
-            // 🧾 Auditoría general del evento
-            AuditoriaAccion::create([
-                'action_id' => null,
-                'tipo_accion' => 'LOGICA_FORMULARIO',
-                'usuario_id' => $this->usuario,
-                'estado' => $accion['ok'] ? 'success' : 'error',
-                'mensaje' => $accion['mensaje'],
-                'detalle' => $accion,
-                'errores' => $accion['errores'],
-            ]);
+
         }
 
     }

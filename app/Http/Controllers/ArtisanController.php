@@ -20,6 +20,8 @@ class ArtisanController extends Controller
             'clave_segura' => 'required|string',
         ]);
 
+
+
         if ($request->clave_segura !== env('ARTISAN_PANEL_PASSWORD')) {
             return back()->with('error', 'Contraseña incorrecta');
         }

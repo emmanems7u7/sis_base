@@ -314,15 +314,19 @@ class FormularioController extends Controller
 
     public function detalle($accion_id = null)
     {
-        // Si llega un ID específico (notificación), traemos solo esa acción
+
+        $breadcrumb = [
+            ['name' => 'Inicio', 'url' => route('home')],
+            ['name' => 'Formularios', 'url' => route('formularios.index')],
+        ];
         if ($accion_id) {
-            $acciones = AuditoriaAccion::where('action_id', $accion_id)->get();
+            // Retorna como colección para que el foreach funcione
+            $acciones = collect([AuditoriaAccion::find($accion_id)]);
         } else {
-            // Para el módulo de auditoría, trae todas
             $acciones = AuditoriaAccion::orderBy('created_at', 'desc')->get();
         }
 
-        return view('auditoria.index', compact('acciones'));
+        return view('auditoria.index', compact('acciones', 'breadcrumb'));
     }
 
 }

@@ -13,24 +13,21 @@ class LogicaFormularioFinalizada extends Notification
     use Queueable;
 
     public $detalleEjecucion;
+    public $ruta;
 
     /**
      * Crear una nueva instancia de notificación.
      *
      * @param array $detalleEjecucion
+     * @param  $ruta
+     * 
      */
-    public function __construct(array $detalleEjecucion)
+    public function __construct(array $detalleEjecucion, $ruta)
     {
-        // $detalleEjecucion puede tener estructura:
-        // [
-        //   'accion_id' => 123,
-        //   'tipo_accion' => 'TAC-001',
-        //   'detalle' => 'Se actualizaron 3 campos: ...',
-        //   'errores' => '',
-        //   'mensaje' => 'Acción ejecutada correctamente',
-        //   'ok' => true
-        // ]
+
         $this->detalleEjecucion = $detalleEjecucion;
+        $this->ruta = $ruta;
+
     }
 
     /**
@@ -51,7 +48,8 @@ class LogicaFormularioFinalizada extends Notification
             'title' => 'Ejecución de reglas de formulario',
             'message' => $this->generarMensajeHumano(),
             'detalle' => $this->detalleEjecucion,
-            'url' => route('formulario.logica.detalle', ['accion_id' => $this->detalleEjecucion['accion_id']])
+            'url' => $this->ruta
+            //'url' => route('formulario.logica.detalle', ['accion_id' => $this->detalleEjecucion['accion_id']])
         ];
     }
 
@@ -64,9 +62,9 @@ class LogicaFormularioFinalizada extends Notification
             'title' => 'Ejecución de reglas de formulario',
             'message' => $this->generarMensajeHumano(),
             'detalle' => $this->detalleEjecucion,
-            'url' => route('formulario.logica.detalle', ['accion_id' => $this->detalleEjecucion['accion_id']], false)
+            'url' => $this->ruta
+            // 'url' => route('formulario.logica.detalle', ['accion_id' => $this->detalleEjecucion['accion_id']], false)
 
-            //  'url' => url('/formulario/logica/detalle/' . $this->detalleEjecucion['accion_id'])
         ]);
     }
 
@@ -79,7 +77,7 @@ class LogicaFormularioFinalizada extends Notification
             ->subject('Ejecución de reglas de formulario finalizada')
             ->greeting('Hola ' . $notifiable->name)
             ->line($this->generarMensajeHumano())
-            ->action('Ver detalles', route('formulario.logica.detalle', ['accion_id' => $this->detalleEjecucion['accion_id']]))
+            ->action('Ver detalles', $this->ruta)
             ->line('Gracias por usar nuestro sistema.');
     }
 
