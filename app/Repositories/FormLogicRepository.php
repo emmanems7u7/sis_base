@@ -105,13 +105,13 @@ class FormLogicRepository implements FormLogicInterface
         switch ($tipoAccion) {
 
             case 'TAC-001':
-                /*
 
-  if (!$formDestino) {
-            $mensaje = "No existe formulario destino para la acción {$action->id}";
-            Log::warning($mensaje);
-            return $mensaje;
-        }
+
+                if (!$formDestino) {
+                    $mensaje = "No existe formulario destino para la acción {$action->id}";
+                    Log::warning($mensaje);
+                    return $mensaje;
+                }
 
                 // modificar_campo
                 $CampoDestinoId = $parametros['campo_ref_id'] ?? null;
@@ -274,7 +274,7 @@ class FormLogicRepository implements FormLogicInterface
 
                 });
 
-*/
+
                 break;
 
             case 'TAC-005': // crear_registros
