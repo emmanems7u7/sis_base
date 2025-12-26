@@ -24,6 +24,7 @@ use App\Http\Controllers\ModuloController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\FormLogicController;
 use App\Http\Controllers\LogicaController;
+use App\Http\Controllers\NotificationController;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -413,3 +414,7 @@ Route::get('/form-destino/info/{formDestinoId}', [FormularioController::class, '
 
 Route::post('/ejecutar-logica-formulario', [LogicaController::class, 'ejecutar'])
     ->name('logica.ejecutar');
+
+Route::get('/formulario/logica/detalle/{accion_id}', action: [FormularioController::class, 'detalle'])
+    ->name('formulario.logica.detalle');
+Route::get('/notification/{notification}/markAsRead', [NotificationController::class, 'markAsRead'])->name('notification.markAsRead');

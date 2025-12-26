@@ -15,6 +15,7 @@ use Carbon\Carbon;
 use App\Exports\ExportExcel;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Interfaces\FormularioInterface;
+use App\Models\AuditoriaAccion;
 
 use function Laravel\Prompts\form;
 
@@ -306,6 +307,22 @@ class FormularioController extends Controller
             'formulario' => $formulario,
             'formulariosRelacionados' => $formulariosRelacionados
         ]);
+    }
+    /**
+     * Mostrar detalle de la acción ejecutada.
+     */
+
+    public function detalle($accion_id = null)
+    {
+        // Si llega un ID específico (notificación), traemos solo esa acción
+        if ($accion_id) {
+            $acciones = AuditoriaAccion::where('action_id', $accion_id)->get();
+        } else {
+            // Para el módulo de auditoría, trae todas
+            $acciones = AuditoriaAccion::orderBy('created_at', 'desc')->get();
+        }
+
+        return view('auditoria.index', compact('acciones'));
     }
 
 }

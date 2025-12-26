@@ -329,6 +329,7 @@
     if (Schema::hasTable('notifications') && Auth::check()) {
         $cantidadNotificaciones = Auth::user()->unreadNotifications->count();
         $tieneNotificaciones = $cantidadNotificaciones > 0;
+        
     }
 @endphp
 
@@ -354,19 +355,25 @@
             }
         @endphp
 
-        @forelse($notificaciones as $notification)
-            <li class="list-group-item">
-                <a style="text-decoration: none;"
-                onclick="NotificacionLeida(event,'{{ $notification->id }}')"
-                href="{{ $notification->data['action_url'] }}"
-                class="text-black float-right">
-                    <strong>{{ $notification->created_at->diffForHumans() }}</strong> -
-                    {{ $notification->data['message'] }}
-                </a>
-            </li>
-        @empty
-            <li>No hay notificaciones nuevas</li>
-        @endforelse
+@forelse($notificaciones as $notification)
+    @php
+        $data = $notification->data ?? [];
+        $message = $data['message'] ?? 'Sin mensaje';
+        $actionUrl = $data['url'] ?? '#'; 
+    @endphp
+    <li class="list-group-item">
+        <a 
+            href="{{ $actionUrl }}"
+            onclick="NotificacionLeida(event,'{{ $notification->id }}')"
+            style="text-decoration: none;"
+            class="text-black float-right"
+        >
+            <strong>{{ $notification->created_at->diffForHumans() }}</strong> - {{ $message }}
+        </a>
+    </li>
+@empty
+    <li class="list-group-item">No hay notificaciones nuevas</li>
+@endforelse
 
         </ul>
     </div>

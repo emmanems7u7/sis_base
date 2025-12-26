@@ -18,7 +18,7 @@ use App\Models\FormLogicCondition;
 use Jenssegers\Agent\Agent;
 
 use App\Jobs\EjecutarLogicaFormulario;
-
+use App\Models\FormLogicRule;
 
 class RespuestasFormController extends Controller
 {
@@ -343,15 +343,21 @@ class RespuestasFormController extends Controller
 
             $filasSeleccionadas = $this->fila($request);
 
+            $evento = 'on_create';
 
-            /*
-            $resultado = $this->FormLogicInterface->ejecutarLogica($respuesta, $filasSeleccionadas, 'on_create');
+
+
+
+
+            $resultado = $this->FormLogicInterface->ValidarLogica($respuesta, $filasSeleccionadas, $evento);
+
 
             //Eliminar valores vacíos o nulos
             $resultado = array_filter($resultado, fn($msg) => !empty(trim($msg)));
 
             //Si hay mensajes de error, cancelar la transacción y retornar
             if (!empty($resultado)) {
+
                 DB::rollBack();
 
                 $mensaje = implode('<br>', $resultado);
@@ -359,14 +365,22 @@ class RespuestasFormController extends Controller
                 return back()
                     ->withErrors(['logica' => $mensaje])
                     ->withInput();
-            }
-*/
 
-            EjecutarLogicaFormulario::dispatch(
-                $respuesta,
-                $filasSeleccionadas,
-                'on_create'
-            );
+            } else {
+                $usuario = auth()->id();
+
+                EjecutarLogicaFormulario::dispatch(
+                    $respuesta,
+                    $filasSeleccionadas,
+                    $evento,
+                    $usuario
+
+                );
+            }
+
+
+
+
 
 
             DB::commit();

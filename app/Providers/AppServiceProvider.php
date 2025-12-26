@@ -22,7 +22,8 @@ use App\Interfaces\CorreoInterface;
 use App\Repositories\CorreoRepository;
 use App\Interfaces\CatalogoInterface;
 use App\Repositories\CatalogoRepository;
-
+use App\Interfaces\NotificationInterface;
+use App\Repositories\NotificationRepository;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -39,6 +40,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(IAInterface::class, IARepository::class);
         $this->app->bind(FormularioInterface::class, FormularioRepository::class);
         $this->app->bind(FormLogicInterface::class, FormLogicRepository::class);
+        $this->app->bind(NotificationInterface::class, NotificationRepository::class);
 
 
 
