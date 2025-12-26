@@ -64,7 +64,8 @@ class LogicaFormularioFinalizada extends Notification
             'title' => 'Ejecución de reglas de formulario',
             'message' => $this->generarMensajeHumano(),
             'detalle' => $this->detalleEjecucion,
-            'url' => route('formulario.logica.detalle', ['accion_id' => $this->detalleEjecucion['accion_id']])
+            'url' => route('formulario.logica.detalle', ['accion_id' => $this->detalleEjecucion['accion_id']], false)
+
             //  'url' => url('/formulario/logica/detalle/' . $this->detalleEjecucion['accion_id'])
         ]);
     }
