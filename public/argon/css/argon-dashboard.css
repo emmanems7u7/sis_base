@@ -28404,3 +28404,21 @@ pre[class*=language-] {
   color: #000 !important;
   background-color: #333 !important;
 }
+
+/* Estilos generales del editor */
+.ck-editor__editable {
+  min-height: 150px;
+  background-color: #fff; /* fondo claro por defecto */
+  color: #000; /* texto oscuro por defecto */
+}
+
+/* Cuando la página tenga .dark-version */
+.dark-version .ck-editor__editable {
+  background-color: #121c41; /* fondo oscuro */
+  color: #f0f0f0 !important;           /* texto claro */
+}
+
+/* Cambiar también los placeholder */
+.dark-version .ck-editor__editable[data-placeholder]::before {
+  color: #aaa !important;
+}

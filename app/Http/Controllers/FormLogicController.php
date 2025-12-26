@@ -91,7 +91,7 @@ class FormLogicController extends Controller
             ['name' => 'Inicio', 'url' => route('home')],
             ['name' => 'Administrar Módulo', 'url' => route('modulo.administrar', $modulo->id)],
 
-            ['name' => 'Logica de Negocio', 'url' => route('correos.index')],
+            ['name' => 'Logica de Negocio', 'url' => ''],
         ];
         $operaciones = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Operaciones de Campo', true);
         $tipo_acciones = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Tipos de Acción', true);
@@ -180,20 +180,50 @@ class FormLogicController extends Controller
                 /** ------------------------------
                  *  3️⃣ enviar_email
                  * ------------------------------*/
-                if ($tipo === 'enviar_email') {
+                if ($tipo === 'TAC-003') {
+
+                    $usuarios = $p['email_usuarios'] ?? [];
+                    $roles = $p['email_roles'] ?? [];
+
+
+
+                    // 🔹 Textos visibles (puedes mejorar luego con consultas reales)
+                    $usuariosText = collect($usuarios)->map(fn($id) => "Usuario #{$id}")->toArray();
+                    $rolesText = collect($roles)->map(fn($id) => "Rol #{$id}")->toArray();
+
                     return (object) [
                         'id' => $action->id,
-                        'tipo_accion_id' => $tipo,
-                        'tipo_accion_text' => 'Enviar correo',
 
-                        'email_to' => $p['email_to'] ?? '',
+                        'tipo_accion_id' => $tipo,
+                        'tipo_accion_text' => 'enviar_email',
+
+                        'form_ref_id' => '',
+                        'filtros_relacion' => [],
+
+                        // Datos directos
                         'email_subject' => $p['email_subject'] ?? '',
                         'email_body' => $p['email_body'] ?? '',
+                        'email_template' => $p['email_template'] ?? null,
+                        'email_usuarios' => $usuarios,
+                        'email_roles' => $roles,
+
+                        // LO QUE EL JS LEE
+                        'email_detalle' => [
+                            'to' => $usuarios,
+                            'to_text' => $usuariosText,
+                            'roles' => $roles,
+                            'roles_text' => $rolesText,
+                            'subject' => $p['email_subject'] ?? '',
+                            'body' => $p['email_body'] ?? '',
+                            'template' => $p['email_template'] ?? null,
+
+                            // opcional pero recomendado
+                            'camposUsados' => $p['camposUsados'] ?? [],
+                        ],
 
                         'condiciones' => $p['condiciones'] ?? [],
                     ];
                 }
-
                 /** ------------------------------
                  * 4️⃣ Otros tipos (fallback)
                  * ------------------------------*/
@@ -207,8 +237,26 @@ class FormLogicController extends Controller
         ];
 
 
+        $usuarios = User::select('id', 'name', 'email')->get();
+        $roles = Role::select('id', 'name')->get();
+        $plantillas = PlantillaCorreo::where('estado', '1')->get();
+
+
+
+
+
         //dd($rule);
-        return view('form_logic.edit', compact('modulo', 'tipo_acciones', 'operaciones', 'rule', 'formularios', 'breadcrumb'));
+        return view('form_logic.edit', compact(
+            'modulo',
+            'tipo_acciones',
+            'operaciones',
+            'rule',
+            'formularios',
+            'breadcrumb',
+            'usuarios',
+            'roles',
+            'plantillas'
+        ));
     }
 
     public function update(Request $request, $form_logic, Modulo $modulo)

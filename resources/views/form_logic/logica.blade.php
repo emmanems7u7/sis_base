@@ -1,3 +1,5 @@
+<script src="https://cdn.ckeditor.com/ckeditor5/38.1.0/classic/ckeditor.js"></script>
+
 <style>
     #contenedor-campos-form .fa-triangle-exclamation {
         animation: fadeIn 0.3s ease-in-out;
@@ -168,17 +170,31 @@
 
 
 <script>
+    let editor;
+
+    ClassicEditor
+        .create(document.querySelector('#modal-email-body'))
+        .then(newEditor => {
+            editor = newEditor;
+        })
+        .catch(error => {
+            console.error(error);
+        });
+</script>
+
+<script>
 
     const accionesIniciales = @json(old('acciones_json', $rule->acciones ?? []));
 
     document.addEventListener('DOMContentLoaded', () => {
+
 
         // Objeto para almacenar filtros
         const filtrosGuardados = {};
 
         let editingIndex = null; // Variable global para saber si estamos editando
         let accionIndex = 0;
-        const formularioPrincipal = document.querySelector('.select-formulario');
+        const formularioPrincipal = document.getElementById('formulario_id');
         const accionesList = document.getElementById('acciones-list');
         const accionesJSONInput = document.getElementById('acciones-json');
         const modalElement = document.getElementById('modalAccion');
@@ -268,7 +284,7 @@
             const tipo = e.target.value;
             const inputEstatico = document.getElementById('modal-valor-estatico');
             const selectCampo = document.getElementById('modal-valor-campo');
-            const formId = formularioPrincipal.value;
+            const formId = document.getElementById('formulario_id').value;
 
             if (tipo === 'campo') {
                 inputEstatico.classList.add('d-none');
@@ -934,7 +950,7 @@
             if (tipoAccion_id === 'TAC-003' || tipoAccion_id === 'enviar_email') {
                 // Asunto, mensaje y plantilla
                 accionObj.email_subject = document.getElementById('modal-email-subject').value.trim();
-                accionObj.email_body = document.getElementById('modal-email-body').value.trim();
+                accionObj.email_body = editor.getData().trim();
                 accionObj.email_template = document.getElementById('email-template')?.value || null;
 
                 // Usuarios seleccionados (IDs)
@@ -1116,7 +1132,7 @@
 
                 // 3️⃣ Asunto y mensaje
                 const subject = document.getElementById('modal-email-subject').value.trim();
-                const body = document.getElementById('modal-email-body').value.trim();
+                const body = editor.getData().trim();
 
                 /* ================= VALIDACIONES ================= */
 
@@ -1175,7 +1191,6 @@
         // 🔹 Crear card visual
         function crearCardVisual(accionObj, index) {
             let cardWrapper;
-            console.log(accionObj);
             if (editingIndex !== null) {
                 // Si estamos editando, reemplazamos el card existente
                 cardWrapper = accionesList.children[editingIndex];
@@ -1225,6 +1240,7 @@
             }
 
             if (accionObj.tipo_accion_id === 'TAC-003' || accionObj.tipo_accion_id === 'enviar_email') {
+
                 const usuariosText = (accionObj.email_detalle?.to_text || []).join(', ') || 'Ninguno';
                 const rolesText = (accionObj.email_detalle?.roles_text || []).join(', ') || 'Ninguno';
                 const asunto = accionObj.email_subject || '';
@@ -1232,12 +1248,12 @@
                 const plantilla = accionObj.email_template ? accionObj.email_template : '';
 
                 cardHTML += `<p>
-        <strong>Usuarios:</strong> ${usuariosText}<br>
-        <strong>Roles:</strong> ${rolesText}<br>
-        <strong>Asunto:</strong> ${asunto}<br>
-        <strong>Mensaje:</strong> ${mensaje}<br>
-        ${plantilla ? `<strong>Plantilla:</strong> ${plantilla}<br>` : ''}
-    </p>`;
+                                <strong>Usuarios:</strong> ${usuariosText}<br>
+                                <strong>Roles:</strong> ${rolesText}<br>
+                                <strong>Asunto:</strong> ${asunto}<br>
+                                <strong>Mensaje:</strong> ${mensaje}<br>
+                                ${plantilla ? `<strong>Plantilla:</strong> ${plantilla}<br>` : ''}
+                            </p>`;
 
                 // Campos usados en el email
                 if (accionObj.email_detalle?.camposUsados && accionObj.email_detalle.camposUsados.length) {
@@ -1258,16 +1274,44 @@
                 cardHTML += `</p>`;
             }
 
-            cardHTML += `<div class="d-flex justify-content-end gap-2">
-                        <button type="button" class="btn btn-sm btn-primary edit-accion-card">Editar</button>
-                        <button type="button" class="btn btn-sm btn-danger remove-accion-card">Eliminar</button>
-                        </div>`;
+            cardHTML += `
+                <div class="d-flex justify-content-end gap-2">
+                    <button 
+                        type="button" 
+                        class="btn btn-sm btn-primary edit-accion-card" 
+                        data-index="${index}">
+                        Editar
+                    </button>
+
+                    <button 
+                        type="button" 
+                        class="btn btn-sm btn-danger remove-accion-card" 
+                        data-index="${index}">
+                        Eliminar
+                    </button>
+                </div>`;
 
             card.innerHTML = cardHTML;
+            // EDITAR
+            card.querySelector('.edit-accion-card')?.addEventListener('click', async (e) => {
 
+                // arreglo global o contexto donde guardas las acciones
+                await abrirModalEdicion(accionObj, index);
+            });
+
+            // ELIMINAR
+            card.querySelector('.remove-accion-card')?.addEventListener('click', (e) => {
+                const index = parseInt(e.currentTarget.dataset.index);
+                eliminarAccion(index); // o la lógica que ya tengas
+            });
             // Reasignar índices de las columnas
             Array.from(accionesList.children).forEach((c, i) => c.dataset.index = i);
         }
+
+
+
+
+
 
 
         // 🔹 Abrir modal edición con autocompletado usando cache
@@ -1366,7 +1410,6 @@
             /* =========================
                 CAMPOS DE USUARIO
              ========================= */
-
             camposUsuario.forEach(campo => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
@@ -1374,13 +1417,11 @@
                 btn.textContent = campo.label;
 
                 btn.addEventListener('click', () => {
-                    insertarTextoEnTextarea(textarea, `[${campo.nombre}]`);
+                    insertarTextoEnEditor(editor, `[${campo.nombre}]`);
                 });
 
                 contenedor_usuarios.appendChild(btn);
             });
-
-
 
 
 
@@ -1405,24 +1446,21 @@
                 btn.textContent = campo.nombre;
 
                 btn.addEventListener('click', () => {
-                    insertarTextoEnTextarea(textarea, `[${campo.nombre}]`);
+                    insertarTextoEnEditor(editor, `[${campo.nombre}]`);
                 });
 
                 contenedor.appendChild(btn);
             });
         }
-
-        function insertarTextoEnTextarea(textarea, texto) {
-            const start = textarea.selectionStart;
-            const end = textarea.selectionEnd;
-
-            textarea.value =
-                textarea.value.substring(0, start) +
-                texto +
-                textarea.value.substring(end);
-
-            textarea.focus();
-            textarea.selectionStart = textarea.selectionEnd = start + texto.length;
+        // Función para insertar texto en CKEditor
+        function insertarTextoEnEditor(editorInstance, texto) {
+            if (!editorInstance) return; // seguridad
+            editorInstance.model.change(writer => {
+                const selection = editorInstance.model.document.selection;
+                const position = selection.getFirstPosition();
+                writer.insertText(texto, position);
+            });
+            editorInstance.editing.view.focus();
         }
 
 

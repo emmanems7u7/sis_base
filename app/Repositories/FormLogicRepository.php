@@ -423,7 +423,6 @@ class FormLogicRepository implements FormLogicInterface
 
 
                 break;
-
             case 'TAC-003': // enviar_email dinámico
 
                 $mensaje = '';
@@ -521,7 +520,6 @@ class FormLogicRepository implements FormLogicInterface
                         libxml_use_internal_errors(true);
                         $dom = new \DOMDocument('1.0', 'UTF-8');
                         $dom->loadHTML(mb_convert_encoding($htmlPlantilla, 'HTML-ENTITIES', 'UTF-8'));
-
                         $xpath = new \DOMXPath($dom);
                         $contenedor = $xpath->query("//*[@id='contenido']")->item(0);
 
@@ -530,50 +528,56 @@ class FormLogicRepository implements FormLogicInterface
                             continue;
                         }
 
+                        // Limpiar contenido previo
                         while ($contenedor->firstChild) {
                             $contenedor->removeChild($contenedor->firstChild);
                         }
 
-                        $fragment = $dom->createDocumentFragment();
-                        $fragment->appendXML($bodyBase ?? '');
-                        $contenedor->appendChild($fragment);
+                        // Crear un fragmento temporal para cargar el HTML de CKEditor
+                        $tmpDoc = new \DOMDocument();
+                        $tmpDoc->loadHTML(mb_convert_encoding('<div>' . $bodyBase . '</div>', 'HTML-ENTITIES', 'UTF-8'));
+                        $tmpBody = $tmpDoc->getElementsByTagName('div')->item(0);
+
+                        foreach ($tmpBody->childNodes as $child) {
+                            $contenedor->appendChild($dom->importNode($child, true));
+                        }
 
                         $body = $dom->saveHTML();
                     }
-
                     // 5.2 Reemplazo de variables [campo]
                     preg_match_all('/\[(.*?)\]/', $body, $matches);
                     $variables = $matches[1] ?? [];
 
                     foreach ($variables as $variable) {
 
-                        // Buscamos el campo correspondiente
+                        $valor = null; // IMPORTANTE: null, no ''
+
+                        // 1️⃣ Buscar en campos del formulario
                         $campo = CamposForm::where('nombre', $variable)->first();
 
-                        // Inicializamos valor vacío
-                        $valor = '';
-
                         if ($campo) {
-                            // Obtenemos el valor original del usuario/respuesta
                             $valorUsuario = $respuestaOrigen->camposRespuestas()
                                 ->where('cf_id', $campo->id)
                                 ->value('valor');
-                            // Solo si tiene categoria_id o form_ref_id hacemos la búsqueda
-                            // Solo buscamos valor real si el campo tiene categoria_id o form_ref_id
+
                             if (!empty($campo->categoria_id) || !empty($campo->form_ref_id)) {
                                 $valor = $this->FormularioRepository->obtenerValorReal($campo, $valorUsuario);
                             } else {
-                                $valor = $valorUsuario; // Directamente
+                                $valor = $valorUsuario;
                             }
                         }
 
-
-                        // Si no existe el campo, intentamos usar propiedad del usuario
-                        if ($valor === '' && in_array($variable, $userDestino->getFillable())) {
-                            $valor = $userDestino->{$variable} ?? '';
+                        // 2️⃣ Buscar en atributos del usuario destino
+                        if ($valor === null && in_array($variable, $userDestino->getFillable())) {
+                            $valor = $userDestino->{$variable} ?? null;
                         }
 
-                        $body = str_replace("[$variable]", $valor, $body);
+                        // 3️⃣ SOLO reemplazar si hay valor
+                        if ($valor !== null && $valor !== '') {
+                            $body = str_replace("[$variable]", $valor, $body);
+                        }
+
+                        // ❗ Si no hay valor → se mantiene [variable]
                     }
 
                     // 5.3 Enviar correo usando DynamicMailer

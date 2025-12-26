@@ -13,9 +13,12 @@ use App\Interfaces\CatalogoInterface;
 use App\Interfaces\FormularioInterface;
 use App\Interfaces\FormLogicInterface;
 use App\Models\FormLogicCondition;
-use App\Models\FormLogicRule;
-use Illuminate\Support\Facades\Validator;
+
+
 use Jenssegers\Agent\Agent;
+
+use App\Jobs\EjecutarLogicaFormulario;
+
 
 class RespuestasFormController extends Controller
 {
@@ -333,18 +336,15 @@ class RespuestasFormController extends Controller
         try {
             $respuesta = $this->FormularioRepository->crearRespuesta($form);
 
-
             foreach ($campos as $campo) {
                 $this->FormularioRepository->guardarCampo($campo, $respuesta->id, $request, $form);
             }
 
 
-
-
             $filasSeleccionadas = $this->fila($request);
 
 
-
+            /*
             $resultado = $this->FormLogicInterface->ejecutarLogica($respuesta, $filasSeleccionadas, 'on_create');
 
             //Eliminar valores vacíos o nulos
@@ -360,6 +360,13 @@ class RespuestasFormController extends Controller
                     ->withErrors(['logica' => $mensaje])
                     ->withInput();
             }
+*/
+
+            EjecutarLogicaFormulario::dispatch(
+                $respuesta,
+                $filasSeleccionadas,
+                'on_create'
+            );
 
 
             DB::commit();
@@ -373,6 +380,7 @@ class RespuestasFormController extends Controller
             return redirect()->back()->withErrors('Error al guardar el formulario: ' . $e->getMessage());
         }
     }
+
 
 
     /**

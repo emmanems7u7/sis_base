@@ -23,6 +23,7 @@ use App\Http\Controllers\RespuestasFormController;
 use App\Http\Controllers\ModuloController;
 use App\Http\Controllers\LogController;
 use App\Http\Controllers\FormLogicController;
+use App\Http\Controllers\LogicaController;
 
 Route::get('/', function () {
     return redirect('/login');
@@ -410,3 +411,5 @@ Route::get('/form-destino/info/{formDestinoId}', [FormularioController::class, '
     ->name('form-destino.info');
 
 
+Route::post('/ejecutar-logica-formulario', [LogicaController::class, 'ejecutar'])
+    ->name('logica.ejecutar');

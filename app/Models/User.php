@@ -90,4 +90,9 @@ class User extends Authenticatable
             return ['database'];
         }
     }
+    public function getNombreCompletoAttribute(): string
+    {
+        return "{$this->usuario_nombres} {$this->usuario_app} {$this->usuario_apm}";
+    }
+
 }

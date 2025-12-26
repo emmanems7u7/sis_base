@@ -41,23 +41,3 @@
         </div>
     </div>
 </div>
-
-<script>
-    // listener para modal-tipo-valor
-    document.getElementById('modal-tipo-valor').addEventListener('change', e => {
-        const tipo = e.target.value;
-        const inputEstatico = document.getElementById('modal-valor-estatico');
-        const selectCampo = document.getElementById('modal-valor-campo');
-        const formId = formularioPrincipal.value;
-
-        if (tipo === 'campo') {
-            inputEstatico.classList.add('d-none');
-            selectCampo.classList.remove('d-none');
-            cargarCamposCached(formId, selectCampo, '-- Seleccione campo origen --');
-        } else {
-            inputEstatico.classList.remove('d-none');
-            selectCampo.classList.add('d-none');
-        }
-    });
-
-</script>

@@ -15,7 +15,7 @@
     <div class="col-md-4">
         <div class="mb-3">
             <label class="form-label">Formulario de origen </label>
-            <select class="form-select select-formulario" name="formulario_id" required>
+            <select class="form-select select-formulario" id="formulario_id" name="formulario_id" required>
                 <option value="">Seleccione...</option>
 
                 @foreach ($formularios as $form)
