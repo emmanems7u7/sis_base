@@ -1158,6 +1158,7 @@ class FormLogicRepository implements FormLogicInterface
 
                     DB::transaction(function () use ($registrosOrigen, $campos, $campoRelacion, $respuestaOrigen, $action, $usuario) {
 
+
                         foreach ($registrosOrigen->take(10) as $registroOrigen) {
 
                             $respuestaDestino = RespuestasForm::create([
