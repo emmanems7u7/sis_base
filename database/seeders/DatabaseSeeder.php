@@ -49,6 +49,8 @@ class DatabaseSeeder extends Seeder
 
 */
 
+        $this->call(class: OperacionesCampoSeeder::class);
+        $this->call(class: TipoAccionSeeder::class);
 
         // $this->call(EstadosActivoInactivoSeeder::class);
 
