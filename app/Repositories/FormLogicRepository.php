@@ -829,13 +829,13 @@ class FormLogicRepository implements FormLogicInterface
             case '!=':
                 return $origen != $destino;
             case '>':
-                return (float) $origen > (float) $destino;
-            case '<':
                 return (float) $origen < (float) $destino;
+            case '<':
+                return (float) $origen > (float) $destino;
             case '>=':
-                return (float) $origen >= (float) $destino;
-            case '<=':
                 return (float) $origen <= (float) $destino;
+            case '<=':
+                return (float) $origen >= (float) $destino;
             case 'in':
                 $valores = is_array($destino) ? $destino : explode(',', (string) $destino);
                 return in_array($origen, $valores);
