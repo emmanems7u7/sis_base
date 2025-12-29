@@ -49,7 +49,7 @@ class LogicaFormularioFinalizada extends Notification
             'message' => $this->generarMensajeHumano(),
             'detalle' => $this->detalleEjecucion,
             'url' => $this->ruta
-            //'url' => route('formulario.logica.detalle', ['accion_id' => $this->detalleEjecucion['accion_id']])
+            //'url' => route('formulario.auditoria.detalle', ['accion_id' => $this->detalleEjecucion['accion_id']])
         ];
     }
 
@@ -63,7 +63,7 @@ class LogicaFormularioFinalizada extends Notification
             'message' => $this->generarMensajeHumano(),
             'detalle' => $this->detalleEjecucion,
             'url' => $this->ruta
-            // 'url' => route('formulario.logica.detalle', ['accion_id' => $this->detalleEjecucion['accion_id']], false)
+            // 'url' => route('formulario.auditoria.detalle', ['accion_id' => $this->detalleEjecucion['accion_id']], false)
 
         ]);
     }

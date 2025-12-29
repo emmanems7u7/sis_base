@@ -92,8 +92,24 @@ class PermisoRepository extends BaseRepository implements PermisoInterface
     }
     protected function registrarEnSeeder(Permission $permiso, $id_relacion = 0)
     {
-        $fecha = now()->format('Ymd');
-        $nombreClase = 'Generado_SeederPermisos_' . $fecha;
+        // Prefijo según entorno
+        $entorno = app()->environment();
+        switch ($entorno) {
+            case 'local':
+                $prefijo = 'LOCAL_';
+                break;
+            case 'production':
+                $prefijo = 'PROD_';
+                break;
+            case 'staging':
+                $prefijo = 'STAGING_';
+                break;
+            default:
+                $prefijo = 'GEN_';
+        }
+
+        $fecha = now()->format('Ymd'); // AñoMesDiaHoraMinSeg
+        $nombreClase = "{$prefijo}SeederPermisos_{$fecha}";
         $rutaSeeder = database_path("seeders/{$nombreClase}.php");
 
         $lineaPermiso = "            ['id' => {$permiso->id}, 'name' => '{$permiso->name}', 'tipo' => '{$permiso->tipo}', 'id_relacion' => {$id_relacion}, 'guard_name' => '{$permiso->guard_name}' ],";
@@ -129,7 +145,7 @@ class PermisoRepository extends BaseRepository implements PermisoInterface
             return;
         }
 
-        // Si existe, asegurarnos de no duplicar
+        // Si existe, evitar duplicados
         $contenidoActual = File::get($rutaSeeder);
         if (!Str::contains($contenidoActual, "'name' => '{$permiso->name}'")) {
             $contenidoActual = str_replace(
@@ -140,15 +156,19 @@ class PermisoRepository extends BaseRepository implements PermisoInterface
             File::put($rutaSeeder, $contenidoActual);
         }
 
-        $this->agregarSeederADatabaseSeeder($nombreClase);
+        // Agregar a DatabaseSeeder con prefijo
+        $this->agregarSeederADatabaseSeeder($nombreClase, $prefijo);
     }
-    public function eliminarDeSeeder(Permission $permiso)
+
+
+    public function eliminarDeSeeder(Permission $permiso): array
     {
+        $archivosModificados = [];
         $seeders = File::files(database_path('seeders'));
 
-
         foreach ($seeders as $seeder) {
-            if (!Str::startsWith($seeder->getFilename(), 'Generado_SeederPermisos_')) {
+            // Solo seeders de permisos generados
+            if (!Str::contains($seeder->getFilename(), 'SeederPermisos_')) {
                 continue;
             }
 
@@ -158,22 +178,16 @@ class PermisoRepository extends BaseRepository implements PermisoInterface
             // Patrón que busca cualquier array que contenga name, tipo y guard_name
             $pattern = '/\[\s*\'id\'\s*=>\s*\d+\s*,\s*\'name\'\s*=>\s*\'' . preg_quote($permiso->name, '/') . '\'\s*,\s*\'tipo\'\s*=>\s*\'' . preg_quote($permiso->tipo, '/') . '\'\s*,[^\]]*?\'guard_name\'\s*=>\s*\'' . preg_quote($permiso->guard_name, '/') . '\'\s*\],?/s';
 
-
             $contenidoNuevo = preg_replace($pattern, '', $contenido, 1);
 
-
-            if ($contenidoOriginal !== $contenidoNuevo) {
-
+            if ($contenidoNuevo !== $contenidoOriginal) {
                 File::put($seeder->getRealPath(), $contenidoNuevo);
-                break; // lo encontramos y eliminamos
+                $archivosModificados[] = $seeder->getFilename();
             }
-
-
         }
 
-
+        return $archivosModificados;
     }
-
 
 
 

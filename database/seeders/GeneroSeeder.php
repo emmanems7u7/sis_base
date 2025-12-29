@@ -21,7 +21,7 @@ class GeneroSeeder extends Seeder
             'estado' => 1
         ]);
 
-        // Familiares desde los cuales el paciente puede heredar enfermedades
+
         $generos = [
             'Hombre',
             'Mujer',

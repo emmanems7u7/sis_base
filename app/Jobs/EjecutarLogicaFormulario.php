@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Interfaces\CatalogoInterface;
 use App\Interfaces\FormLogicInterface;
 use App\Models\AuditoriaAccion;
 use App\Models\Respuesta;
@@ -35,7 +36,7 @@ class EjecutarLogicaFormulario implements ShouldQueue
         $this->usuario = $usuario;
         $this->url = $url;
     }
-    public function handle(FormLogicInterface $formLogic)
+    public function handle(FormLogicInterface $formLogic, CatalogoInterface $catalogoInterface)
     {
         $resultado = $formLogic->ejecutarLogica(
             $this->respuesta,
@@ -50,9 +51,11 @@ class EjecutarLogicaFormulario implements ShouldQueue
         if ($user && !empty($resultado['acciones_ejecutadas'])) {
             foreach ($resultado['acciones_ejecutadas'] as $accion) {
                 // Crear un array con la estructura que espera tu notificación
+
+                $tipo_accion = $catalogoInterface->getNombreCatalogo($accion['tipo_accion']);
                 $detalle = [
                     'accion_id' => $accion['accion_id'] ?? null,
-                    'tipo_accion' => $accion['tipo_accion'] ?? null,
+                    'tipo_accion' => $tipo_accion ?? null,
                     'mensaje' => $accion['mensaje'] ?? '',
                     'detalle' => $accion['detalle'] ?? [],
                     'errores' => $accion['errores'] ?? [],
@@ -60,8 +63,8 @@ class EjecutarLogicaFormulario implements ShouldQueue
                 ];
                 // 🧾 Auditoría general del evento
                 $auditoria = AuditoriaAccion::create([
-                    'action_id' => null,
-                    'tipo_accion' => 'LOGICA_FORMULARIO',
+                    'action_id' => $accion['accion_id'],
+                    'tipo_accion' => $tipo_accion,
                     'usuario_id' => $this->usuario,
                     'estado' => $accion['ok'] ? 'success' : 'error',
                     'mensaje' => $accion['mensaje'],

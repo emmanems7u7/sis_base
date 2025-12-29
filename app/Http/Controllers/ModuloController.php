@@ -232,20 +232,63 @@ class ModuloController extends Controller
             ['name' => 'Administrar Modulo', 'url' => route('modulos.index')],
 
         ];
-        // Supongamos que $moduloId tiene el ID del módulo
-        $modulo = Modulo::with('formularios')->find($modulo);
+
+
+        $modulo = Modulo::with('formularios.campos')->find($modulo);
+
 
 
         // Obtenemos los IDs de los formularios asociados
         $formIds = $modulo->formularios->pluck('id');
 
+
         // Ahora filtramos las reglas solo de esos formularios
         $rules = FormLogicRule::with(['formulario', 'actions.formularioDestino'])
             ->whereIn('form_id', $formIds)
             ->get();
+
         $isMobile = $this->isMobile;
+
         $rules->operacion = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Operaciones de Campo', true);
-        return view('modulos.administrar', compact('isMobile', 'rules', 'modulo', 'breadcrumb'));
+
+
+        // Grafo final
+        $grafo = [
+            'formularios' => [],
+            'relaciones' => [],
+        ];
+
+        foreach ($modulo->formularios as $formulario) {
+
+            // Nodo formulario + sus campos
+            $grafo['formularios'][$formulario->id] = [
+                'id' => $formulario->id,
+                'nombre' => $formulario->nombre,
+                // Convertir la collection a array plano
+                'campos' => $formulario->campos->map(function ($campo) {
+                    return [
+                        'id' => $campo->id,
+                        'nombre' => $campo->nombre,
+                        'tipo' => $campo->tipo,
+                        'form_ref_id' => $campo->form_ref_id,
+                    ];
+                })->values()->all(), // <-- aquí usamos all() para obtener array plano
+            ];
+
+            // Relaciones (solo campos con referencia)
+            foreach ($formulario->campos as $campo) {
+                if ($campo->form_ref_id) {
+                    $grafo['relaciones'][] = [
+                        'from' => $formulario->id,
+                        'to' => $campo->form_ref_id,
+                        'campo' => $campo->nombre,
+                        'tipo' => $campo->tipo,
+                    ];
+                }
+            }
+        }
+
+        return view('modulos.administrar', compact('isMobile', 'rules', 'modulo', 'breadcrumb', 'grafo'));
 
     }
 }

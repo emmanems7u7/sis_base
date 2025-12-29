@@ -38,10 +38,26 @@ class MenuRepository extends BaseRepository implements MenuInterface
 
     protected function guardarEnSeederMenu(Menu $menu): void
     {
-        $fecha = now()->format('Ymd');
-        $nombreSeeder = "Generado_SeederMenu_{$fecha}.php";
-        $nombreClase = "Generado_SeederMenu_{$fecha}";
 
+        // Determinar prefijo según entorno
+        $entorno = app()->environment(); // local, production, staging, etc.
+        switch ($entorno) {
+            case 'local':
+                $prefijo = 'LOCAL_';
+                break;
+            case 'production':
+                $prefijo = 'PROD_';
+                break;
+            case 'staging':
+                $prefijo = 'STAGING_';
+                break;
+            default:
+                $prefijo = 'GEN_';
+        }
+
+        $fecha = now()->format('Ymd'); // Incluye hora, minuto y segundo para unicidad
+        $nombreSeeder = "{$prefijo}SeederMenu_{$fecha}.php";
+        $nombreClase = "{$prefijo}SeederMenu_{$fecha}";
         $rutaSeeder = database_path("seeders/{$nombreSeeder}");
 
         // Preparamos los valores
@@ -50,56 +66,59 @@ class MenuRepository extends BaseRepository implements MenuInterface
         $padreId = $menu->padre_id !== null ? $menu->padre_id : 'null';
         $seccionId = (int) $menu->seccion_id;
         $ruta = addslashes($menu->ruta);
-        $modulo = addslashes($menu->modulo_id) ?? 'null';
+        $modulo = addslashes($menu->modulo_id ?? 'null');
 
         $registro = <<<PHP
-                                    [
-                                        'id' => '{$menu->id}',
-                                        'nombre' => '{$nombre}',
-                                        'orden' => {$orden},
-                                        'padre_id' => {$padreId},
-                                        'seccion_id' => {$seccionId},
-                                        'ruta' => '{$ruta}',
-                                        'modulo_id' => '{$modulo}',
-                                    ],
-                        PHP;
+                                [
+                                    'id' => '{$menu->id}',
+                                    'nombre' => '{$nombre}',
+                                    'orden' => {$orden},
+                                    'padre_id' => {$padreId},
+                                    'seccion_id' => {$seccionId},
+                                    'ruta' => '{$ruta}',
+                                    'modulo_id' => '{$modulo}',
+                                ],
+                PHP;
 
+        // Crear archivo si no existe
         if (!File::exists($rutaSeeder)) {
             $plantilla = <<<PHP
-                        <?php
-                        
-                        namespace Database\Seeders;
-                        
-                        use Illuminate\Database\Seeder;
-                        use App\Models\Menu;
-                        
-                        class Generado_SeederMenu_{$fecha} extends Seeder
-                        {
-                            public function run(): void
-                            {
-                                \$menus = [{$registro}];
-                        
-                                foreach (\$menus as \$data) {
-                                    Menu::firstOrCreate(
-                                        ['nombre' => \$data['nombre']],
-                                        \$data
-                                    );
-                                }
-                            }
+                <?php
+                
+                namespace Database\Seeders;
+                
+                use Illuminate\Database\Seeder;
+                use App\Models\Menu;
+                
+                class {$nombreClase} extends Seeder
+                {
+                    public function run(): void
+                    {
+                        \$menus = [{$registro}];
+
+                        foreach (\$menus as \$data) {
+                            Menu::firstOrCreate(
+                                ['nombre' => \$data['nombre']],
+                                \$data
+                            );
                         }
-                        PHP;
+                    }
+                }
+                PHP;
+
             File::put($rutaSeeder, $plantilla);
             return;
         }
 
-        // Si el seeder ya existe, evita duplicados
+        // Si ya existe, agregamos registro si no está
         $contenido = File::get($rutaSeeder);
         if (!Str::contains($contenido, "'nombre' => '{$nombre}'")) {
             $contenido = str_replace('        $menus = [', "        \$menus = [\n{$registro}", $contenido);
             File::put($rutaSeeder, $contenido);
         }
 
-        $this->agregarSeederADatabaseSeeder($nombreClase);
+        // Agregar a DatabaseSeeder con prefijo
+        $this->agregarSeederADatabaseSeeder($nombreClase, $prefijo);
     }
 
     public function CrearSeccion($request)
@@ -122,9 +141,29 @@ class MenuRepository extends BaseRepository implements MenuInterface
 
     protected function guardarEnSeederSeccion(Seccion $seccion): void
     {
-        $fecha = now()->format('Ymd');
-        $nombreSeeder = "Generado_SeederSeccion_{$fecha}.php";
-        $nombreClase = "Generado_SeederSeccion_{$fecha}";
+
+
+        // Determinar prefijo según entorno
+        $entorno = app()->environment(); // local, production, staging, etc.
+        switch ($entorno) {
+            case 'local':
+                $prefijo = 'LOCAL_';
+                break;
+            case 'production':
+                $prefijo = 'PROD_';
+                break;
+            case 'staging':
+                $prefijo = 'STAGING_';
+                break;
+            default:
+                $prefijo = 'GEN_';
+        }
+
+
+
+        $fecha = now()->format('Ymd'); // Incluye hora, minuto y segundo
+        $nombreSeeder = "{$prefijo}SeederSeccion_{$fecha}.php";
+        $nombreClase = "{$prefijo}SeederSeccion_{$fecha}";
         $rutaSeeder = database_path("seeders/{$nombreSeeder}");
 
         // Preparar los valores
@@ -133,14 +172,15 @@ class MenuRepository extends BaseRepository implements MenuInterface
         $posicion = (int) $seccion->posicion;
 
         $registro = <<<PHP
-                                [
-                                    'id' => {$seccion->id},
-                                    'titulo' => '{$titulo}',
-                                    'icono' => '{$icono}',
-                                    'posicion' => {$posicion},
-                                ],
+                                    [
+                                        'id' => {$seccion->id},
+                                        'titulo' => '{$titulo}',
+                                        'icono' => '{$icono}',
+                                        'posicion' => {$posicion},
+                                    ],
                     PHP;
 
+        // Crear archivo si no existe
         if (!File::exists($rutaSeeder)) {
             $plantilla = <<<PHP
                     <?php
@@ -150,12 +190,12 @@ class MenuRepository extends BaseRepository implements MenuInterface
                     use Illuminate\Database\Seeder;
                     use App\Models\Seccion;
                     
-                    class Generado_SeederSeccion_{$fecha} extends Seeder
+                    class {$nombreClase} extends Seeder
                     {
                         public function run(): void
                         {
                             \$secciones = [{$registro}];
-                    
+    
                             foreach (\$secciones as \$data) {
                                 Seccion::firstOrCreate(
                                     ['titulo' => \$data['titulo']],
@@ -176,8 +216,11 @@ class MenuRepository extends BaseRepository implements MenuInterface
             $contenido = str_replace('        $secciones = [', "        \$secciones = [\n{$registro}", $contenido);
             File::put($rutaSeeder, $contenido);
         }
-        $this->agregarSeederADatabaseSeeder($nombreClase);
+
+        // Agregar a DatabaseSeeder con prefijo
+        $this->agregarSeederADatabaseSeeder($nombreClase, $prefijo);
     }
+
 
 
 
@@ -187,40 +230,43 @@ class MenuRepository extends BaseRepository implements MenuInterface
         return $menus;
     }
 
+
     function eliminarSeccionDeSeeder(int $id)
-    {
-        $seeders = File::files(database_path('seeders'));
-
-        foreach ($seeders as $seeder) {
-            // Solo buscamos los seeders de secciones generados
-            if (!Str::startsWith($seeder->getFilename(), 'Generado_SeederSeccion_')) {
-                continue;
-            }
-
-            $contenido = File::get($seeder->getRealPath());
-
-            // Patrón para eliminar cualquier array que tenga el 'id' de la sección
-            $pattern = "/\s*\[\s*'id'\s*=>\s*" . preg_quote($id, '/') . "[^\]]*\],?\s*/";
-
-            $contenidoNuevo = preg_replace($pattern, '', $contenido, 1);
-
-            // Guardamos si hubo cambios
-            if ($contenido !== $contenidoNuevo) {
-                File::put($seeder->getRealPath(), $contenidoNuevo);
-                break; // ya lo encontramos
-            }
-        }
-    }
-
-
-
-    public function eliminarMenuDeSeeders(Menu $menu): array
     {
         $archivosModificados = [];
         $seeders = File::files(database_path('seeders'));
 
         foreach ($seeders as $seeder) {
-            if (!Str::startsWith($seeder->getFilename(), 'Generado_SeederMenu_')) {
+            // Solo buscamos los seeders de secciones generados (prefijo opcional)
+            if (!Str::contains($seeder->getFilename(), 'SeederSeccion_')) {
+                continue;
+            }
+
+            $contenido = File::get($seeder->getRealPath());
+            $contenidoOriginal = $contenido;
+
+            // Patrón para eliminar cualquier array que tenga el 'id' de la sección
+            $pattern = "/\[\s*'id'\s*=>\s*{$id}.*?\],?\s*/s";
+
+            $contenido = preg_replace($pattern, '', $contenido, 1);
+
+            if ($contenido !== $contenidoOriginal) {
+                File::put($seeder->getRealPath(), $contenido);
+                $archivosModificados[] = $seeder->getFilename();
+            }
+        }
+
+        return $archivosModificados;
+    }
+
+    public function eliminarMenuDeSeeders(Menu $menu)
+    {
+        $archivosModificados = [];
+        $seeders = File::files(database_path('seeders'));
+
+        foreach ($seeders as $seeder) {
+            // Solo seeders de menú generados
+            if (!Str::contains($seeder->getFilename(), 'SeederMenu_')) {
                 continue;
             }
 
@@ -228,13 +274,13 @@ class MenuRepository extends BaseRepository implements MenuInterface
             $contenidoOriginal = $contenido;
 
             // 1️⃣ Intentar eliminar por 'id'
-            $patternId = "/\s*\[\s*'id'\s*=>\s*['\"]?" . preg_quote($menu->id, '/') . "['\"]?[^\]]*\],?\s*/";
+            $patternId = "/\[\s*'id'\s*=>\s*['\"]?{$menu->id}['\"]?.*?\],?\s*/s";
             $contenido = preg_replace($patternId, '', $contenido, 1);
 
             // 2️⃣ Si no se eliminó nada por id, intentar por 'nombre'
             if ($contenido === $contenidoOriginal) {
                 $nombreEscapado = preg_quote($menu->nombre, '/');
-                $patternNombre = "/[ \t]*\[\s*'nombre'\s*=>\s*'{$nombreEscapado}'(?:.*?\n)*?\s*\],\s*/";
+                $patternNombre = "/\[\s*'nombre'\s*=>\s*'{$nombreEscapado}'.*?\],?\s*/s";
                 $contenido = preg_replace($patternNombre, '', $contenido, 1);
             }
 
@@ -245,7 +291,7 @@ class MenuRepository extends BaseRepository implements MenuInterface
             }
         }
 
-        return $archivosModificados; // Array con los seeders modificados
+        return $archivosModificados;
     }
 
 

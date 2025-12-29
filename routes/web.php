@@ -416,5 +416,10 @@ Route::post('/ejecutar-logica-formulario', [LogicaController::class, 'ejecutar']
     ->name('logica.ejecutar');
 
 Route::get('/formulario/logica/detalle/{accion_id}', action: [FormularioController::class, 'detalle'])
-    ->name('formulario.logica.detalle');
+    ->name('formulario.auditoria.detalle');
+
+
+Route::get('/formulario/logica/detalle', action: [FormularioController::class, 'detalle'])
+    ->name('formulario.auditoria.index');
+
 Route::get('/notification/{notification}/markAsRead', [NotificationController::class, 'markAsRead'])->name('notification.markAsRead');

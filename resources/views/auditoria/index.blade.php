@@ -4,35 +4,42 @@
 
     <div class="card mt-3">
         <div class="card-body">
-            <table class="table table-striped" id="tablaAcciones">
-                <thead>
-                    <tr>
-                        <th>ID</th>
-                        <th>Tipo de Acción</th>
-                        <th>Mensaje</th>
-                        <th>Usuario</th>
-                        <th>Fecha</th>
-                        <th>Detalle</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @foreach($acciones as $accion)
-                        <tr data-detalle='@json($accion->detalle)' data-errores='@json($accion->errores)'
-                            data-mensaje="{{ $accion->mensaje }}" data-tipo="{{ $accion->tipo_accion }}">
-                            <td>{{ $accion->action_id }}</td>
-                            <td>{{ $accion->tipo_accion }}</td>
-                            <td>{{ $accion->mensaje }}</td>
-                            <td>{{ $accion->usuario_id }}</td>
-                            <td>{{ $accion->created_at }}</td>
-                            <td>
-                                <button class="btn btn-sm btn-primary btn-ver-detalle">
-                                    Ver detalle
-                                </button>
-                            </td>
+
+            <div class="table-responsive">
+                <table class="table table-striped" id="tablaAcciones">
+                    <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>Tipo de Acción</th>
+                            <th>Mensaje</th>
+                            <th>Usuario</th>
+                            <th>Fecha</th>
+                            <th>Detalle</th>
                         </tr>
-                    @endforeach
-                </tbody>
-            </table>
+                    </thead>
+                    <tbody>
+                        @foreach($acciones as $accion)
+                            <tr data-detalle='@json($accion->detalle)' data-errores='@json($accion->errores)'
+                                data-mensaje="{{ $accion->mensaje }}" data-tipo="{{ $accion->tipo_accion }}">
+                                <td>{{ $loop->iteration }}</td>
+                                <td>{{ $accion->tipo_accion }}</td>
+                                <td>{{ $accion->mensaje }}</td>
+                                <td>{{ $accion->NombreUsuario }}</td>
+                                <td>{{ $accion->created_at }}</td>
+                                <td>
+                                    <button class="btn btn-sm btn-primary btn-ver-detalle">
+                                        Ver detalle
+                                    </button>
+                                </td>
+                            </tr>
+                        @endforeach
+                    </tbody>
+                </table>
+            </div>
+            <!-- Paginación -->
+            <div class="d-flex justify-content-center">
+                {{ $acciones->links('pagination::bootstrap-4') }}
+            </div>
         </div>
     </div>
 

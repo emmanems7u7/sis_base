@@ -323,7 +323,7 @@ class FormularioController extends Controller
             // Retorna como colección para que el foreach funcione
             $acciones = collect([AuditoriaAccion::find($accion_id)]);
         } else {
-            $acciones = AuditoriaAccion::orderBy('created_at', 'desc')->get();
+            $acciones = AuditoriaAccion::orderBy('created_at', 'desc')->paginate(15);
         }
 
         return view('auditoria.index', compact('acciones', 'breadcrumb'));

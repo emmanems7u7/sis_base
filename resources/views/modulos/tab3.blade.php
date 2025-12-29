@@ -1,22 +1,70 @@
-<h5 class="mb-3"><i class="fas fa-link me-2 text-warning"></i>Módulos Relacionados</h5>
-<table class="table table-striped align-middle">
-    <thead>
-        <tr>
-            <th>Nombre del Módulo</th>
-            <th>Tipo de Relación</th>
-            <th>Estado</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>Roles y Permisos</td>
-            <td>Dependencia directa</td>
-            <td><span class="badge bg-success">Activo</span></td>
-        </tr>
-        <tr>
-            <td>Gestión de Sesiones</td>
-            <td>Complementario</td>
-            <td><span class="badge bg-secondary">Inactivo</span></td>
-        </tr>
-    </tbody>
-</table>
+<div id="cy" style="width: 100%; height: 600px; border:1px solid #ccc;"></div>
+<script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const formularios = @json($grafo['formularios']);
+        const relaciones = @json($grafo['relaciones']);
+
+        // Generar nodos
+        const nodes = Object.values(formularios).map(form => ({
+            data: {
+                id: 'form_' + form.id,
+                label: form.nombre + '\nCampos: ' + form.campos.map(c => c.nombre).join(', ')
+            }
+        }));
+
+        // Generar conexiones
+        const edges = relaciones.map(rel => ({
+            data: {
+                id: `edge_${rel.from}_${rel.to}`,
+                source: 'form_' + rel.from,
+                target: 'form_' + rel.to,
+                label: rel.campo
+            }
+        }));
+
+        const cy = cytoscape({
+            container: document.getElementById('cy'),
+            elements: [...nodes, ...edges],
+            style: [
+                {
+                    selector: 'node',
+                    style: {
+                        'background-color': '#3498db',
+                        'label': 'data(label)',
+                        'color': '#fff',
+                        'text-valign': 'center',
+                        'text-halign': 'center',
+                        'width': 'label',
+                        'height': 'label',
+                        'padding': '10px',
+                        'shape': 'roundrectangle',
+                        'text-wrap': 'wrap',
+                        'font-size': '12px'
+                    }
+                },
+                {
+                    selector: 'edge',
+                    style: {
+                        'width': 2,
+                        'line-color': '#2c3e50',
+                        'target-arrow-color': '#2c3e50',
+                        'target-arrow-shape': 'triangle',
+                        'curve-style': 'bezier',
+                        'label': 'data(label)',
+                        'font-size': '10px',
+                        'text-background-color': '#fff',
+                        'text-background-opacity': 0.7,
+                        'text-rotation': 'autorotate'
+                    }
+                }
+            ],
+            layout: {
+                name: 'breadthfirst',
+                directed: true,
+                padding: 10,
+                spacingFactor: 1.8
+            }
+        });
+    });
+</script>

@@ -1,6 +1,14 @@
 <script src="https://cdn.ckeditor.com/ckeditor5/38.1.0/classic/ckeditor.js"></script>
 
 <style>
+    .btn-xs {
+        padding: 2px 6px !important;
+        font-size: 11px;
+        line-height: 1.2;
+        border-radius: 4px;
+        margin: 2px;
+    }
+
     #contenedor-campos-form .fa-triangle-exclamation {
         animation: fadeIn 0.3s ease-in-out;
         opacity: 0.9;

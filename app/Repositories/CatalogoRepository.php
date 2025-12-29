@@ -71,9 +71,27 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
 
     protected function guardarEnSeederCategoria(Categoria $categoria): void
     {
-        $fecha = now()->format('Ymd');
-        $nombreSeeder = "SeederCategoria_{$fecha}.php";
-        $nombreClase = "SeederCategoria_{$fecha}";
+
+        // Determinar prefijo según entorno
+        $entorno = app()->environment(); // local, production, staging, etc.
+        switch ($entorno) {
+            case 'local':
+                $prefijo = 'LOCAL_';
+                break;
+            case 'production':
+                $prefijo = 'PROD_';
+                break;
+            case 'staging':
+                $prefijo = 'STAGING_';
+                break;
+            default:
+                $prefijo = 'GEN_';
+        }
+
+
+        $fecha = now()->format('Ymd'); // Incluye hora para mayor unicidad
+        $nombreSeeder = "{$prefijo}SeederCategoria_{$fecha}.php";
+        $nombreClase = "{$prefijo}SeederCategoria_{$fecha}";
         $rutaSeeder = database_path("seeders/{$nombreSeeder}");
 
         // Preparamos los valores
@@ -100,7 +118,7 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
                     use Illuminate\Database\Seeder;
                     use App\Models\Categoria;
                     
-                    class SeederCategoria_{$fecha} extends Seeder
+                    class {$nombreClase} extends Seeder
                     {
                         public function run(): void
                         {
@@ -127,39 +145,61 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
             File::put($rutaSeeder, $contenido);
         }
 
-        $this->agregarSeederADatabaseSeeder($nombreClase, 'SEEDERS CATEGORIA');
-
+        // Agregamos a DatabaseSeeder con prefijo
+        $this->agregarSeederADatabaseSeeder($nombreClase, $prefijo);
     }
-    protected function eliminarDeSeederCategoria(Categoria $categoria): void
+
+    protected function eliminarDeSeederCategoria(Categoria $categoria): array
     {
-        $fecha = now()->format('Ymd');
-        $nombreSeeder = "SeederCategoria_{$fecha}.php";
+        $archivosModificados = [];
+        $seeders = File::files(database_path('seeders'));
 
-        $rutaSeeder = database_path("seeders/{$nombreSeeder}");
+        foreach ($seeders as $seeder) {
+            // Solo seeders de categorías generados
+            if (!Str::contains($seeder->getFilename(), 'SeederCategoria_')) {
+                continue;
+            }
 
-        if (!File::exists($rutaSeeder)) {
-            return;
+            $contenido = File::get($seeder->getRealPath());
+            $contenidoOriginal = $contenido;
+
+            $nombreEscapado = preg_quote($categoria->nombre, '/');
+
+            // Regex para eliminar el array que tenga el 'nombre' de la categoría
+            $pattern = "/\[\s*'nombre'\s*=>\s*'{$nombreEscapado}'.*?\],?\s*/s";
+
+            $contenido = preg_replace($pattern, '', $contenido, 1);
+
+            if ($contenido !== $contenidoOriginal) {
+                File::put($seeder->getRealPath(), $contenido);
+                $archivosModificados[] = $seeder->getFilename();
+            }
         }
 
-        $nombreEscapado = preg_quote($categoria->nombre, '/');
-        $contenido = File::get($rutaSeeder);
-
-        // Regex para encontrar el array con ese nombre
-        $pattern = "/[ \t]*\[\s*'nombre'\s*=>\s*'{$nombreEscapado}'(?:.*?\n)*?\s*\],\s*/";
-
-        $contenidoModificado = preg_replace($pattern, '', $contenido, 1);
-
-        if ($contenidoModificado !== null && $contenidoModificado !== $contenido) {
-            File::put($rutaSeeder, $contenidoModificado);
-        }
+        return $archivosModificados;
     }
 
     protected function guardarEnSeederCatalogo(Catalogo $catalogo): void
     {
-        $fecha = now()->format('Ymd');
-        $nombreSeeder = "SeederCatalogo_{$fecha}.php";
-        $nombreClase = "SeederCatalogo_{$fecha}";
+        // Determinar prefijo según entorno
+        $entorno = app()->environment(); // local, production, staging, etc.
+        switch ($entorno) {
+            case 'local':
+                $prefijo = 'LOCAL_';
+                break;
+            case 'production':
+                $prefijo = 'PROD_';
+                break;
+            case 'staging':
+                $prefijo = 'STAGING_';
+                break;
+            default:
+                $prefijo = 'GEN_';
+        }
 
+        $fecha = now()->format('Ymd');
+        $nombreSeeder = "{$prefijo}SeederCatalogo_{$fecha}.php";
+        $nombreClase = "{$prefijo}SeederCatalogo_{$fecha}";
         $rutaSeeder = database_path("seeders/{$nombreSeeder}");
 
         // Escapamos valores
@@ -171,42 +211,41 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
         $accion = addslashes($catalogo->accion_usuario ?? 'sistema');
 
         $registro = <<<PHP
-                                [
-                                    'id' => {$catalogo->id},
-                                    'categoria_id' => {$categoriaId},
-                                    'catalogo_parent' => {$catalogoParent},
-                                    'catalogo_codigo' => '{$codigo}',
-                                    'catalogo_descripcion' => '{$descripcion}',
-                                    'catalogo_estado' => '{$estado}',
-                                    'accion_usuario' => '{$accion}',
-                                ],
-                    PHP;
+            [
+                'id' => {$catalogo->id},
+                'categoria_id' => {$categoriaId},
+                'catalogo_parent' => {$catalogoParent},
+                'catalogo_codigo' => '{$codigo}',
+                'catalogo_descripcion' => '{$descripcion}',
+                'catalogo_estado' => '{$estado}',
+                'accion_usuario' => '{$accion}',
+            ],
+            PHP;
 
         if (!File::exists($rutaSeeder)) {
             $plantilla = <<<PHP
-                    <?php
-                    
-                    namespace Database\Seeders;
-                    
-                    use Illuminate\Database\Seeder;
-                    use App\Models\Catalogo;
-                    
-                    class SeederCatalogo_{$fecha} extends Seeder
-                    {
-                        public function run(): void
-                        {
-                            \$catalogos = [{$registro}];
-                    
-                            foreach (\$catalogos as \$data) {
-                                Catalogo::firstOrCreate(
-                                    ['catalogo_codigo' => \$data['catalogo_codigo']],
-                                    \$data
-                                );
-                            }
-                        }
-                    }
-                    PHP;
+            <?php
 
+            namespace Database\Seeders;
+
+            use Illuminate\Database\Seeder;
+            use App\Models\Catalogo;
+
+            class {$nombreClase} extends Seeder
+            {
+                public function run(): void
+                {
+                    \$catalogos = [{$registro}];
+
+                    foreach (\$catalogos as \$data) {
+                        Catalogo::firstOrCreate(
+                            ['catalogo_codigo' => \$data['catalogo_codigo']],
+                            \$data
+                        );
+                    }
+                }
+            }
+            PHP;
             File::put($rutaSeeder, $plantilla);
             return;
         }
@@ -217,8 +256,8 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
             $contenido = str_replace('        $catalogos = [', "        \$catalogos = [\n{$registro}", $contenido);
             File::put($rutaSeeder, $contenido);
         }
-        $this->agregarSeederADatabaseSeeder($nombreClase, 'SEEDERS CATALOGO');
 
+        $this->agregarSeederADatabaseSeeder($nombreClase, $prefijo);
     }
     protected function eliminarDeSeederCatalogo(Catalogo $catalogo): void
     {

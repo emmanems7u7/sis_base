@@ -20,4 +20,11 @@ class AuditoriaAccion extends Model
         'detalle' => 'array',
         'errores' => 'array',
     ];
+
+    public function getNombreUsuarioAttribute(): string
+    {
+        $usuario = User::find($this->usuario_id);
+        return $usuario->NombreCompleto;
+    }
+
 }
