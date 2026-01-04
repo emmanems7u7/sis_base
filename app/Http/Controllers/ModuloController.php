@@ -212,9 +212,14 @@ class ModuloController extends Controller
 
         $formularios_asociados = Modulo::with('formularios')->findOrFail($modulo_id);
 
+
+        $config = $modulo->configuracion ?? [];
+        $modo = $config['modo'] ?? 'mostrar_todos';
+
+
         return view(
             'modulosDinamicos.index',
-            compact('isMobile', 'formulariosConRespuestas', 'modulo', 'breadcrumb', 'formularios_asociados')
+            compact('isMobile', 'formulariosConRespuestas', 'modulo', 'breadcrumb', 'formularios_asociados', 'modo')
         );
     }
 
@@ -308,6 +313,23 @@ class ModuloController extends Controller
             'mensaje' => $request->activo
                 ? 'Formulario activado correctamente'
                 : 'Formulario desactivado correctamente'
+        ]);
+    }
+
+    public function actualizarConfiguracion(Request $request, Modulo $modulo)
+    {
+        // Validar que recibimos un JSON válido
+        $data = $request->validate([
+            'configuracion' => 'required|array',
+        ]);
+
+        $modulo->configuracion = $data['configuracion'];
+        $modulo->save();
+
+        return response()->json([
+            'success' => true,
+            'mensaje' => 'Configuración actualizada correctamente',
+            'configuracion' => $modulo->configuracion,
         ]);
     }
 }

@@ -1,109 +1,161 @@
+@if($modo === 'mostrar_todos')
 
-
-    
-    <div class="row g-3 mt-2"> {{-- g-3 agrega espacio entre columnas --}}
+    {{-- Mostrar todas las tablas/cards móviles --}}
+    <div class="row g-3 mt-2">
         @foreach($formulariosConRespuestas as $item)
-        <div class="card shadow-lg mt-3">
-        <div class="card-body">
+            <div class="col-12">
+                @include('modulosDinamicos.registros_movil', ['item' => $item, 'modulo' => $modulo])
+            </div>
+        @endforeach
+    </div>
 
+@elseif($modo === 'acordeon')
+
+    {{-- Accordion móvil --}}
+    <div class="accordion" id="accordionFormulariosMobile_{{ $modulo->id }}">
+        @foreach($formulariosConRespuestas as $index => $item)
             @php
                 $formulario = $item['formulario'];
                 $respuestas = $item['respuestas'];
             @endphp
-
-            <h5 class="mt-4"><i class="fas fa-file-alt me-2"></i>{{ $formulario->nombre }}</h5>
-
-            @include('formularios.modal_busqueda' , ['formulario' => $formulario, 'campos' => $formulario->campos, 'modulo' => $modulo->id])
-            
-            @include('modulosDinamicos.botones_accion', ['formulario' => $formulario])
-            
-            @forelse($respuestas as $respuesta)
-                <div class="col-12 col-md-6 col-lg-4 mt-2"> {{-- RESPONSIVE COLUMNS --}}
-                    <div class="card h-100 shadow-sm">
-                        <div class="card-body" style="max-height:400px; overflow-y:auto; position:relative;">
-                            <h6 class="card-title">{{ $respuesta->actor->name ?? 'Anónimo' }}</h6>
-                            <p class="text-muted mb-2">Fecha de registro: {{ $respuesta->created_at->format('d/m/Y H:i') }}</p>
-
-                            @foreach($formulario->campos->sortBy('posicion') as $campo)
-                                @php
-                                    $valores = $respuesta->camposRespuestas
-                                        ->where('cf_id', $campo->id)
-                                        ->pluck('valor')
-                                        ->toArray();
-                                    $tipoCampo = strtolower($campo->campo_nombre);
-                                @endphp
-                                <div class="mb-2">
-                                    <strong>{{ $campo->etiqueta }}:</strong>
-                                    @foreach($valores as $v)
-                                        @switch($tipoCampo)
-                                            @case('checkbox')
-                                            @case('radio')
-                                            @case('selector')
-                                                {{ $campo->opciones_catalogo->where('catalogo_codigo', $v)->first()?->catalogo_descripcion }}
-                                                @if(!$loop->last), @endif
-                                            @break
-
-                                            @case('imagen')
-                                                <img src="{{ asset("archivos/formulario_{$formulario->id}/imagenes/{$v}") }}"
-                                                     style="max-width:100px; max-height:100px;"
-                                                     class="rounded me-1 mb-1">
-                                            @break
-
-                                            @case('video')
-                                                <video src="{{ asset("archivos/formulario_{$formulario->id}/videos/{$v}") }}"
-                                                       style="max-width:100%; height:auto;" controls class="mb-1"></video>
-                                            @break
-
-                                            @case('archivo')
-                                                <a href="{{ asset("archivos/formulario_{$formulario->id}/archivos/{$v}") }}"
-                                                   target="_blank"
-                                                   class="btn btn-sm btn-outline-primary mb-1">Descargar</a>
-                                            @break
-
-                                            @case('enlace')
-                                                <a href="{{ $v }}" target="_blank">Ver enlace</a>
-                                            @break
-
-                                            @case('fecha')
-                                                {{ \Carbon\Carbon::parse($v)->format('d/m/Y') }}
-                                            @break
-
-                                            @case('hora')
-                                                {{ $v }}
-                                            @break
-
-                                            @default
-                                                {{ $v }}
-                                        @endswitch
-                                    @endforeach
-                                </div>
-                            @endforeach
-                        </div>
-
-                        <div class="card-footer d-flex justify-content-start flex-wrap">
-                            <a href="{{ route('respuestas.edit', $respuesta) }}" class="btn btn-sm btn-warning me-1 mb-1">
-                                <i class="fas fa-pencil-alt"></i> Editar
-                            </a>
-                            <a href="#" class="btn btn-sm btn-danger mb-1"
-                               onclick="confirmarEliminacion('eliminarRespuesta_{{ $respuesta->id }}', '¿Estás seguro de que deseas eliminar esta respuesta?')">
-                                <i class="fas fa-trash-alt"></i> Eliminar
-                            </a>
-                        </div>
+            <div class="accordion-item">
+                <h2 class="accordion-header" id="headingMobile_{{ $formulario->id }}">
+                    <button class="accordion-button {{ $index !== 0 ? 'collapsed' : '' }}" 
+                            type="button" 
+                            data-bs-toggle="collapse" 
+                            data-bs-target="#collapseMobile_{{ $formulario->id }}" 
+                            aria-expanded="{{ $index === 0 ? 'true' : 'false' }}" 
+                            aria-controls="collapseMobile_{{ $formulario->id }}">
+                        <i class="fas fa-chevron-right me-2"></i>
+                        {{ $formulario->nombre }}
+                    </button>
+                </h2>
+                <div id="collapseMobile_{{ $formulario->id }}" 
+                     class="accordion-collapse collapse {{ $index === 0 ? 'show' : '' }}" 
+                     aria-labelledby="headingMobile_{{ $formulario->id }}">
+                    <div class="accordion-body">
+                        @include('modulosDinamicos.registros_movil', ['item' => $item, 'modulo' => $modulo])
                     </div>
                 </div>
-            @empty
-                <p class="text-center text-muted">No hay respuestas registradas para este formulario.</p>
-            @endforelse
-
-            </div></div> 
+            </div>
         @endforeach
     </div>
-<div class="table-responsive">
-   {{-- Paginación centrada --}}
-   <div class="d-flex justify-content-center mt-3">
-        {{ $respuestas->links('pagination::bootstrap-4') }}
+
+@elseif($modo === 'pestanas')
+
+    {{-- Pestañas móvil (similar al desktop, pero en full width) --}}
+    <div class="col-12 mt-3">
+        <div class="nav-wrapper position-relative end-0">
+            <ul class="nav nav-pills nav-fill p-1" role="tablist">
+                @foreach($formulariosConRespuestas as $index => $item)
+                    @php $formulario = $item['formulario']; @endphp
+                    <li class="nav-item">
+                        <a class="nav-link mb-0 px-0 py-1 d-flex align-items-center justify-content-center {{ $index === 0 ? 'active' : '' }}"
+                           href="javascript:;"
+                           role="tab"
+                           data-target="#formularioMobile_{{ $formulario->id }}">
+                            <i class="fas fa-file-alt"></i>
+                            <span class="ms-2">{{ $formulario->nombre }}</span>
+                        </a>
+                    </li>
+                @endforeach
+            </ul>
+            <div class="moving-tab position-absolute nav-link" style="transition: all 0.3s ease;"></div>
+        </div>
+
+        <div class="mt-3">
+            @foreach($formulariosConRespuestas as $index => $item)
+                @php $formulario = $item['formulario']; @endphp
+                <div id="formularioMobile_{{ $formulario->id }}" 
+                     class="formulario-tab-content {{ $index === 0 ? 'fade show' : 'fade d-none' }}">
+                    @include('modulosDinamicos.registros_movil', ['item' => $item, 'modulo' => $modulo])
+                </div>
+            @endforeach
+        </div>
     </div>
-</div>
- 
 
+    <script>
+    const mobileLinks = document.querySelectorAll('.nav-wrapper .nav-link');
+    const mobileMovingTab = document.querySelector('.moving-tab');
 
+    mobileLinks.forEach(link => {
+        link.addEventListener('click', function() {
+            // Active
+            mobileLinks.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+
+            // Mover barra animada
+            const rect = link.getBoundingClientRect();
+            const parentRect = link.parentElement.parentElement.getBoundingClientRect();
+            mobileMovingTab.style.width = rect.width + 'px';
+            mobileMovingTab.style.transform = `translateX(${rect.left - parentRect.left}px)`;
+
+            // Mostrar formulario con fade
+            const targetId = link.dataset.target;
+            document.querySelectorAll('.formulario-tab-content').forEach(f => {
+                f.classList.remove('show');
+                f.classList.add('d-none');
+            });
+            const target = document.querySelector(targetId);
+            target.classList.remove('d-none');
+            void target.offsetWidth; // reflow
+            target.classList.add('show');
+        });
+    });
+
+    window.addEventListener('load', () => {
+        const activeLink = document.querySelector('.nav-wrapper .nav-link.active');
+        if(activeLink){
+            const rect = activeLink.getBoundingClientRect();
+            const parentRect = activeLink.parentElement.parentElement.getBoundingClientRect();
+            mobileMovingTab.style.width = rect.width + 'px';
+            mobileMovingTab.style.transform = `translateX(${rect.left - parentRect.left}px)`;
+        }
+    });
+    </script>
+
+@elseif($modo === 'selector')
+
+    {{-- Selector móvil de formulario único --}}
+    <div class="mb-3">
+        <label for="selectorFormulariosMobile_{{ $modulo->id }}" class="form-label">Selecciona un formulario:</label>
+        <select class="form-select" id="selectorFormulariosMobile_{{ $modulo->id }}">
+            @foreach($formulariosConRespuestas as $index => $item)
+                @php $formulario = $item['formulario']; @endphp
+                <option value="{{ $formulario->id }}" {{ $index === 0 ? 'selected' : '' }}>
+                    {{ $formulario->nombre }}
+                </option>
+            @endforeach
+        </select>
+    </div>
+
+    <div id="formulariosSelectorMobile_{{ $modulo->id }}">
+        @foreach($formulariosConRespuestas as $index => $item)
+            @php $formulario = $item['formulario']; @endphp
+            <div class="formulario-tab-content {{ $index === 0 ? 'fade show' : 'fade d-none' }}" id="formularioMobile_{{ $formulario->id }}">
+                @include('modulosDinamicos.registros_movil', ['item' => $item, 'modulo' => $modulo])
+            </div>
+        @endforeach
+    </div>
+
+    <script>
+        const selectMobile = document.getElementById('selectorFormulariosMobile_{{ $modulo->id }}');
+
+        selectMobile.addEventListener('change', function() {
+            const selectedId = this.value;
+            const forms = document.querySelectorAll('#formulariosSelectorMobile_{{ $modulo->id }} .formulario-tab-content');
+
+            forms.forEach(f => {
+                if(f.id === 'formularioMobile_' + selectedId) {
+                    f.classList.remove('d-none');
+                    void f.offsetWidth; // reflow para activar fade
+                    f.classList.add('show');
+                } else {
+                    f.classList.remove('show');
+                    f.classList.add('d-none');
+                }
+            });
+        });
+    </script>
+
+@endif

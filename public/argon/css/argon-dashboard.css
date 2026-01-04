@@ -28429,3 +28429,95 @@ pre[class*=language-] {
   transition: background-color 3s ease-in-out;
   /* duración más larga y suavizado */
 }
+
+
+
+
+    /* Accordion general */
+.accordion-button {
+    background-color: #fff;
+    color: #344767;
+    font-weight: 600;
+    border: 1px solid #e7e7e7;
+    border-radius: 0.375rem;
+    transition: all 0.35s ease;
+    box-shadow: 0 2px 10px rgb(0 0 0 / 8%);
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #f1f1f1;
+    color: #344767;
+    box-shadow: inset 0 -1px 0 rgb(0 0 0 / 13%);
+}
+
+.accordion-button:focus {
+    box-shadow: 0 0 0 0.25rem rgb(66 153 225 / 25%);
+    outline: none;
+}
+
+/* Accordion body */
+.accordion-body {
+    background-color: #fff;
+    border-top: 1px solid #e7e7e7;
+    padding: 1rem;
+    color: #344767;
+}
+
+/* Transition para collapse */
+.accordion-collapse.collapse {
+    transition: height 0.5s ease;
+}
+
+/* Iconos dentro del botón */
+.accordion-button i {
+    font-size: 1rem;
+    margin-right: 0.5rem;
+    transition: transform 0.35s ease;
+}
+
+.accordion-button.collapsed i {
+    transform: rotate(0deg);
+}
+
+.accordion-button:not(.collapsed) i {
+    transform: rotate(90deg);
+}
+
+/* Ajuste para mobile / responsivo */
+@media (max-width: 768px) {
+    .accordion-button {
+        font-size: 0.875rem;
+    }
+}
+
+
+/* =================================== */
+/* Modo oscuro */
+.dark-version .accordion-button {
+  background-color: #1c2233;
+  color: #f0f0f0;
+  border-color: #333;
+  box-shadow: 0 2px 10px rgb(0 0 0 / 20%);
+}
+
+.dark-version .accordion-button:not(.collapsed) {
+  background-color: #2a3147;
+  color: #f0f0f0;
+  box-shadow: inset 0 -1px 0 rgb(255 255 255 / 10%);
+}
+
+.dark-version .accordion-body {
+  background-color: #121c41;
+  color: #f0f0f0;
+  border-top-color: #333;
+}
+
+.dark-version .accordion-button:focus {
+  box-shadow: 0 0 0 0.25rem rgb(66 153 225 / 40%);
+}
+
+.dark-version .accordion .accordion-button {
+  border-color: rgba(255, 255, 255, 0.4) !important;
+  color: #fff;
+  opacity: 0.8;
+}

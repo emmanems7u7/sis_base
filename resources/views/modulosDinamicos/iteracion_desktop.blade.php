@@ -1,137 +1,159 @@
 
 
+@if($modo === 'mostrar_todos')
 
+    {{-- Mostrar todas las tablas como ya lo tienes --}}
+    @foreach($formulariosConRespuestas as $item)
+        @include('modulosDinamicos.registros_desktop', ['item' => $item, 'modulo' => $modulo])
+    @endforeach
 
-       
+@elseif($modo === 'acordeon')
 
-@foreach($formulariosConRespuestas as $item)
-<div class="card shadow-lg mt-3">
-        <div class="card-body">
-    @php
-        $formulario = $item['formulario'];
-        $respuestas = $item['respuestas'];
-    @endphp
-
-      <h5 class="mt-4"><i class="fas fa-file-alt me-2"></i>{{ $formulario->nombre }}</h5>
-
-        <div class="table-responsive">
-
-        @include('formularios.modal_busqueda' , ['formulario' => $formulario, 'campos' => $formulario->campos, 'modulo' => $modulo->id])
-    
-
-            <table class="table table-bordered table-striped mt-3">
-                <thead class="table-dark">
-                {{-- Barra de acciones --}}
-            <tr>
-                <th colspan="{{ $formulario->campos->count() + 5 }}">
-
-                <div class="d-flex justify-content-between flex-wrap align-items-center">
-                @include('modulosDinamicos.botones_accion', ['formulario' => $formulario])
-
+<div class="accordion" id="accordionFormulariosStayOpen_{{ $modulo->id }}">
+    @foreach($formulariosConRespuestas as $index => $item)
+        @php
+            $formulario = $item['formulario'];
+            $respuestas = $item['respuestas'];
+        @endphp
+        <div class="accordion-item">
+            <h2 class="accordion-header" id="headingStayOpen_{{ $formulario->id }}">
+                <button class="accordion-button {{ $index !== 0 ? 'collapsed' : '' }}" 
+                        type="button" 
+                        data-bs-toggle="collapse" 
+                        data-bs-target="#collapseStayOpen_{{ $formulario->id }}" 
+                        aria-expanded="{{ $index === 0 ? 'true' : 'false' }}" 
+                        aria-controls="collapseStayOpen_{{ $formulario->id }}">
+                        <i class="fas fa-chevron-right me-2"></i>
+                        {{ $formulario->nombre }}
+                </button>
+            </h2>
+            <div id="collapseStayOpen_{{ $formulario->id }}" 
+                 class="accordion-collapse collapse {{ $index === 0 ? 'show' : '' }}" 
+                 aria-labelledby="headingStayOpen_{{ $formulario->id }}">
+                <div class="accordion-body">
+                    @include('modulosDinamicos.registros_desktop', ['item' => $item, 'modulo' => $modulo])
                 </div>
-
-                </th>
-            </tr>
-                    <tr>
-                    <th>#</th>
-                        <th>Quién llenó</th>
-                        @foreach($formulario->campos->sortBy('posicion') as $campo)
-                            <th>{{ $campo->etiqueta }}</th>
-                        @endforeach
-                        <th>Registro</th>
-                        <th>Acciones</th> 
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse($respuestas as $respuesta)
-                        <tr>
-                            <td>{{ $loop->iteration + ($respuestas->currentPage() - 1) * $respuestas->perPage() }}</td>
-                            <td>{{ $respuesta->actor->name ?? 'Anonimo' }}</td>
-
-                            @foreach($formulario->campos->sortBy('posicion') as $campo)
-                                @php
-                                    $valores = $respuesta->camposRespuestas
-                                        ->where('cf_id', $campo->id)
-                                        ->pluck('valor')
-                                        ->toArray();
-                                    $tipoCampo = strtolower($campo->campo_nombre);
-                                    $displayValores = [];
-                                    foreach ($valores as $v) {
-                                        switch ($tipoCampo) {
-                                            case 'checkbox':
-                                            case 'radio':
-                                            case 'selector':
-                                                $desc = $campo->opciones_catalogo->where('catalogo_codigo', $v)->first()?->catalogo_descripcion;
-                                                $displayValores[] = $desc ?? $v;
-                                                break;
-
-                                            case 'imagen':
-                                                $displayValores[] = "<img src='" . asset("archivos/formulario_{$formulario->id}/imagenes/{$v}") . "' style='max-width:50px; max-height:50px;' class='rounded me-1 mb-1'>";
-                                                break;
-
-                                            case 'video':
-                                                $displayValores[] = "<video src='" . asset("archivos/formulario_{$formulario->id}/videos/{$v}") . "' style='max-width:100px; max-height:50px;' controls></video>";
-                                                break;
-
-                                            case 'archivo':
-                                                $displayValores[] = "<a href='" . asset("archivos/formulario_{$formulario->id}/archivos/{$v}") . "' target='_blank' class='btn btn-sm btn-outline-primary mb-1'>Descargar</a>";
-                                                break;
-
-                                            case 'enlace':
-                                                $displayValores[] = "<a href='$v' target='_blank'>Ver enlace</a>";
-                                                break;
-
-                                            case 'fecha':
-                                                $displayValores[] = \Carbon\Carbon::parse($v)->format('d/m/Y');
-                                                break;
-
-                                            case 'hora':
-                                                $displayValores[] = $v;
-                                                break;
-
-                                            default:
-                                                $displayValores[] = $v;
-                                        }
-                                    }
-                                @endphp
-                                <td>{!! implode(' ', $displayValores) !!}</td>
-                            @endforeach
-
-                            <td>{{ $respuesta->created_at->format('d/m/Y H:i') }}</td>
-                            <td>
-                                <a href="{{ route('respuestas.edit', $respuesta) }}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-pencil-alt"></i> Editar
-                                </a>
-                                <a href="#" class="btn btn-sm btn-danger"
-                                    onclick="confirmarEliminacion('eliminarRespuesta_{{ $respuesta->id }}', '¿Estás seguro de que deseas eliminar esta respuesta?')">
-                                    <i class="fas fa-trash-alt"></i> Eliminar
-                                </a>
-                                <form id="eliminarRespuesta_{{ $respuesta->id }}" method="POST"
-                                    action="{{ route('respuestas.destroy', $respuesta) }}" style="display: none;">
-                                    @csrf
-                                    @method('DELETE')
-                                </form>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="{{ $formulario->campos->count() + 4 }}" class="text-center">
-                                No hay respuestas registradas para este formulario.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
-
-
+            </div>
         </div>
+    @endforeach
+</div>
 
-    <div class="d-flex justify-content-center mt-3">
-        {{-- Paginación --}}
-        {{ $respuestas->links('pagination::bootstrap-4') }}
+@elseif($modo === 'pestanas')
+
+<div class="col-lg-12 col-md-12 my-sm-auto ms-sm-auto me-sm-0 mx-auto mt-3">
+    <div class="nav-wrapper position-relative end-0">
+        <ul class="nav nav-pills nav-fill p-1" role="tablist">
+            @foreach($formulariosConRespuestas as $index => $item)
+                @php $formulario = $item['formulario']; @endphp
+                <li class="nav-item">
+                    <a class="nav-link mb-0 px-0 py-1 d-flex align-items-center justify-content-center {{ $index === 0 ? 'active' : '' }}"
+                       href="javascript:;"
+                       role="tab"
+                       data-target="#formulario_{{ $formulario->id }}">
+                        <i class="fas fa-file-alt"></i>
+                        <span class="ms-2">{{ $formulario->nombre }}</span>
+                    </a>
+                </li>
+            @endforeach
+        </ul>
+        <!-- Mantener la barra de animación pero vacía -->
+        <div class="moving-tab position-absolute nav-link" style="transition: all 0.3s ease;"></div>
     </div>
 
+    <div class="mt-3">
+        @foreach($formulariosConRespuestas as $index => $item)
+            @php $formulario = $item['formulario']; @endphp
+            <div id="formulario_{{ $formulario->id }}" 
+                 class="formulario-tab-content {{ $index === 0 ? 'fade show' : 'fade d-none' }}">
+                @include('modulosDinamicos.registros_desktop', ['item' => $item, 'modulo' => $modulo])
+            </div>
+        @endforeach
     </div>
-    </div>
+</div>
 
-@endforeach
+<script>
+const links = document.querySelectorAll('.nav-wrapper .nav-link');
+const movingTab = document.querySelector('.moving-tab');
+
+links.forEach(link => {
+    link.addEventListener('click', function() {
+        // Active
+        links.forEach(l => l.classList.remove('active'));
+        link.classList.add('active');
+
+        // Mover barra animada (moving-tab)
+        const rect = link.getBoundingClientRect();
+        const parentRect = link.parentElement.parentElement.getBoundingClientRect();
+        movingTab.style.width = rect.width + 'px';
+        movingTab.style.transform = `translateX(${rect.left - parentRect.left}px)`;
+
+        // Mostrar formulario con fade
+        const targetId = link.dataset.target;
+        document.querySelectorAll('.formulario-tab-content').forEach(f => {
+            f.classList.remove('show');
+            f.classList.add('d-none');
+        });
+        const target = document.querySelector(targetId);
+        target.classList.remove('d-none');
+        void target.offsetWidth; // reflow
+        target.classList.add('show');
+    });
+});
+
+// Inicializar posición de moving-tab al cargar
+window.addEventListener('load', () => {
+    const activeLink = document.querySelector('.nav-wrapper .nav-link.active');
+    if(activeLink){
+        const rect = activeLink.getBoundingClientRect();
+        const parentRect = activeLink.parentElement.parentElement.getBoundingClientRect();
+        movingTab.style.width = rect.width + 'px';
+        movingTab.style.transform = `translateX(${rect.left - parentRect.left}px)`;
+    }
+});
+</script>
+
+@elseif($modo === 'selector')
+
+{{-- Selector de formulario único --}}
+<div class="mb-3">
+    <label for="selectorFormularios_{{ $modulo->id }}" class="form-label">Selecciona un formulario:</label>
+    <select class="form-select" id="selectorFormularios_{{ $modulo->id }}">
+        @foreach($formulariosConRespuestas as $index => $item)
+            @php $formulario = $item['formulario']; @endphp
+            <option value="{{ $formulario->id }}" {{ $index === 0 ? 'selected' : '' }}>
+                {{ $formulario->nombre }}
+            </option>
+        @endforeach
+    </select>
+</div>
+
+<div id="formulariosSelector_{{ $modulo->id }}">
+    @foreach($formulariosConRespuestas as $index => $item)
+        @php $formulario = $item['formulario']; @endphp
+        <div class="formulario-tab-content {{ $index === 0 ? 'fade show' : 'fade d-none' }}" id="formulario_{{ $formulario->id }}">
+            @include('modulosDinamicos.registros_desktop', ['item' => $item, 'modulo' => $modulo])
+        </div>
+    @endforeach
+</div>
+
+<script>
+    const select = document.getElementById('selectorFormularios_{{ $modulo->id }}');
+
+    select.addEventListener('change', function() {
+        const selectedId = this.value;
+        const forms = document.querySelectorAll('#formulariosSelector_{{ $modulo->id }} .formulario-tab-content');
+
+        forms.forEach(f => {
+            if(f.id === 'formulario_' + selectedId) {
+                f.classList.remove('d-none');
+                void f.offsetWidth; // reflow para activar fade
+                f.classList.add('show');
+            } else {
+                f.classList.remove('show');
+                f.classList.add('d-none');
+            }
+        });
+    });
+</script>
+
+@endif

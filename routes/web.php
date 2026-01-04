@@ -389,10 +389,13 @@ Route::get('/modulo/{modulo_id}/administrar', [ModuloController::class, 'ModuloA
 Route::get('/modulos/formulario/check/{formulario_id}', [ModuloController::class, 'checkFormulario'])
     ->name('modulos.formulario.check');
 
-
+//cambiar visibilidad del formulario asociado al modulo
 Route::post('/modulo/formulario/toggle', [ModuloController::class, 'toggle'])
     ->name('modulo.formulario.toggle');
 
+//actualizar configuracion
+Route::put('/modulos/{modulo}/configuracion', [ModuloController::class, 'actualizarConfiguracion'])
+    ->name('modulos.configuracion.update');
 
 
 Route::prefix('admin/form-logic')->middleware(['auth'])->group(function () {

@@ -12,13 +12,9 @@
                     <h6 class="mt-2 d-flex align-items-center gap-2">
                         Formularios asociados al Módulo
 
-                        <i class="fas fa-question-circle btn-tooltip"
-                        data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        title="Aquí se muestran los formularios asociados al módulo. Si alguno no aparece en la lista, es porque está inactivo. Puedes activarlo desde la configuración de módulos."
-                        data-container="body"
-                        data-animation="true"
-                        style="cursor: pointer;">
+                        <i class="fas fa-question-circle btn-tooltip" data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Aquí se muestran los formularios asociados al módulo. Si alguno no aparece en la lista, es porque está inactivo. Puedes activarlo desde la configuración de módulos."
+                            data-container="body" data-animation="true" style="cursor: pointer;">
                         </i>
                     </h6>
                     <div class="mb-2">
@@ -29,12 +25,12 @@
                         @endforelse
                     </div>
 
-                
+
 
                     <a href="{{ route('formularios.index') }}" class="btn btn-sm btn-secondary "><i
                             class="fas fa-arrow-left me-1"></i>Volver</a>
-                  
-               
+
+
                 </div>
             </div>
         </div>
@@ -49,13 +45,13 @@
     </div>
 
 
+    <div class="mt-2">
+        @if($isMobile)
+            @include('modulosDinamicos.iteracion_movil')
+        @else
+            @include('modulosDinamicos.iteracion_desktop')
+        @endif
 
-            @if($isMobile)
-                @include('modulosDinamicos.iteracion_movil')
-            @else
-                @include('modulosDinamicos.iteracion_desktop')
-            @endif
-
-      
+    </div>
 
 @endsection
