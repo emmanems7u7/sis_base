@@ -60,7 +60,7 @@
                     </li>
                 @endforeach
             </ul>
-            <div class="moving-tab position-absolute nav-link" style="transition: all 0.3s ease;"></div>
+          
         </div>
 
         <div class="mt-3">
@@ -76,8 +76,7 @@
 
     <script>
     const mobileLinks = document.querySelectorAll('.nav-wrapper .nav-link');
-    const mobileMovingTab = document.querySelector('.moving-tab');
-
+   
     mobileLinks.forEach(link => {
         link.addEventListener('click', function() {
             // Active
@@ -87,8 +86,7 @@
             // Mover barra animada
             const rect = link.getBoundingClientRect();
             const parentRect = link.parentElement.parentElement.getBoundingClientRect();
-            mobileMovingTab.style.width = rect.width + 'px';
-            mobileMovingTab.style.transform = `translateX(${rect.left - parentRect.left}px)`;
+           
 
             // Mostrar formulario con fade
             const targetId = link.dataset.target;
@@ -108,8 +106,7 @@
         if(activeLink){
             const rect = activeLink.getBoundingClientRect();
             const parentRect = activeLink.parentElement.parentElement.getBoundingClientRect();
-            mobileMovingTab.style.width = rect.width + 'px';
-            mobileMovingTab.style.transform = `translateX(${rect.left - parentRect.left}px)`;
+           
         }
     });
     </script>

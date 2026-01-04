@@ -40,8 +40,9 @@
 
 @elseif($modo === 'pestanas')
 
+
 <div class="col-lg-12 col-md-12 my-sm-auto ms-sm-auto me-sm-0 mx-auto mt-3">
-    <div class="nav-wrapper position-relative end-0">
+    <div class="nav-wrapper position-relative end-0 custom-border">
         <ul class="nav nav-pills nav-fill p-1" role="tablist">
             @foreach($formulariosConRespuestas as $index => $item)
                 @php $formulario = $item['formulario']; @endphp
@@ -56,8 +57,7 @@
                 </li>
             @endforeach
         </ul>
-        <!-- Mantener la barra de animación pero vacía -->
-        <div class="moving-tab position-absolute nav-link" style="transition: all 0.3s ease;"></div>
+       
     </div>
 
     <div class="mt-3">
@@ -73,7 +73,6 @@
 
 <script>
 const links = document.querySelectorAll('.nav-wrapper .nav-link');
-const movingTab = document.querySelector('.moving-tab');
 
 links.forEach(link => {
     link.addEventListener('click', function() {
@@ -84,8 +83,7 @@ links.forEach(link => {
         // Mover barra animada (moving-tab)
         const rect = link.getBoundingClientRect();
         const parentRect = link.parentElement.parentElement.getBoundingClientRect();
-        movingTab.style.width = rect.width + 'px';
-        movingTab.style.transform = `translateX(${rect.left - parentRect.left}px)`;
+       
 
         // Mostrar formulario con fade
         const targetId = link.dataset.target;
@@ -106,8 +104,7 @@ window.addEventListener('load', () => {
     if(activeLink){
         const rect = activeLink.getBoundingClientRect();
         const parentRect = activeLink.parentElement.parentElement.getBoundingClientRect();
-        movingTab.style.width = rect.width + 'px';
-        movingTab.style.transform = `translateX(${rect.left - parentRect.left}px)`;
+       
     }
 });
 </script>

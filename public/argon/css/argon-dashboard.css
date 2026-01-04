@@ -28521,3 +28521,30 @@ pre[class*=language-] {
   color: #fff;
   opacity: 0.8;
 }
+
+/* Contenedor nav-wrapper debe tener position: relative */
+.nav-wrapper {
+  position: relative; 
+}
+
+/* Barra animada */
+.moving-tab {
+  border-radius: 2px;
+  background-color: #ffc107; 
+  box-shadow: 0 2px 5px rgba(0,0,0,0.7);
+  transition: transform 0.4s cubic-bezier(0.4,0,0.2,1), width 0.4s cubic-bezier(0.4,0,0.2,1);
+}
+
+/* Modo oscuro */
+.dark-version .moving-tab {
+  background-color: #f0ad4e;
+  box-shadow: 0 2px 5px rgba(0,0,0,0.7);
+}
+.custom-border {
+  box-shadow: 0 2px 5px rgba(0,0,0,0.2);
+  border-radius: 7px; /* opcional, bordes redondeados */
+}
+
+
+
+

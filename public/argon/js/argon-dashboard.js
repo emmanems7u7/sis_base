@@ -270,140 +270,90 @@ document.addEventListener("DOMContentLoaded", function() {
     });
   });
 });
-
-// Tabs navigation
+// ===============================
+// Tabs navigation con moving-tab
+// ===============================
 
 var total = document.querySelectorAll('.nav-pills');
 
+// Inicializa eventos (NO crea moving-tab)
 function initNavs() {
-  total.forEach(function(item, i) {
-    var moving_div = document.createElement('div');
-    var first_li = item.querySelector('li:first-child .nav-link');
-    var tab = first_li.cloneNode();
-    tab.innerHTML = "-";
+  total.forEach(function(item) {
 
-    moving_div.classList.add('moving-tab', 'position-absolute', 'nav-link');
-    moving_div.appendChild(tab);
-    item.appendChild(moving_div);
+    item.addEventListener('click', function (e) {
+      const link = e.target.closest('.nav-link');
+      if (!link) return;
 
-    var list_length = item.getElementsByTagName("li").length;
+      // activar tab
+      item.querySelectorAll('.nav-link').forEach(l => l.classList.remove('active'));
+      link.classList.add('active');
 
-    moving_div.style.padding = '0px';
-    moving_div.style.width = item.querySelector('li:nth-child(1)').offsetWidth + 'px';
-    moving_div.style.transform = 'translate3d(0px, 0px, 0px)';
-    moving_div.style.transition = '.5s ease';
+      ajustarNavs();
+    });
 
-    item.onmouseover = function(event) {
-      let target = getEventTarget(event);
-      let li = target.closest('li'); // get reference
-      if (li) {
-        let nodes = Array.from(li.closest('ul').children); // get array
-        let index = nodes.indexOf(li) + 1;
-        item.querySelector('li:nth-child(' + index + ') .nav-link').onclick = function() {
-          moving_div = item.querySelector('.moving-tab');
-          let sum = 0;
-          if (item.classList.contains('flex-column')) {
-            for (var j = 1; j <= nodes.indexOf(li); j++) {
-              sum += item.querySelector('li:nth-child(' + j + ')').offsetHeight;
-            }
-            moving_div.style.transform = 'translate3d(0px,' + sum + 'px, 0px)';
-            moving_div.style.height = item.querySelector('li:nth-child(' + j + ')').offsetHeight;
-          } else {
-            for (var j = 1; j <= nodes.indexOf(li); j++) {
-              sum += item.querySelector('li:nth-child(' + j + ')').offsetWidth;
-            }
-            moving_div.style.transform = 'translate3d(' + sum + 'px, 0px, 0px)';
-            moving_div.style.width = item.querySelector('li:nth-child(' + index + ')').offsetWidth + 'px';
-          }
-        }
+  });
+}
+function ajustarNavs() {
+  total.forEach(function(item) {
+    const activeLink = item.querySelector('.nav-link.active');
+    if (!activeLink) return;
+
+    let moving = item.querySelector('.moving-tab');
+    if (!moving) {
+      moving = document.createElement('div');
+      moving.classList.add('moving-tab', 'position-absolute', 'nav-link');
+      moving.style.padding = '0px';
+      moving.style.transition = '.4s ease';
+      item.appendChild(moving);
+    }
+
+    moving.innerHTML = "";
+
+    const li = activeLink.parentElement;
+    const nodes = Array.from(li.closest('ul').children);
+    const index = nodes.indexOf(li) + 1;
+
+    let sum = 0;
+
+    // Altura siempre igual al link
+    moving.style.height = activeLink.offsetHeight + 'px';
+
+    if (window.innerWidth < 991) {
+      // Vertical
+      item.classList.remove('flex-row');
+      item.classList.add('flex-column');
+
+      for (let j = 1; j < index; j++) {
+        sum += item.querySelector('li:nth-child(' + j + ')').offsetHeight;
       }
+
+      moving.style.transform = `translate3d(0px, ${sum}px, 0px)`;
+      // ancho = ancho del LI activo, no del UL
+      moving.style.width = activeLink.offsetWidth + 'px';
+
+    } else {
+      // Horizontal
+      item.classList.remove('flex-column');
+      item.classList.add('flex-row');
+
+      for (let j = 1; j < index; j++) {
+        sum += item.querySelector('li:nth-child(' + j + ')').offsetWidth;
+      }
+
+      moving.style.transform = `translate3d(${sum}px, 0px, 0px)`;
+      moving.style.width = activeLink.offsetWidth + 'px';
     }
   });
 }
 
-setTimeout(function() {
+// Inicialización
+window.addEventListener('load', function () {
   initNavs();
-}, 100);
-
-// Tabs navigation resize
-
-window.addEventListener('resize', function(event) {
-  total.forEach(function(item, i) {
-    item.querySelector('.moving-tab').remove();
-    var moving_div = document.createElement('div');
-    var tab = item.querySelector(".nav-link.active").cloneNode();
-    tab.innerHTML = "-";
-
-    moving_div.classList.add('moving-tab', 'position-absolute', 'nav-link');
-    moving_div.appendChild(tab);
-
-    item.appendChild(moving_div);
-
-    moving_div.style.padding = '0px';
-    moving_div.style.transition = '.5s ease';
-
-    let li = item.querySelector(".nav-link.active").parentElement;
-
-    if (li) {
-      let nodes = Array.from(li.closest('ul').children); // get array
-      let index = nodes.indexOf(li) + 1;
-
-      let sum = 0;
-      if (item.classList.contains('flex-column')) {
-        for (var j = 1; j <= nodes.indexOf(li); j++) {
-          sum += item.querySelector('li:nth-child(' + j + ')').offsetHeight;
-        }
-        moving_div.style.transform = 'translate3d(0px,' + sum + 'px, 0px)';
-        moving_div.style.width = item.querySelector('li:nth-child(' + index + ')').offsetWidth + 'px';
-        moving_div.style.height = item.querySelector('li:nth-child(' + j + ')').offsetHeight;
-      } else {
-        for (var j = 1; j <= nodes.indexOf(li); j++) {
-          sum += item.querySelector('li:nth-child(' + j + ')').offsetWidth;
-        }
-        moving_div.style.transform = 'translate3d(' + sum + 'px, 0px, 0px)';
-        moving_div.style.width = item.querySelector('li:nth-child(' + index + ')').offsetWidth + 'px';
-
-      }
-    }
-  });
-
-  if (window.innerWidth < 991) {
-    total.forEach(function(item, i) {
-      if (!item.classList.contains('flex-column')) {
-        item.classList.remove('flex-row');
-        item.classList.add('flex-column', 'on-resize');
-        let li = item.querySelector(".nav-link.active").parentElement;
-        let nodes = Array.from(li.closest('ul').children); // get array
-        let index = nodes.indexOf(li) + 1;
-        let sum = 0;
-        for (var j = 1; j <= nodes.indexOf(li); j++) {
-          sum += item.querySelector('li:nth-child(' + j + ')').offsetHeight;
-        }
-        var moving_div = document.querySelector('.moving-tab');
-        moving_div.style.width = item.querySelector('li:nth-child(1)').offsetWidth + 'px';
-        moving_div.style.transform = 'translate3d(0px,' + sum + 'px, 0px)';
-
-      }
-    });
-  } else {
-    total.forEach(function(item, i) {
-      if (item.classList.contains('on-resize')) {
-        item.classList.remove('flex-column', 'on-resize');
-        item.classList.add('flex-row');
-        let li = item.querySelector(".nav-link.active").parentElement;
-        let nodes = Array.from(li.closest('ul').children); // get array
-        let index = nodes.indexOf(li) + 1;
-        let sum = 0;
-        for (var j = 1; j <= nodes.indexOf(li); j++) {
-          sum += item.querySelector('li:nth-child(' + j + ')').offsetWidth;
-        }
-        var moving_div = document.querySelector('.moving-tab');
-        moving_div.style.transform = 'translate3d(' + sum + 'px, 0px, 0px)';
-        moving_div.style.width = item.querySelector('li:nth-child(' + index + ')').offsetWidth + 'px';
-      }
-    })
-  }
+  ajustarNavs();
 });
+
+// Recalcular al resize
+window.addEventListener('resize', ajustarNavs);
 
 // Function to remove flex row on mobile devices
 if (window.innerWidth < 991) {
