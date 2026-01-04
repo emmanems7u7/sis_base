@@ -331,7 +331,7 @@ Route::get('/campos/{campo}/buscar-opcion', [CamposFormController::class, 'busca
 Route::get('/formulario/{id}/campos', [App\Http\Controllers\FormularioController::class, 'showCampos'])->name('formulario.campos');
 
 
-Route::get('/formularios/{form}/create', [RespuestasFormController::class, 'create'])
+Route::get('/formularios/{form}/create/{modulo}', [RespuestasFormController::class, 'create'])
     ->name('formularios.registrar');
 
 
@@ -388,6 +388,10 @@ Route::get('/modulo/{modulo_id}/administrar', [ModuloController::class, 'ModuloA
 // Ruta para verificar si el formulario ya está asociado
 Route::get('/modulos/formulario/check/{formulario_id}', [ModuloController::class, 'checkFormulario'])
     ->name('modulos.formulario.check');
+
+
+Route::post('/modulo/formulario/toggle', [ModuloController::class, 'toggle'])
+    ->name('modulo.formulario.toggle');
 
 
 

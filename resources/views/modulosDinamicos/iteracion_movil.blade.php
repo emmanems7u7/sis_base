@@ -1,14 +1,24 @@
-<div class="container my-3">
-   
-    <div class="row g-3"> {{-- g-3 agrega espacio entre columnas --}}
+
+
+    
+    <div class="row g-3 mt-2"> {{-- g-3 agrega espacio entre columnas --}}
         @foreach($formulariosConRespuestas as $item)
+        <div class="card shadow-lg mt-3">
+        <div class="card-body">
+
             @php
                 $formulario = $item['formulario'];
                 $respuestas = $item['respuestas'];
             @endphp
- <h5 class="mt-4"><i class="fas fa-file-alt me-2"></i>{{ $formulario->nombre }}</h5>
+
+            <h5 class="mt-4"><i class="fas fa-file-alt me-2"></i>{{ $formulario->nombre }}</h5>
+
+            @include('formularios.modal_busqueda' , ['formulario' => $formulario, 'campos' => $formulario->campos, 'modulo' => $modulo->id])
+            
+            @include('modulosDinamicos.botones_accion', ['formulario' => $formulario])
+            
             @forelse($respuestas as $respuesta)
-                <div class="col-12 col-md-6 col-lg-4"> {{-- RESPONSIVE COLUMNS --}}
+                <div class="col-12 col-md-6 col-lg-4 mt-2"> {{-- RESPONSIVE COLUMNS --}}
                     <div class="card h-100 shadow-sm">
                         <div class="card-body" style="max-height:400px; overflow-y:auto; position:relative;">
                             <h6 class="card-title">{{ $respuesta->actor->name ?? 'Anónimo' }}</h6>
@@ -84,11 +94,16 @@
             @empty
                 <p class="text-center text-muted">No hay respuestas registradas para este formulario.</p>
             @endforelse
+
+            </div></div> 
         @endforeach
     </div>
-
-    {{-- Paginación centrada --}}
-    <div class="d-flex justify-content-center mt-3">
+<div class="table-responsive">
+   {{-- Paginación centrada --}}
+   <div class="d-flex justify-content-center mt-3">
         {{ $respuestas->links('pagination::bootstrap-4') }}
     </div>
 </div>
+ 
+
+

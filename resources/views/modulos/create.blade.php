@@ -18,8 +18,9 @@
 
                 @include('modulos._form')
 
-                <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Guardar</button>
                 <a href="{{ route('modulos.index') }}" class="btn btn-secondary">Cancelar</a>
+                <button type="submit" class="btn btn-success"><i class="fas fa-save"></i> Guardar</button>
+
             </form>
 
         </div>

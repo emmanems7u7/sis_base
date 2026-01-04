@@ -19,6 +19,7 @@ use Jenssegers\Agent\Agent;
 
 use App\Jobs\EjecutarLogicaFormulario;
 use App\Models\FormLogicRule;
+use App\Models\Modulo;
 
 class RespuestasFormController extends Controller
 {
@@ -60,133 +61,65 @@ class RespuestasFormController extends Controller
         $agent = new Agent();
         $isMobile = $agent->isMobile();
 
-        // Obtener formulario con campos
-        $formulario = Formulario::with('campos')->findOrFail($form);
+        $resultado = $this->FormularioRepository->procesarFormularioConFiltros(Formulario::with('campos')->findOrFail($form), $request);
 
-        // ================================
-        // QUERY BASE DE RESPUESTAS
-        // ================================
-        $query = RespuestasForm::where('form_id', $formulario->id)
-            ->with('camposRespuestas.campo');
+        $campos = $resultado['formulario']->campos;
 
-        // ================================
-        // MAPEAR CAMPOS POR NOMBRE
-        // ================================
-        $camposPorNombre = $formulario->campos->keyBy('nombre');
-
-        // ================================
-        // FILTROS DINÁMICOS (POR NOMBRE)
-        // ================================
-        $inputs = collect($request->all())
-            ->except(['_token', 'page'])
-            ->filter(fn($v) => $v !== null && $v !== '');
-
-        foreach ($inputs as $nombreCampo => $valorEnviado) {
-
-            // Ignorar inputs que no pertenecen al formulario
-            if (!$camposPorNombre->has($nombreCampo)) {
-                continue;
-            }
-
-            $campo = $camposPorNombre->get($nombreCampo);
-
-            // ================================
-            // FILTRO SEGÚN TIPO DE CAMPO
-            // ================================
-            $query->whereHas('camposRespuestas', function ($q) use ($campo, $valorEnviado) {
-
-                $q->where('cf_id', $campo->id);
-
-                switch ($campo->campo_nombre) {
-
-                    case 'text':
-                    case 'textarea':
-                    case 'email':
-                    case 'password':
-                    case 'enlace':
-                        // Búsqueda flexible: devuelve coincidencias parciales
-                        $q->where('valor', 'like', "%{$valorEnviado}%");
-                        break;
-
-                    case 'checkbox':
-                        foreach ($valorEnviado as $valor) {
-                            $q->whereExists(function ($sub) use ($campo, $valor) {
-                                $sub->select(DB::raw(1))
-                                    ->from('respuestas_campos as cr2')
-                                    ->whereColumn('cr2.respuesta_id', 'respuestas_campos.respuesta_id')
-                                    ->where('cr2.cf_id', $campo->id)
-                                    ->where('cr2.valor', $valor);
-                            });
-                        }
-                        break;
-
-                    case 'selector':
-                    case 'radio':
-
-                        // Campos que usan form_ref_id o categoria_id: comparación exacta
-                        $q->where('valor', $valorEnviado);
-                        break;
-
-                    default:
-                        // Para number, fecha, hora u otros campos exactos
-                        $q->where('valor', $valorEnviado);
-                        break;
-                }
-            });
-        }
-
-        // ================================
-        // PAGINACIÓN
-        // ================================
-        $respuestas = $query
-            ->orderBy('created_at', 'desc')
-            ->paginate(15)
-            ->withQueryString();
-
-        // ================================
-        // CAMPOS ORDENADOS Y PROCESADOS
-        // ================================
-        $formulario = Formulario::with([
-            'campos' => function ($q) {
-                $q->orderBy('posicion');
-            }
-        ])->findOrFail($form);
-
-        $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
-        $formulario->campos = $camposProcesados;
-
-        $campos = $formulario->campos;
         DB::disconnect();
-        // ================================
-        // RETORNO A LA VISTA
-        // ================================
-        return view('formularios.respuestas_formulario', compact(
-            'isMobile',
-            'formulario',
-            'respuestas',
-            'breadcrumb',
-            'campos'
-        ));
+
+        return view('formularios.respuestas_formulario', array_merge($resultado, compact('isMobile', 'breadcrumb', 'campos')));
     }
 
 
 
 
-    public function create($form)
+    public function create($form, $modulo)
     {
-        $breadcrumb = [
-            ['name' => 'Inicio', 'url' => route('home')],
-            ['name' => 'Formularios', 'url' => route('formularios.index')],
-            ['name' => 'Respuestas Formulario', 'url' => route('formularios.respuestas.formulario', $form)],
 
-            ['name' => 'Registrar Datos ', 'url' => route('permissions.index')],
-        ];
+
+        // Buscar los modelos sin sobrescribir los parámetros originales
+        $formularioModelo = Formulario::find($form); // puede ser null
+        $moduloModelo = $modulo > 0 ? Modulo::find($modulo) : null; // solo buscamos si es >0
+
+        // Validaciones
+        if ($moduloModelo) {
+            // Caso: venimos desde módulo → ambos deben existir
+            if (!$formularioModelo) {
+                return redirect()->back()->with('error', 'Formulario no encontrado para este módulo.');
+            }
+        } else {
+            // Caso: venimos desde formularios → solo se requiere formulario
+            if (!$formularioModelo) {
+                return redirect()->back()->with('error', 'Formulario no encontrado.');
+            }
+        }
+
+        // Validación extra: módulo >0 pero no encontrado
+        if ($modulo > 0 && $moduloModelo === null) {
+            return redirect()->back()->with('error', 'Módulo no encontrado.');
+        }
+
+        // Construir breadcrumb
+        if ($moduloModelo) {
+            $breadcrumb = [
+                ['name' => 'Inicio', 'url' => route('home')],
+                ['name' => 'Módulo ' . $moduloModelo->nombre, 'url' => route('modulo.index', $moduloModelo->id)],
+                ['name' => 'Registrar ' . $formularioModelo->nombre, 'url' => route('permissions.index')],
+            ];
+        } else {
+            $breadcrumb = [
+                ['name' => 'Inicio', 'url' => route('home')],
+                ['name' => 'Formularios', 'url' => route('formularios.index')],
+                ['name' => 'Respuestas Formulario', 'url' => route('formularios.respuestas.formulario', $formularioModelo->id)],
+                ['name' => 'Registrar Datos', 'url' => route('permissions.index')],
+            ];
+        }
 
         $formulario = Formulario::with([
             'campos' => function ($q) {
                 $q->orderBy('posicion');
             }
-        ])->findOrFail($form);
+        ])->findOrFail($formularioModelo->id);
 
 
 
@@ -259,7 +192,12 @@ class RespuestasFormController extends Controller
         }
         // fin
 
-        return view('formularios.registrar_datos_form', compact('humanRules', 'formulario', 'breadcrumb'));
+        return view('formularios.registrar_datos_form', compact(
+            'humanRules',
+            'formulario',
+            'breadcrumb',
+            'moduloModelo'
+        ));
     }
 
 

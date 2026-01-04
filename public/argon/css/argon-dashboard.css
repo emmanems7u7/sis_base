@@ -28422,3 +28422,10 @@ pre[class*=language-] {
 .dark-version .ck-editor__editable[data-placeholder]::before {
   color: #aaa !important;
 }
+
+.option-nueva {
+  background-color: #d1ecf1;
+  /* color inicial */
+  transition: background-color 3s ease-in-out;
+  /* duración más larga y suavizado */
+}

@@ -289,4 +289,81 @@ class FormularioRepository implements FormularioInterface
         // 3️⃣ Si no tiene ni categoria_id ni form_ref_id, devolvemos el valor tal cual
         return $valorUsuario;
     }
+
+
+
+
+    public function procesarFormularioConFiltros($formulario, Request $request, $pageName = null)
+    {
+        // Mapear campos por nombre
+        $camposPorNombre = $formulario->campos->keyBy('nombre');
+
+        // Query base de respuestas
+        $query = RespuestasForm::where('form_id', $formulario->id)
+            ->with('camposRespuestas.campo', 'actor');
+
+        // FILTROS DINÁMICOS POR NOMBRE DE CAMPO
+        $inputs = collect($request->all())
+            ->except(['_token', 'page'])
+            ->filter(fn($v) => $v !== null && $v !== '');
+
+        foreach ($inputs as $nombreCampo => $valorEnviado) {
+            if (!$camposPorNombre->has($nombreCampo))
+                continue;
+
+            $campo = $camposPorNombre->get($nombreCampo);
+
+            $query->whereHas('camposRespuestas', function ($q) use ($campo, $valorEnviado) {
+                $q->where('cf_id', $campo->id);
+
+                switch ($campo->campo_nombre) {
+                    case 'text':
+                    case 'textarea':
+                    case 'email':
+                    case 'password':
+                    case 'enlace':
+                        $q->where('valor', 'like', "%{$valorEnviado}%");
+                        break;
+
+                    case 'checkbox':
+                        foreach ($valorEnviado as $valor) {
+                            $q->whereExists(function ($sub) use ($campo, $valor) {
+                                $sub->select(DB::raw(1))
+                                    ->from('respuestas_campos as cr2')
+                                    ->whereColumn('cr2.respuesta_id', 'respuestas_campos.respuesta_id')
+                                    ->where('cr2.cf_id', $campo->id)
+                                    ->where('cr2.valor', $valor);
+                            });
+                        }
+                        break;
+
+                    case 'selector':
+                    case 'radio':
+                        $q->where('valor', $valorEnviado);
+                        break;
+
+                    default:
+                        $q->where('valor', $valorEnviado);
+                        break;
+                }
+            });
+        }
+
+        // PAGINACIÓN (nombre de página independiente si se pasa)
+        $respuestas = $query->orderBy('created_at', 'desc')
+            ->paginate(15, ['*'], $pageName ?? 'page')
+            ->withQueryString();
+
+        // PROCESAR CAMPOS
+        $formulario = Formulario::with(['campos' => fn($q) => $q->orderBy('posicion')])
+            ->findOrFail($formulario->id);
+
+        $camposProcesados = $this->CamposFormCat($formulario->campos);
+        $formulario->campos = $camposProcesados;
+
+        return [
+            'formulario' => $formulario,
+            'respuestas' => $respuestas,
+        ];
+    }
 }

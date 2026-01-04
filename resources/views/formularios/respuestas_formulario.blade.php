@@ -4,43 +4,7 @@
 @section('content')
 
 
-    <!-- Modal -->
-    <div class="modal fade" id="modal_busqueda" tabindex="-1" role="dialog" aria-labelledby="modal_busquedaLabel"
-        aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
-        <div class="modal-dialog modal-dialog-centered" role="document">
-            <div
-                class="modal-content  {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }}">
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modal_busquedaLabel"><i class="fas fa-filter"></i> Filtrar Resultados</h5>
-                    <button type="button" class="btn-close txt-black" data-bs-dismiss="modal" aria-label="Close">
-                        <span aria-hidden="true"></span>
-                    </button>
-                </div>
-                <div class="modal-body">
-                    <div class="row">
-                        <div class="col-12">
-
-                            <form action="{{ route('formularios.respuestas.formulario', $formulario->id) }}" method="GET">
-                                <div class="input-group">
-
-                                    @include('formularios._campos', ['cols' => 1, 'requerido' => 0])
-
-
-                                </div>
-
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn bg-gradient-secondary" data-bs-dismiss="modal">Cerrar</button>
-                    <button type="submit" class="btn bg-gradient-primary">Filtrar</button>
-                </div>
-                </form>
-
-            </div>
-        </div>
-    </div>
-
+    @include('formularios.modal_busqueda',[ 'formulario' => $formulario, 'campos' => $formulario->campos, 'modulo' => 0])
 
     <div class="row">
         <div class="col-md-6 mt-2 order-2 order-md-1">
@@ -49,9 +13,10 @@
                     <h5>Respuestas del Formulario: {{ $formulario->nombre }}</h5>
                     <a href="{{ route('formularios.index') }}" class="btn btn-sm btn-secondary "><i
                             class="fas fa-arrow-left me-1"></i>Volver</a>
-                    <a href="{{ route('formularios.registrar', $formulario) }}" class="btn btn-sm btn-success">
+                    <a href="{{ route('formularios.registrar', ['form' => $formulario, 'modulo' => 0]) }}" class="btn btn-sm btn-success">
                         <i class="fas fa-plus"></i> Registrar
                     </a>
+                    
                     <div class="btn-group" role="group" aria-label="Export options">
 
                         <div class="btn-group" role="group">
@@ -84,7 +49,7 @@
 
                     <!-- Botón para abrir el modal -->
                     <button type="button" class="btn btn-primary btn-sm" data-bs-toggle="modal"
-                        data-bs-target="#modal_busqueda">
+                        data-bs-target="#modal_busqueda_{{ $formulario->id }}">
                         <i class="fas fa-search"></i> Buscar
                     </button>
 

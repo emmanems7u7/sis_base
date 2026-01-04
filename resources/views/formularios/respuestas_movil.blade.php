@@ -1,6 +1,6 @@
+
 <div class="row mt-2">
     
-
         @forelse($respuestas as $respuesta)
         <div class="col-md-6">
             <div class="card mb-3 shadow-sm">

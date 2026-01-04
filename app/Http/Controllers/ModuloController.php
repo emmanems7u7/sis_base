@@ -10,6 +10,8 @@ use Illuminate\Support\Str;
 use Jenssegers\Agent\Agent;
 use App\Interfaces\CatalogoInterface;
 use App\Models\FormLogicRule;
+use App\Interfaces\FormularioInterface;
+use App\Models\RespuestasForm;
 
 class ModuloController extends Controller
 {
@@ -17,12 +19,15 @@ class ModuloController extends Controller
     protected $CatalogoRepository;
     protected $isMobile;
     protected $agent;
+    protected $FormularioRepository;
 
-    public function __construct(CatalogoInterface $catalogoInterface, )
+    public function __construct(CatalogoInterface $catalogoInterface, FormularioInterface $formularioInterface)
     {
         $this->agent = new Agent();
         $this->isMobile = $this->agent->isMobile();
         $this->CatalogoRepository = $catalogoInterface;
+        $this->FormularioRepository = $formularioInterface;
+
 
     }
     public function index(Request $request)
@@ -183,44 +188,34 @@ class ModuloController extends Controller
     public function ModulosIndex(Request $request, $modulo_id)
     {
 
-
         $agent = new Agent();
         $isMobile = $agent->isMobile();
 
-        $modulo = Modulo::with('formularios.campos')->findOrFail($modulo_id);
+        $modulo = Modulo::with([
+            'formularios' => fn($q) => $q->wherePivot('activo', true)->with('campos')
+        ])->findOrFail($modulo_id);
 
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
             ['name' => 'Módulo ' . $modulo->nombre, 'url' => route('modulos.index')],
         ];
 
-
-        $search = $request->input('search');
-
-        // Preparar un array para pasar a la vista
         $formulariosConRespuestas = [];
 
         foreach ($modulo->formularios as $formulario) {
-            $query = $formulario->respuestas()->with('camposRespuestas.campo', 'actor');
-
-            // Filtro de búsqueda por actor
-            if (!empty($search)) {
-                $query->whereHas('actor', function ($q) use ($search) {
-                    $q->where('name', 'like', "%{$search}%");
-                });
-            }
-
-            $respuestas = $query->orderBy('created_at', 'desc')->paginate(15)->withQueryString();
-
-            $formulariosConRespuestas[] = [
-                'formulario' => $formulario,
-                'respuestas' => $respuestas,
-            ];
+            $formulariosConRespuestas[] = $this->FormularioRepository->procesarFormularioConFiltros(
+                $formulario,
+                $request,
+                'page_' . $formulario->id // paginación independiente
+            );
         }
 
+        $formularios_asociados = Modulo::with('formularios')->findOrFail($modulo_id);
 
-
-        return view('modulosDinamicos.index', compact('isMobile', 'formulariosConRespuestas', 'modulo', 'breadcrumb'));
+        return view(
+            'modulosDinamicos.index',
+            compact('isMobile', 'formulariosConRespuestas', 'modulo', 'breadcrumb', 'formularios_asociados')
+        );
     }
 
     public function ModuloAdmin($modulo)
@@ -290,5 +285,29 @@ class ModuloController extends Controller
 
         return view('modulos.administrar', compact('isMobile', 'rules', 'modulo', 'breadcrumb', 'grafo'));
 
+    }
+
+    public function toggle(Request $request)
+    {
+        $request->validate([
+            'modulo_id' => 'required|exists:modulos,id',
+            'formulario_id' => 'required|exists:formularios,id',
+            'activo' => 'required|boolean',
+        ]);
+
+        $modulo = Modulo::findOrFail($request->modulo_id);
+
+        // Actualizar SOLO el campo activo del pivot
+        $modulo->formularios()->updateExistingPivot(
+            $request->formulario_id,
+            ['activo' => $request->activo]
+        );
+
+        return response()->json([
+            'success' => true,
+            'mensaje' => $request->activo
+                ? 'Formulario activado correctamente'
+                : 'Formulario desactivado correctamente'
+        ]);
     }
 }

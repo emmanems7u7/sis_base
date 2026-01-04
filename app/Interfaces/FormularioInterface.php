@@ -23,6 +23,7 @@ interface FormularioInterface
 
     public function obtenerValorReal(CamposForm $campo, $valorUsuario);
 
+    public function procesarFormularioConFiltros($formulario, Request $request, $pageName = null);
 
 
 }

@@ -97,6 +97,23 @@ class DatabaseSeeder extends Seeder
 
         // FIN PERMISOS
 
+
+        /******************** Seeders creados automaticamente LOCAL_03-01-2026 ****************************/
+        // SECCION
+        $this->call(LOCAL_SeederSeccion_20260103::class);
+
+        // FIN SECCION
+
+        // PERMISOS
+        $this->call(LOCAL_SeederPermisos_20260103::class);
+
+        // FIN PERMISOS
+
+        // MENU
+        $this->call(LOCAL_SeederMenu_20260103::class);
+
+        // FIN MENU
+        /********************  Fin Seeders creados automaticamente LOCAL_03-01-2026 ****************************/
     }
 
 

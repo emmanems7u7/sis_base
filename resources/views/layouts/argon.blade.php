@@ -193,25 +193,28 @@
                                 </div>
 
                                 <ul class="list-unstyled ms-4">
-                                    @foreach ($seccion->menus as $menu)
-                                        @can($menu->nombre)
-                                            <li class="nav-item text-black">
-                                                @if($menu->modulo_id == null || $menu->modulo_id == 0)
-                                                @php
-                                                        $ruta = route($menu->ruta)
-                                                @endphp
-                                                @else
-                                                @php
-                                                    $ruta = route('modulo.index', ['modulo_id' => $menu->modulo_id]);  
-                                                @endphp
-                                                @endif
+                                @foreach ($seccion->menus as $menu)
+                                    @can($menu->nombre)
+                                        <li class="nav-item text-black">
+                                            @php
+                                                if($menu->modulo_id == null || $menu->modulo_id == 0){
+                                                    $ruta = route($menu->ruta);
+                                                    $esActivo = Route::currentRouteName() === $menu->ruta;
+                                                } else {
+                                                    $ruta = route('modulo.index', ['modulo_id' => $menu->modulo_id]);
 
-                                                <a class="nav-link {{ Route::currentRouteName() === $menu->ruta ? 'active bg-gradient-' . $color : '' }}" href="{{ $ruta  }}">
-                                                    <span class="text-black nav-link-text">{{ $menu->nombre }}</span>
-                                                </a>
-                                            </li>
-                                        @endcan
-                                    @endforeach
+                                                    // Compara nombre de ruta + parámetro modulo_id
+                                                    $esActivo = Route::currentRouteName() === 'modulo.index' 
+                                                        && request()->route('modulo_id') == $menu->modulo_id;
+                                                }
+                                            @endphp
+
+                                            <a class="nav-link {{ $esActivo ? 'active bg-gradient-' . $color : '' }}" href="{{ $ruta }}">
+                                                <span class="text-black nav-link-text">{{ $menu->nombre }}</span>
+                                            </a>
+                                        </li>
+                                    @endcan
+                                @endforeach
                                 </ul>
                             </li>
                         @endcan
@@ -800,6 +803,7 @@
     <script src="{{asset('argon/js/plugins/perfect-scrollbar.min.js')}}"></script>
     <script src="{{asset('argon/js/plugins/smooth-scrollbar.min.js')}}"></script>
     <script src="{{asset('argon/js/plugins/chartjs.min.js')}}"></script>
+    <script src="{{asset('js/campos.js')}}"></script>
 
 
 

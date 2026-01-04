@@ -6,7 +6,7 @@
         @include('formularios.contenedor_superior', ['formulario' => $formulario])
 
 
-        <div class="card">
+        <div class="card mt-2">
             <div class="card-body">
                 <h5>Reglas y Acciones para el registro</h5>
                 @if(!empty($humanRules))
@@ -29,8 +29,14 @@
                     @csrf
                     @include('formularios._campos', ['campos' => $formulario->campos->sortBy('posicion'), 'valores' => []])
 
+                    @if(!$moduloModelo)
                     <a href="{{ route('formularios.index') }}" class="btn btn-secondary mt-3"><i
                             class="fas fa-arrow-left me-1"></i>Volver</a>
+                    @else
+                    <a href="{{ route('modulo.index', $moduloModelo->id) }}" class="btn btn-secondary mt-3"><i
+                            class="fas fa-arrow-left me-1"></i>Volver</a>
+                    @endif
+
                     <button type="submit" class="btn btn-primary mt-3">Registrar</button>
                 </form>
             </div>
