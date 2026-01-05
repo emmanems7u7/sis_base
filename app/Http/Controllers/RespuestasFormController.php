@@ -70,16 +70,8 @@ class RespuestasFormController extends Controller
         return view('formularios.respuestas_formulario', array_merge($resultado, compact('isMobile', 'breadcrumb', 'campos')));
     }
 
-
-
-
-    public function create($form, $modulo)
+    function validacion_modulo_form($formularioModelo, $moduloModelo, $modulo)
     {
-
-
-        // Buscar los modelos sin sobrescribir los parámetros originales
-        $formularioModelo = Formulario::find($form); // puede ser null
-        $moduloModelo = $modulo > 0 ? Modulo::find($modulo) : null; // solo buscamos si es >0
 
         // Validaciones
         if ($moduloModelo) {
@@ -98,6 +90,18 @@ class RespuestasFormController extends Controller
         if ($modulo > 0 && $moduloModelo === null) {
             return redirect()->back()->with('error', 'Módulo no encontrado.');
         }
+    }
+
+
+    public function create($form, $modulo)
+    {
+
+        // Buscar los modelos
+        $formularioModelo = Formulario::find($form);
+        $moduloModelo = $modulo > 0 ? Modulo::find($modulo) : null;
+
+        $this->validacion_modulo_form($formularioModelo, $moduloModelo, $modulo);
+
 
         // Construir breadcrumb
         if ($moduloModelo) {
@@ -196,7 +200,8 @@ class RespuestasFormController extends Controller
             'humanRules',
             'formulario',
             'breadcrumb',
-            'moduloModelo'
+            'moduloModelo',
+            'modulo'
         ));
     }
 
@@ -256,19 +261,28 @@ class RespuestasFormController extends Controller
 
         return $filasSeleccionadas;
     }
-    public function store(Request $request, $form)
+    public function store(Request $request, $form, $modulo)
     {
+
+        // Buscar los modelos
+        $formularioModelo = Formulario::find($form);
+        $moduloModelo = $modulo > 0 ? Modulo::find($modulo) : null;
+
+        $this->validacion_modulo_form($formularioModelo, $moduloModelo, $modulo);
+
 
         $campos = CamposForm::where('form_id', $form)->get();
 
         $rules = $this->validacion($campos);
-        $validatedData = $request->validate($rules);
+
+        $request->validate($rules);
 
         $errores = $this->FormularioRepository->validarOpcionesCatalogo($campos, $request);
 
         if (!empty($errores)) {
             return redirect()->back()->withErrors($errores)->withInput();
         }
+
 
         DB::beginTransaction();
         try {
@@ -284,10 +298,8 @@ class RespuestasFormController extends Controller
             $evento = 'on_create';
 
 
-
-
-
             $resultado = $this->FormLogicInterface->ValidarLogica($respuesta, $filasSeleccionadas, $evento);
+
 
 
             //Eliminar valores vacíos o nulos
@@ -319,13 +331,25 @@ class RespuestasFormController extends Controller
 
 
 
-
-
             DB::commit();
 
             DB::disconnect();
-            return redirect()->route('formularios.respuestas.formulario', $form)
-                ->with('status', 'Registro creado correctamente.');
+
+
+            //Definir retorno de ruta 
+            if ($moduloModelo) {
+
+                return redirect()->route('modulo.index', $moduloModelo->id)
+                    ->with([
+                        'status' => 'Registro creado correctamente.',
+                        'formulario_id' => $formularioModelo->id
+                    ]);
+            } else {
+
+                return redirect()->route('formularios.respuestas.formulario', $form)
+                    ->with('status', 'Registro creado correctamente.');
+            }
+
 
         } catch (\Exception $e) {
             DB::rollBack();
@@ -554,17 +578,38 @@ class RespuestasFormController extends Controller
 
 
 
-    public function edit(RespuestasForm $respuesta)
+    public function edit(RespuestasForm $respuesta, $modulo)
     {
 
-        $formulario = $respuesta->formulario()->with('campos')->first();
-        $breadcrumb = [
-            ['name' => 'Inicio', 'url' => route('home')],
-            ['name' => 'Formularios', 'url' => route('formularios.index')],
-            ['name' => 'Respuestas Formulario', 'url' => route('formularios.respuestas.formulario', $formulario)],
 
-            ['name' => 'Editar Datos ', 'url' => route('permissions.index')],
-        ];
+
+        $formulario = $respuesta->formulario()->with('campos')->first();
+
+        // Buscar los modelos
+        $moduloModelo = $modulo > 0 ? Modulo::find($modulo) : null;
+
+        $this->validacion_modulo_form($formulario, $moduloModelo, $modulo);
+
+
+        // Construir breadcrumb
+        if ($moduloModelo) {
+            $breadcrumb = [
+                ['name' => 'Inicio', 'url' => route('home')],
+                ['name' => 'Módulo ' . $moduloModelo->nombre, 'url' => route('modulo.index', $moduloModelo->id)],
+                ['name' => 'Editar ' . $formulario->nombre, 'url' => route('permissions.index')],
+            ];
+        } else {
+            $breadcrumb = [
+                ['name' => 'Inicio', 'url' => route('home')],
+                ['name' => 'Formularios', 'url' => route('formularios.index')],
+                ['name' => 'Respuestas Formulario', 'url' => route('formularios.respuestas.formulario', $formulario)],
+
+                ['name' => 'Editar Datos ', 'url' => route('permissions.index')],
+            ];
+        }
+
+
+
 
         // Cargar las opciones de catálogo para cada campo
         $campos = $formulario->campos->sortBy('posicion')->map(function ($campo) {
@@ -579,12 +624,30 @@ class RespuestasFormController extends Controller
         // Asignar los campos procesados al formulario
         $formulario->campos = $camposProcesados;
 
-        return view('formularios.editar_datos_form', compact('breadcrumb', 'respuesta', 'formulario', 'campos'));
+        return view('formularios.editar_datos_form', compact(
+            'breadcrumb',
+            'respuesta',
+            'formulario',
+            'campos',
+            'moduloModelo',
+            'modulo'
+        ));
     }
 
-    public function update(Request $request, RespuestasForm $respuesta)
+    public function update(Request $request, RespuestasForm $respuesta, $modulo)
     {
         $form = $respuesta->form_id;
+
+
+        // Buscar los modelos
+        $formularioModelo = Formulario::find($form);
+        $moduloModelo = $modulo > 0 ? Modulo::find($modulo) : null;
+
+        $this->validacion_modulo_form($formularioModelo, $moduloModelo, $modulo);
+
+
+
+
 
         // 1️ Obtener los campos del formulario
         $campos = CamposForm::where('form_id', $form)->get();
@@ -685,8 +748,23 @@ class RespuestasFormController extends Controller
 
             DB::commit();
             DB::disconnect();
-            return redirect()->route('formularios.respuestas.formulario', $form)
-                ->with('status', 'Respuesta actualizada correctamente.');
+
+
+            //Definir retorno de ruta 
+            if ($moduloModelo) {
+
+                return redirect()->route('modulo.index', $moduloModelo->id)
+                    ->with([
+                        'status' => 'Respuesta actualizada correctamente.',
+                        'formulario_id' => $formularioModelo->id
+                    ]);
+            } else {
+
+                return redirect()->route('formularios.respuestas.formulario', $form)
+                    ->with('status', 'Respuesta actualizada correctamente.');
+            }
+
+
 
         } catch (\Exception $e) {
             DB::rollBack();

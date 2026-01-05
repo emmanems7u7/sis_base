@@ -71,7 +71,7 @@
 
                     <td>{{ $respuesta->created_at->format('d/m/Y H:i') }}</td>
                     <td>
-                        <a href="{{ route('respuestas.edit', $respuesta) }}" class="btn btn-sm btn-warning">
+                        <a href="{{ route('respuestas.edit', ['respuesta' => $respuesta , 'modulo' => 0 ]) }}" class="btn btn-sm btn-warning">
                             <i class="fas fa-pencil-alt"></i> Editar
                         </a>
 

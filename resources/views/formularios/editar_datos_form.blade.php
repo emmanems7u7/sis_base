@@ -6,7 +6,7 @@
         @include('formularios.contenedor_superior', ['formulario' => $formulario])
         <div class="card mt-3 shadow-lg">
             <div class="card-body">
-                <form action="{{ route('respuestas.update', $respuesta) }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('respuestas.update', ['respuesta' => $respuesta ,'modulo' => $modulo ]) }}" method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 

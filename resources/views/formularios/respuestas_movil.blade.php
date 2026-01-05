@@ -60,7 +60,7 @@
                 </div>
 
                 <div class="card-footer">
-                    <a href="{{ route('respuestas.edit', $respuesta) }}" class="btn btn-sm btn-warning me-1">
+                    <a href="{{ route('respuestas.edit', ['respuesta' => $respuesta , 'modulo' => 0 ]) }}" class="btn btn-sm btn-warning me-1">
                         <i class="fas fa-pencil-alt"></i> Editar
                     </a>
                     <a href="#" class="btn btn-sm btn-danger"

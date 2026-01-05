@@ -127,7 +127,7 @@ class FormLogicRepository implements FormLogicInterface
     public function ValidarLogica(RespuestasForm $respuesta, $filasSeleccionadas, $evento)
     {
 
-
+        $resultado[] = '';
         $reglas = FormLogicRule::where('form_id', $respuesta->form_id)
             ->where('evento', $evento)
             ->where('activo', true)

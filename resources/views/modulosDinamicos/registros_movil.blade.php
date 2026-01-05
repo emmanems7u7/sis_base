@@ -77,7 +77,7 @@ $respuestas = $item['respuestas'];
                     </ul>
                 </div>
                 <div class="card-footer d-flex justify-content-start flex-wrap">
-                    <a href="{{ route('respuestas.edit', $respuesta) }}" class="btn btn-sm btn-warning me-1 mb-1">
+                    <a href="{{ route('respuestas.edit',  ['respuesta' => $respuesta , 'modulo' => $modulo->id ]) }}" class="btn btn-sm btn-warning me-1 mb-1">
                         <i class="fas fa-pencil-alt"></i> Editar
                     </a>
                     <a href="#" class="btn btn-sm btn-danger mb-1"

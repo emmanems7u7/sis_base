@@ -46,39 +46,44 @@
 <script src="https://cdn.jsdelivr.net/npm/fullcalendar@6.1.11/locales-all.global.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.14.0/Sortable.min.js"></script>
 
-    @php
-        use App\Models\Seccion;
-        use Carbon\Carbon;
-        use App\Models\ConfiguracionCredenciales;
-        use App\Models\Configuracion;
-        use App\Models\UserPersonalizacion;
-        $secciones = Seccion::with('menus')->orderBy('posicion')->get();
-        $config = ConfiguracionCredenciales::first();
-        $configuracion = Configuracion::first();
-       
+@php
+    use App\Models\Seccion;
+    use Carbon\Carbon;
+    use App\Models\ConfiguracionCredenciales;
+    use App\Models\Configuracion;
+    use App\Models\UserPersonalizacion;
+    use Illuminate\Support\Facades\Auth;
+    use Illuminate\Support\Facades\Schema;
+
+    // Secciones y configuraciones
+    $secciones = Seccion::with('menus')->orderBy('posicion')->get();
+    $config = ConfiguracionCredenciales::first();
+    $configuracion = Configuracion::first();
+
+    // Usuario autenticado
     $user = auth()->user();
 
-    if (Schema::hasTable('user_personalizacions')) {
-    $preferencias = UserPersonalizacion::where('user_id', $user->id)->first();
+    // Preferencias del usuario (solo si existe usuario y tabla)
+    if ($user && Schema::hasTable('user_personalizacions')) {
+        $preferencias = UserPersonalizacion::where('user_id', $user->id)->first();
+    } else {
+        $preferencias = null;
+    }
+
+    // Control de cambio de contraseña
+    if (Auth::check() && Auth::user()->usuario_fecha_ultimo_password) {
+        $ultimoCambio = Carbon::parse(Auth::user()->usuario_fecha_ultimo_password);
+        $diferenciaDias = (int) $ultimoCambio->diffInDays(Carbon::now());
+
+        if ($config && $diferenciaDias >= $config->conf_duracion_max) {
+            $tiempo_cambio_contraseña = 1; // Debe cambiar contraseña
         } else {
-            $preferencias = null;
+            $tiempo_cambio_contraseña = 2; // Aún válida
         }
-       
-        if (Auth::user()->usuario_fecha_ultimo_password) {
-            $ultimoCambio = Carbon::parse(Auth::user()->usuario_fecha_ultimo_password);
-
-            $diferenciaDias = (int) $ultimoCambio->diffInDays(Carbon::now());
-
-            if ($diferenciaDias >= $config->conf_duracion_max) {
-                $tiempo_cambio_contraseña = 1;
-            } else {
-                $tiempo_cambio_contraseña = 2;
-            }
-        } else {
-            $tiempo_cambio_contraseña = 1;
-        }
-
-    @endphp
+    } else {
+        $tiempo_cambio_contraseña = 1; // Forzar cambio si no hay fecha o usuario
+    }
+@endphp
 </head>
  
 
@@ -324,7 +329,6 @@
 
 <div class="notification-wrapper">
 @php
-    use Illuminate\Support\Facades\Schema;
 
     $tieneNotificaciones = false;
     $cantidadNotificaciones = 0;

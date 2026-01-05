@@ -24,7 +24,7 @@
 
         <div class="card mt-3 shadow-lg">
             <div class="card-body">
-                <form action="{{ route('formularios.responder', $formulario->id) }}" method="POST"
+                <form action="{{ route('formularios.responder', ['form' => $formulario->id, 'modulo' => $modulo ]) }}" method="POST"
                     enctype="multipart/form-data">
                     @csrf
                     @include('formularios._campos', ['campos' => $formulario->campos->sortBy('posicion'), 'valores' => []])

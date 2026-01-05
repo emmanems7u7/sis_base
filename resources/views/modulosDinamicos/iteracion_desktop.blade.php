@@ -1,4 +1,9 @@
 
+@php
+    $formularioActivo = session('formulario_id') 
+        ?? ($formulariosConRespuestas[0]['formulario']->id ?? null);
+@endphp
+
 
 @if($modo === 'mostrar_todos')
 
@@ -17,19 +22,23 @@
         @endphp
         <div class="accordion-item">
             <h2 class="accordion-header" id="headingStayOpen_{{ $formulario->id }}">
-                <button class="accordion-button {{ $index !== 0 ? 'collapsed' : '' }}" 
-                        type="button" 
-                        data-bs-toggle="collapse" 
-                        data-bs-target="#collapseStayOpen_{{ $formulario->id }}" 
-                        aria-expanded="{{ $index === 0 ? 'true' : 'false' }}" 
-                        aria-controls="collapseStayOpen_{{ $formulario->id }}">
+            <button class="accordion-button {{ $formularioActivo != $formulario->id ? 'collapsed' : '' }}"
+                    type="button"
+                    data-bs-toggle="collapse"
+                    data-bs-target="#collapseStayOpen_{{ $formulario->id }}"
+                    aria-expanded="{{ $formularioActivo == $formulario->id ? 'true' : 'false' }}">
+
+
+
                         <i class="fas fa-chevron-right me-2"></i>
                         {{ $formulario->nombre }}
                 </button>
+
+
+                
             </h2>
-            <div id="collapseStayOpen_{{ $formulario->id }}" 
-                 class="accordion-collapse collapse {{ $index === 0 ? 'show' : '' }}" 
-                 aria-labelledby="headingStayOpen_{{ $formulario->id }}">
+            <div id="collapseStayOpen_{{ $formulario->id }}"
+                class="accordion-collapse collapse {{ $formularioActivo == $formulario->id ? 'show' : '' }}">
                 <div class="accordion-body">
                     @include('modulosDinamicos.registros_desktop', ['item' => $item, 'modulo' => $modulo])
                 </div>
@@ -47,10 +56,10 @@
             @foreach($formulariosConRespuestas as $index => $item)
                 @php $formulario = $item['formulario']; @endphp
                 <li class="nav-item">
-                    <a class="nav-link mb-0 px-0 py-1 d-flex align-items-center justify-content-center {{ $index === 0 ? 'active' : '' }}"
-                       href="javascript:;"
-                       role="tab"
-                       data-target="#formulario_{{ $formulario->id }}">
+                <a class="nav-link mb-0 px-0 py-1 d-flex align-items-center justify-content-center
+                        {{ $formularioActivo == $formulario->id ? 'active' : '' }}"
+                    href="javascript:;"
+                    data-target="#formulario_{{ $formulario->id }}">
                         <i class="fas fa-file-alt"></i>
                         <span class="ms-2">{{ $formulario->nombre }}</span>
                     </a>
@@ -63,8 +72,9 @@
     <div class="mt-3">
         @foreach($formulariosConRespuestas as $index => $item)
             @php $formulario = $item['formulario']; @endphp
-            <div id="formulario_{{ $formulario->id }}" 
-                 class="formulario-tab-content {{ $index === 0 ? 'fade show' : 'fade d-none' }}">
+            <div id="formulario_{{ $formulario->id }}"
+                class="formulario-tab-content fade
+                {{ $formularioActivo == $formulario->id ? 'show' : 'd-none' }}">
                 @include('modulosDinamicos.registros_desktop', ['item' => $item, 'modulo' => $modulo])
             </div>
         @endforeach
@@ -115,9 +125,10 @@ window.addEventListener('load', () => {
 <div class="mb-3">
     <label for="selectorFormularios_{{ $modulo->id }}" class="form-label">Selecciona un formulario:</label>
     <select class="form-select" id="selectorFormularios_{{ $modulo->id }}">
-        @foreach($formulariosConRespuestas as $index => $item)
+        @foreach($formulariosConRespuestas as $item)
             @php $formulario = $item['formulario']; @endphp
-            <option value="{{ $formulario->id }}" {{ $index === 0 ? 'selected' : '' }}>
+            <option value="{{ $formulario->id }}"
+                {{ $formularioActivo == $formulario->id ? 'selected' : '' }}>
                 {{ $formulario->nombre }}
             </option>
         @endforeach
