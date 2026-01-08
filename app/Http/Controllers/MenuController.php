@@ -111,13 +111,13 @@ class MenuController extends Controller
 
         if ($permiso != null) {
 
-            $this->PermisoRepository->eliminarDeSeeder($permiso);
+            $this->PermisoRepository->eliminarDeSeederPermiso($permiso);
             $permiso->delete();
 
         }
         if ($menu != null) {
 
-            $this->menuRepository->eliminarMenuDeSeeders($menu);
+            $this->menuRepository->eliminarDeSeederMenu($menu);
             $menu->delete();
         }
         return redirect()->route('menus.index')->with('status', 'Menú eliminado exitosamente.');

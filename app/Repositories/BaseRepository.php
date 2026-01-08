@@ -32,76 +32,90 @@ class BaseRepository
         return $this->purifier->purify($content);
     }
 
-    protected function agregarSeederADatabaseSeeder(string $nombreClase, string $prefijo): void
+    protected function agregarSeederADatabaseSeeder(string $nombreClase, string $stage, string $tipo): void
     {
-        $rutaDatabaseSeeder = database_path('seeders/DatabaseSeeder.php');
-        if (!File::exists($rutaDatabaseSeeder)) {
+        $rutaPadre = database_path("seeders/{$stage}/{$tipo}/{$tipo}Seeder.php");
+
+        // Crear archivo padre si no existe
+        if (!File::exists($rutaPadre)) {
+            $contenidoBase = <<<PHP
+    <?php
+    
+    namespace Database\Seeders\\{$stage}\\{$tipo};
+    
+    use Illuminate\Database\Seeder;
+    
+    class {$tipo}Seeder extends Seeder
+    {
+        public function run(): void
+        {
+            // SEEDERS GENERADOS
+        }
+    }
+    PHP;
+            File::ensureDirectoryExists(dirname($rutaPadre));
+            File::put($rutaPadre, $contenidoBase);
+        }
+
+        $contenido = File::get($rutaPadre);
+
+        $lineaNueva = "        \$this->call({$nombreClase}::class);";
+
+        // Extraer todas las líneas actuales de seeders
+        preg_match('/(\/\/ SEEDERS GENERADOS)(.*?)(\n\s*\})/s', $contenido, $matches);
+        $bloque = $matches[2] ?? '';
+
+        $lineas = [];
+
+        // Extraer cada línea de $this->call existente
+        if (preg_match_all('/\$this->call\((.*?)::class\);/', $bloque, $m)) {
+            $lineas = array_map(function ($cls) {
+                return "        \$this->call({$cls}::class);";
+            }, $m[1]);
+        }
+
+        // Agregar la nueva si no existe
+        if (!in_array($lineaNueva, $lineas)) {
+            $lineas[] = $lineaNueva;
+        }
+
+        // Ordenar alfabéticamente (YYYYMMDD funciona perfecto)
+        sort($lineas);
+
+        // Reconstruir el bloque
+        $nuevoBloque = "// SEEDERS GENERADOS\n" . implode("\n", $lineas);
+
+        // Reemplazar el bloque original dentro del método run()
+        $contenido = preg_replace(
+            '/(\/\/ SEEDERS GENERADOS)(.*?)(\n\s*\})/s',
+            $nuevoBloque . "$3",
+            $contenido,
+            1
+        );
+
+        File::put($rutaPadre, $contenido);
+    }
+
+    /**
+     * Elimina la línea $this->call(...) del seeder padre.
+     */
+    public function eliminarLlamadaDeSeederPadre(string $stage, string $tipo, string $nombreSeeder): void
+    {
+        $rutaPadre = database_path("seeders/{$stage}/{$tipo}/{$tipo}Seeder.php");
+        if (!File::exists($rutaPadre)) {
             return;
         }
 
-        $contenidoSeeder = File::get($rutaDatabaseSeeder);
-        $fecha = date('d-m-Y'); // Ej: 26-12-2025
-        $inicio = "/******************** Seeders creados automaticamente {$prefijo}{$fecha} ****************************/";
-        $fin = "/********************  Fin Seeders creados automaticamente {$prefijo}{$fecha} ****************************/";
-        $linea = "        \$this->call({$nombreClase}::class);";
+        $contenido = File::get($rutaPadre);
+        $linea = "        \$this->call({$nombreSeeder}::class);";
 
-        // Evitar duplicados globales
-        if (Str::contains($contenidoSeeder, $linea)) {
-            return;
-        }
+        if (Str::contains($contenido, $linea)) {
+            $contenido = str_replace($linea, '', $contenido);
 
-        // Detectar categoría según nombre de clase
-        $categoria = 'OTROS';
-        if (Str::contains($nombreClase, 'Seccion')) {
-            $categoria = 'SECCION';
-        } elseif (Str::contains($nombreClase, 'Menu')) {
-            $categoria = 'MENU';
-        } elseif (Str::contains($nombreClase, 'Permisos')) {
-            $categoria = 'PERMISOS';
-        }
+            // Limpiar líneas vacías dobles
+            $contenido = preg_replace("/\n{2,}/", "\n", $contenido);
 
-        // Si ya existe bloque de la fecha
-        if (Str::contains($contenidoSeeder, $inicio) && Str::contains($contenidoSeeder, $fin)) {
-            $contenidoModificado = preg_replace_callback(
-                "/(^[ \t]*" . preg_quote($inicio, '/') . ")(.*?)(^[ \t]*" . preg_quote($fin, '/') . ")/sm",
-                function ($matches) use ($linea, $categoria) {
-                    $bloque = $matches[2];
-                    $iniCat = "        // {$categoria}";
-                    $finCat = "        // FIN {$categoria}";
-
-                    if (Str::contains($bloque, $iniCat) && Str::contains($bloque, $finCat)) {
-                        return preg_replace_callback(
-                            "/(" . preg_quote($iniCat, '/') . ".*?" . preg_quote($finCat, '/') . ")/s",
-                            function ($sub) use ($linea, $finCat) {
-                                if (Str::contains($sub[0], $linea))
-                                    return $sub[0];
-                                return str_replace($finCat, $linea . "\n\n" . $finCat, $sub[0]);
-                            },
-                            $matches[0],
-                            1
-                        );
-                    }
-
-                    // Crear bloque nuevo de la categoría si no existe
-                    $nuevoSubbloque = "\n        // {$categoria}\n{$linea}\n\n        // FIN {$categoria}\n";
-                    return str_replace($matches[3], $nuevoSubbloque . $matches[3], $matches[0]);
-                },
-                $contenidoSeeder,
-                1
-            );
-
-            File::put($rutaDatabaseSeeder, $contenidoModificado);
-        } else {
-            // Crear bloque nuevo al final del método run()
-            $bloque = "\n        {$inicio}\n        // {$categoria}\n{$linea}\n\n        // FIN {$categoria}\n        {$fin}\n";
-            $contenidoModificado = preg_replace(
-                '/(    \})/m',
-                $bloque . "    }",
-                $contenidoSeeder,
-                1
-            );
-
-            File::put($rutaDatabaseSeeder, $contenidoModificado);
+            File::put($rutaPadre, $contenido);
         }
     }
 }

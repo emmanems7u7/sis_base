@@ -2,6 +2,7 @@
 
 namespace App\Interfaces;
 use App\Models\Menu;
+use App\Models\Seccion;
 
 interface MenuInterface
 {
@@ -9,10 +10,7 @@ interface MenuInterface
     public function CrearSeccion($request);
     public function ObtenerMenuPorSeccion($seccion_id);
 
-    function eliminarSeccionDeSeeder(int $id);
-
-    public function eliminarMenuDeSeeders(Menu $menu);
-
+    public function eliminarDeSeederSeccion(Seccion $seccion);
 
 
 }

@@ -93,8 +93,8 @@ class SeccionController extends Controller
 
 
         if ($permiso != null) {
-            $this->PermisoRepository->eliminarDeSeeder($permiso);
-            $this->menuRepository->eliminarSeccionDeSeeder($id);
+            $this->PermisoRepository->eliminarDeSeederPermiso($permiso);
+            $this->menuRepository->eliminarDeSeederSeccion($seccion);
 
             $permiso->delete();
 

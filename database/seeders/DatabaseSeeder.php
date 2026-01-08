@@ -1,122 +1,31 @@
 <?php
 
-namespace Database\Seeders;
-
-use App\Models\User;
-// use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
+
 class DatabaseSeeder extends Seeder
 {
-    /**
-     * Seed the application's database.
-     */
     public function run(): void
     {
+        //SEEDERS GENERALES
+        $this->call(\Database\Seeders\GEN\GenSeeder::class);
 
 
-        /*
-                User::factory()->create([
-                    'name' => 'admin',
-                    'email' => 'admin@admin.com',
-                    'password' => Hash::make('1'),
-                ]);*/
+        //SEEDERS POR ENTORNO
+        switch (strtoupper(env('APP_STAGE'))) {
+            case 'DEV':
+                $this->call(\Database\Seeders\DEV\DevSeeder::class);
+                break;
 
-        //Contenido minimo para levantar sistema
-/*
-        $this->call(class: RolesPermissionsSeeder::class);
-        $this->call(UserSeeder::class);
-        $this->call(class: CategoriaSeeeder::class);
-        $this->call(CatalogoSeeder::class);
-        $this->call(PermissionSeeder::class);
-        $this->call(ConfiguracionSeeder::class);
-        $this->call(ConfCorreoSeeder::class);
-        $this->call(SeccionesSeeder::class);
-        $this->call(MenusSeeder::class);
-        $this->call(ConfiguracionCredencialesSeeder::class);
+            case 'QA':
+                $this->call(\Database\Seeders\QA\QaSeeder::class);
+                break;
 
-        // Contenido minimo para levantar sistema
+            case 'PRODUCCION':
+                $this->call(\Database\Seeders\PROD\ProdSeeder::class);
+                break;
 
-        $this->call(GeneroSeeder::class);
-        $this->call(TipoDocumentoSeeder::class);
-        $this->call(FormulariosSeeder::class);
-        $this->call(class: CamposSeeder::class);
-         $this->call(class: TipoArchivosSeeder::class);
-        $this->call(class: TipoImagenesSeeder::class);
-        $this->call(class: TipoVideosSeeder::class);
-          $this->call(class: OperacionesCampoSeeder::class);
-        $this->call(class: TipoAccionSeeder::class);
-        $this->call(class: OperacionesCampoSeeder::class);
-        $this->call(class: TipoAccionSeeder::class);
-
-*/
-
-
-
-        // $this->call(EstadosActivoInactivoSeeder::class);
-
-
-        // Seeders creados automaticamente 28-08-2025
-
-        // SECCION
-        //  $this->call(Generado_SeederSeccion_20250828::class);
-
-        // FIN SECCION
-
-        // MENU
-        // $this->call(Generado_SeederMenu_20250828::class);
-        // $this->call(Generado_SeederMenu_20251012::class);
-        // FIN MENU
-
-        // PERMISOS
-        // $this->call(Generado_SeederPermisos_20250828::class);
-        // $this->call(Generado_SeederPermisos_20251012::class);
-
-        // FIN PERMISOS
-
-
-        // Fin Seeders creados automaticamente 28-08-2025
-
-
-        // SECCION
-
-        // FIN SECCION
-
-        // SECCION
-        //$this->call(Generado_SeederSeccion_20251013::class);
-
-        // FIN SECCION
-
-        // MENU
-        // $this->call(Generado_SeederMenu_20251013::class);
-
-        // FIN MENU
-
-        // PERMISOS
-        // $this->call(Generado_SeederPermisos_20251013::class);
-
-        // FIN PERMISOS
-
-
-        /******************** Seeders creados automaticamente LOCAL_03-01-2026 ****************************/
-        // SECCION
-        $this->call(LOCAL_SeederSeccion_20260103::class);
-
-        // FIN SECCION
-
-        // PERMISOS
-        $this->call(LOCAL_SeederPermisos_20260103::class);
-
-        // FIN PERMISOS
-
-        // MENU
-        $this->call(LOCAL_SeederMenu_20260103::class);
-
-        // FIN MENU
-        /********************  Fin Seeders creados automaticamente LOCAL_03-01-2026 ****************************/
+            default:
+                throw new \Exception('Entorno no soportado: ' . env('APP_ENV'));
+        }
     }
-
-
-
-
 }

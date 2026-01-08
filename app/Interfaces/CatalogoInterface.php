@@ -2,6 +2,8 @@
 
 namespace App\Interfaces;
 
+use App\Models\Categoria;
+
 interface CatalogoInterface
 {
     public function GuardarCatalogo($request);
@@ -14,5 +16,8 @@ interface CatalogoInterface
 
     public function obtenerCatalogosPorCategoriaID($id, $soloActivos = false, $limit = null, $offset = 0);
     public function buscarPorDescripcion($categoriaId, $descripcion);
+
+    public function eliminarDeSeederCategoria(Categoria $categoria);
+
 
 }

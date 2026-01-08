@@ -71,28 +71,21 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
 
     protected function guardarEnSeederCategoria(Categoria $categoria): void
     {
+        // Determinar stage y carpeta según tipo
+        $stage = strtoupper(env('APP_STAGE'));
+        $tipo = 'Categorias';
 
-        // Determinar prefijo según entorno
-        $entorno = app()->environment(); // local, production, staging, etc.
-        switch ($entorno) {
-            case 'local':
-                $prefijo = 'LOCAL_';
-                break;
-            case 'production':
-                $prefijo = 'PROD_';
-                break;
-            case 'staging':
-                $prefijo = 'STAGING_';
-                break;
-            default:
-                $prefijo = 'GEN_';
-        }
+        $carpetaSeeder = match ($stage) {
+            'DEV' => "DEV\Categorias",
+            'QA' => "QA\Categorias",
+            'PROD' => "PROD\Categorias",
+            default => "GEN\Categorias",
+        };
 
-
-        $fecha = now()->format('Ymd'); // Incluye hora para mayor unicidad
-        $nombreSeeder = "{$prefijo}SeederCategoria_{$fecha}.php";
-        $nombreClase = "{$prefijo}SeederCategoria_{$fecha}";
-        $rutaSeeder = database_path("seeders/{$nombreSeeder}");
+        // Timestamp para nombre único
+        $fecha = now()->format('Ymd');
+        $nombreClase = "SeederCategoria_{$fecha}";
+        $rutaSeeder = database_path("seeders/{$carpetaSeeder}/{$nombreClase}.php");
 
         // Preparamos los valores
         $nombre = addslashes($categoria->nombre);
@@ -100,59 +93,72 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
         $estado = addslashes($categoria->estado ?? 'activo');
 
         $registro = <<<PHP
-                                [
-                                    'id' => {$categoria->id},
-                                    'nombre' => '{$nombre}',
-                                    'descripcion' => '{$descripcion}',
-                                    'estado' => '{$estado}',
-                                ],
-                    PHP;
+            [
+                'id' => {$categoria->id},
+                'nombre' => '{$nombre}',
+                'descripcion' => '{$descripcion}',
+                'estado' => '{$estado}',
+            ],
+        PHP;
+
+        // Crear carpeta si no existe
+        File::ensureDirectoryExists(database_path("seeders/{$carpetaSeeder}"));
 
         // Si no existe, creamos el archivo con la estructura base
         if (!File::exists($rutaSeeder)) {
             $plantilla = <<<PHP
-                    <?php
-                    
-                    namespace Database\Seeders;
-                    
-                    use Illuminate\Database\Seeder;
-                    use App\Models\Categoria;
-                    
-                    class {$nombreClase} extends Seeder
-                    {
-                        public function run(): void
-                        {
-                            \$categorias = [{$registro}];
-                    
-                            foreach (\$categorias as \$data) {
-                                Categoria::firstOrCreate(
-                                    ['nombre' => \$data['nombre']],
-                                    \$data
-                                );
-                            }
-                        }
-                    }
-                    PHP;
+    <?php
+    
+    namespace Database\Seeders\\{$carpetaSeeder};
+    
+    use Illuminate\Database\Seeder;
+    use App\Models\Categoria;
+    
+    class {$nombreClase} extends Seeder
+    {
+        public function run(): void
+        {
+            \$categorias = [{$registro}];
+    
+            foreach (\$categorias as \$data) {
+                Categoria::firstOrCreate(
+                    ['nombre' => \$data['nombre']],
+                    \$data
+                );
+            }
+        }
+    }
+    PHP;
 
             File::put($rutaSeeder, $plantilla);
             return;
         }
 
-        // Si ya existe, agregamos el nuevo registro si no está
+        // Si ya existe, agregamos el nuevo registro si no está duplicado
         $contenido = File::get($rutaSeeder);
         if (!Str::contains($contenido, "'nombre' => '{$nombre}'")) {
             $contenido = str_replace('        $categorias = [', "        \$categorias = [\n{$registro}", $contenido);
             File::put($rutaSeeder, $contenido);
         }
 
-        // Agregamos a DatabaseSeeder con prefijo
-        $this->agregarSeederADatabaseSeeder($nombreClase, $prefijo);
+        // Agregar automáticamente al seeder maestro del stage
+        $this->agregarSeederADatabaseSeeder($nombreClase, $stage, $tipo);
     }
 
-    protected function eliminarDeSeederCategoria(Categoria $categoria): array
+
+
+    public function eliminarDeSeederCategoria(Categoria $categoria)
     {
         $archivosModificados = [];
-        $seeders = File::files(database_path('seeders'));
+        $stage = strtoupper(env('APP_STAGE'));
+        $tipo = 'Categorias';
+        $rutaCarpeta = database_path("seeders/{$stage}/{$tipo}");
+
+        if (!File::exists($rutaCarpeta)) {
+            return $archivosModificados;
+        }
+
+        $seeders = File::files($rutaCarpeta);
 
         foreach ($seeders as $seeder) {
             // Solo seeders de categorías generados
@@ -166,11 +172,23 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
             $nombreEscapado = preg_quote($categoria->nombre, '/');
 
             // Regex para eliminar el array que tenga el 'nombre' de la categoría
-            $pattern = "/\[\s*'nombre'\s*=>\s*'{$nombreEscapado}'.*?\],?\s*/s";
+            $pattern = "/\[\s*'id'.*?'nombre'\s*=>\s*'{$nombreEscapado}'.*?\],?/s";
 
             $contenido = preg_replace($pattern, '', $contenido, 1);
 
-            if ($contenido !== $contenidoOriginal) {
+            // Limpiar comas sobrantes o líneas vacías
+            $contenido = preg_replace("/,\s*(\s*\])/s", "$1", $contenido);
+            $contenido = preg_replace("/\[\s*\]/s", '[]', $contenido);
+
+            if (Str::contains($contenido, '[]')) {
+                // Si no quedan registros, eliminar el archivo
+                File::delete($seeder->getRealPath());
+                $archivosModificados[] = $seeder->getFilename();
+
+                // Quitar la llamada del seeder padre
+                $this->eliminarLlamadaDeSeederPadre($stage, $tipo, pathinfo($seeder->getFilename(), PATHINFO_FILENAME));
+
+            } elseif ($contenido !== $contenidoOriginal) {
                 File::put($seeder->getRealPath(), $contenido);
                 $archivosModificados[] = $seeder->getFilename();
             }
@@ -179,28 +197,24 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
         return $archivosModificados;
     }
 
+
+
     protected function guardarEnSeederCatalogo(Catalogo $catalogo): void
     {
-        // Determinar prefijo según entorno
-        $entorno = app()->environment(); // local, production, staging, etc.
-        switch ($entorno) {
-            case 'local':
-                $prefijo = 'LOCAL_';
-                break;
-            case 'production':
-                $prefijo = 'PROD_';
-                break;
-            case 'staging':
-                $prefijo = 'STAGING_';
-                break;
-            default:
-                $prefijo = 'GEN_';
-        }
+        // Determinar stage y carpeta según tipo
+        $stage = strtoupper(env('APP_STAGE'));
+        $tipo = 'Catalogos';
+        $carpetaSeeder = match ($stage) {
+            'DEV' => "DEV\Catalogos",
+            'QA' => "QA\Catalogos",
+            'PROD' => "PROD\Catalogos",
+            default => "GEN\Catalogos",
+        };
 
+        // Timestamp para nombre único
         $fecha = now()->format('Ymd');
-        $nombreSeeder = "{$prefijo}SeederCatalogo_{$fecha}.php";
-        $nombreClase = "{$prefijo}SeederCatalogo_{$fecha}";
-        $rutaSeeder = database_path("seeders/{$nombreSeeder}");
+        $nombreClase = "SeederCatalogo_{$fecha}";
+        $rutaSeeder = database_path("seeders/{$carpetaSeeder}/{$nombreClase}.php");
 
         // Escapamos valores
         $categoriaId = (int) $catalogo->categoria_id;
@@ -220,66 +234,96 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
                 'catalogo_estado' => '{$estado}',
                 'accion_usuario' => '{$accion}',
             ],
-            PHP;
+        PHP;
 
+        // Crear carpeta si no existe
+        File::ensureDirectoryExists(database_path("seeders/{$carpetaSeeder}"));
+
+        // Crear archivo si no existe
         if (!File::exists($rutaSeeder)) {
             $plantilla = <<<PHP
-            <?php
-
-            namespace Database\Seeders;
-
-            use Illuminate\Database\Seeder;
-            use App\Models\Catalogo;
-
-            class {$nombreClase} extends Seeder
-            {
-                public function run(): void
-                {
-                    \$catalogos = [{$registro}];
-
-                    foreach (\$catalogos as \$data) {
-                        Catalogo::firstOrCreate(
-                            ['catalogo_codigo' => \$data['catalogo_codigo']],
-                            \$data
-                        );
-                    }
-                }
+    <?php
+    
+    namespace Database\Seeders\\{$stage}\\{$tipo};
+    
+    use Illuminate\Database\Seeder;
+    use App\Models\Catalogo;
+    
+    class {$nombreClase} extends Seeder
+    {
+        public function run(): void
+        {
+            \$catalogos = [{$registro}];
+    
+            foreach (\$catalogos as \$data) {
+                Catalogo::firstOrCreate(
+                    ['catalogo_codigo' => \$data['catalogo_codigo']],
+                    \$data
+                );
             }
-            PHP;
+        }
+    }
+    PHP;
             File::put($rutaSeeder, $plantilla);
+            // Agregar automáticamente al seeder padre
+            $this->agregarSeederADatabaseSeeder($nombreClase, $stage, $tipo);
             return;
         }
 
-        // Si ya existe, evitamos duplicados
+        // Si ya existe, agregar registro si no está duplicado
         $contenido = File::get($rutaSeeder);
         if (!Str::contains($contenido, "'catalogo_codigo' => '{$codigo}'")) {
             $contenido = str_replace('        $catalogos = [', "        \$catalogos = [\n{$registro}", $contenido);
             File::put($rutaSeeder, $contenido);
         }
 
-        $this->agregarSeederADatabaseSeeder($nombreClase, $prefijo);
+        // Agregar al padre, ordenado
+        $this->agregarSeederADatabaseSeeder($nombreClase, $stage, $tipo);
     }
+
+
     protected function eliminarDeSeederCatalogo(Catalogo $catalogo): void
     {
-        $fecha = now()->format('Ymd');
-        $nombreSeeder = "SeederCatalogo_{$fecha}.php";
-        $rutaSeeder = database_path("seeders/{$nombreSeeder}");
+        $stage = strtoupper(env('APP_STAGE'));
+        $tipo = 'Catalogos';
+        $carpetaSeeder = database_path("seeders/{$stage}/{$tipo}");
 
-        if (!File::exists($rutaSeeder)) {
+        if (!File::exists($carpetaSeeder)) {
             return;
         }
 
-        $codigoEscapado = preg_quote($catalogo->catalogo_codigo, '/');
-        $contenido = File::get($rutaSeeder);
+        $seeders = File::files($carpetaSeeder);
 
-        $pattern = "/[ \t]*\[\s*'catalogo_codigo'\s*=>\s*'{$codigoEscapado}'(?:.*?\n)*?\s*\],\s*/";
+        foreach ($seeders as $seeder) {
+            if (!Str::contains($seeder->getFilename(), 'SeederCatalogo_')) {
+                continue;
+            }
 
-        $contenidoModificado = preg_replace($pattern, '', $contenido, 1);
+            $contenido = File::get($seeder->getRealPath());
+            $contenidoOriginal = $contenido;
 
-        if ($contenidoModificado !== null && $contenidoModificado !== $contenido) {
-            File::put($rutaSeeder, $contenidoModificado);
+            $codigoEscapado = preg_quote($catalogo->catalogo_codigo, '/');
+
+            $pattern = "/\[\s*'catalogo_codigo'\s*=>\s*'{$codigoEscapado}'.*?\],?/s";
+
+            $contenido = preg_replace($pattern, '', $contenido, 1);
+
+            // Limpiar comas sobrantes y array vacío
+            $contenido = preg_replace("/,\s*(\s*\])/s", "$1", $contenido);
+            $contenido = preg_replace("/\[\s*\]/s", '[]', $contenido);
+
+            if (Str::contains($contenido, '[]')) {
+                // Si no quedan registros, eliminar el archivo
+                File::delete($seeder->getRealPath());
+
+                // Quitar del seeder padre
+                $this->eliminarLlamadaDeSeederPadre($stage, $tipo, pathinfo($seeder->getFilename(), PATHINFO_FILENAME));
+            } elseif ($contenido !== $contenidoOriginal) {
+                File::put($seeder->getRealPath(), $contenido);
+            }
         }
     }
+
     public function obtenerCatalogosPorCategoria($nombreCategoria, $soloActivos = false)
     {
         $categoria = Categoria::where('nombre', $nombreCategoria)->first();

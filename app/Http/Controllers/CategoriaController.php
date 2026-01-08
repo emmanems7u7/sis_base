@@ -80,8 +80,10 @@ class CategoriaController extends Controller
     {
         $categoria = Categoria::findOrFail($id);
 
+        $this->CatalogoRepository->eliminarDeSeederCategoria($categoria);
+
         $categoria->delete();
 
-        return redirect()->route('catalogo.index')->with('success', 'Categoría eliminada.');
+        return redirect()->back()->with('status', 'Categoría eliminada.');
     }
 }
