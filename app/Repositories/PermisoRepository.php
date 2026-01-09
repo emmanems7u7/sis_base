@@ -8,14 +8,23 @@ use App\Models\Menu;
 use App\Models\Seccion;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
+
+
+use App\Interfaces\SeederInterface;
+
+
 class PermisoRepository extends BaseRepository implements PermisoInterface
 {
     protected $permissions;
+    protected $SeederRepository;
 
-    public function __construct()
+
+
+    public function __construct(SeederInterface $seederRepository)
     {
         parent::__construct();
         $this->permissions = Permission::all();
+        $this->SeederRepository = $seederRepository;
     }
     public function GetPermisosTipo($tipo)
     {
@@ -86,120 +95,10 @@ class PermisoRepository extends BaseRepository implements PermisoInterface
             $permiso = Permission::create($data);
         }
 
-        $this->guardarEnSeederPermiso($permiso, $idRelacion);
+        $this->SeederRepository->guardarEnSeederPermiso($permiso, $idRelacion);
 
         return $permiso;
     }
-    protected function guardarEnSeederPermiso(Permission $permiso, $id_relacion = 0): void
-    {
-        $stage = strtoupper(env('APP_STAGE'));
-        $tipo = 'Permisos';
-        $carpetaSeeder = match ($stage) {
-            'DEV' => "DEV\Permisos",
-            'QA' => "QA\Permisos",
-            'PROD' => "PROD\Permisos",
-            default => "GEN\Permisos",
-        };
-
-        $fecha = now()->format('Ymd');
-        $nombreClase = "SeederPermisos_{$fecha}";
-        $rutaSeeder = database_path("seeders/{$carpetaSeeder}/{$nombreClase}.php");
-
-        $name = addslashes($permiso->name);
-        $tipoPermiso = addslashes($permiso->tipo);
-        $guard = addslashes($permiso->guard_name);
-
-        $registro = <<<PHP
-            [
-                'id' => {$permiso->id},
-                'name' => '{$name}',
-                'tipo' => '{$tipoPermiso}',
-                'id_relacion' => {$id_relacion},
-                'guard_name' => '{$guard}',
-            ],
-        PHP;
-
-        File::ensureDirectoryExists(database_path("seeders/{$carpetaSeeder}"));
-
-        if (!File::exists($rutaSeeder)) {
-            $plantilla = <<<PHP
-    <?php
-    
-    namespace Database\Seeders\\{$stage}\\{$tipo};
-    
-    use Illuminate\Database\Seeder;
-    use Spatie\Permission\Models\Permission;
-    
-    class {$nombreClase} extends Seeder
-    {
-        public function run(): void
-        {
-            \$permisos = [{$registro}];
-    
-            foreach (\$permisos as \$permiso) {
-                Permission::firstOrCreate(
-                    ['name' => \$permiso['name'], 'tipo' => \$permiso['tipo']],
-                    \$permiso
-                );
-            }
-        }
-    }
-    PHP;
-            File::put($rutaSeeder, $plantilla);
-            $this->agregarSeederADatabaseSeeder($nombreClase, $stage, $tipo);
-            return;
-        }
-
-        $contenido = File::get($rutaSeeder);
-        if (!Str::contains($contenido, "'name' => '{$name}'")) {
-            $contenido = str_replace('        $permisos = [', "        \$permisos = [\n{$registro}", $contenido);
-            File::put($rutaSeeder, $contenido);
-        }
-
-        $this->agregarSeederADatabaseSeeder($nombreClase, $stage, $tipo);
-    }
-
-
-    public function eliminarDeSeederPermiso(Permission $permiso): void
-    {
-        $stage = strtoupper(env('APP_STAGE'));
-        $tipo = 'Permisos';
-        $carpetaSeeder = database_path("seeders/{$stage}/{$tipo}");
-
-        if (!File::exists($carpetaSeeder)) {
-            return;
-        }
-
-        $seeders = File::files($carpetaSeeder);
-
-        foreach ($seeders as $seeder) {
-            if (!Str::contains($seeder->getFilename(), 'SeederPermisos_')) {
-                continue;
-            }
-
-            $contenido = File::get($seeder->getRealPath());
-            $contenidoOriginal = $contenido;
-
-            $nameEscapado = preg_quote($permiso->name, '/');
-            $tipoEscapado = preg_quote($permiso->tipo, '/');
-            $guardEscapado = preg_quote($permiso->guard_name, '/');
-
-            $pattern = "/\[\s*'id'\s*=>\s*\d+\s*,\s*'name'\s*=>\s*'{$nameEscapado}'\s*,\s*'tipo'\s*=>\s*'{$tipoEscapado}'\s*,[^\]]*'guard_name'\s*=>\s*'{$guardEscapado}'\s*\],?/s";
-
-            $contenido = preg_replace($pattern, '', $contenido, 1);
-            $contenido = preg_replace("/,\s*(\s*\])/s", "$1", $contenido); // limpiar comas sobrantes
-            $contenido = preg_replace("/\[\s*\]/s", '[]', $contenido);
-
-            if (Str::contains($contenido, '[]')) {
-                // Archivo vacío, eliminar
-                File::delete($seeder->getRealPath());
-                $this->eliminarLlamadaDeSeederPadre($stage, $tipo, pathinfo($seeder->getFilename(), PATHINFO_FILENAME));
-            } elseif ($contenido !== $contenidoOriginal) {
-                File::put($seeder->getRealPath(), $contenido);
-            }
-        }
-    }
-
 
     public function EditarPermiso($request, $permission)
     {

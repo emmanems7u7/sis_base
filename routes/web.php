@@ -32,6 +32,7 @@ use App\Http\Controllers\LogController;
 use App\Http\Controllers\FormLogicController;
 use App\Http\Controllers\LogicaController;
 use App\Http\Controllers\NotificationController;
+use App\Http\Controllers\SeederController;
 
 /*
 |--------------------------------------------------------------------------
@@ -425,6 +426,11 @@ Route::middleware(['auth'])->group(function () {
 
 
 
+    Route::get('/seeders/explorador', [SeederController::class, 'index'])
+        ->name('seeders.index');
+
+    Route::get('/seeders/ver', [SeederController::class, 'verSeeder'])
+        ->name('seeders.ver');
 });
 
 

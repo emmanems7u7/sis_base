@@ -11,6 +11,7 @@ interface MenuInterface
     public function ObtenerMenuPorSeccion($seccion_id);
 
     public function eliminarDeSeederSeccion(Seccion $seccion);
+    public function eliminarDeSeederMenu(Menu $seccion);
 
 
 }
