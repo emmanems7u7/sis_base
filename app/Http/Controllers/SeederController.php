@@ -54,11 +54,20 @@ class SeederController extends Controller
 
         $path = database_path('seeders/' . env('APP_STAGE') . '/' . $ruta);
 
-        abort_if(!file_exists($path), 404);
 
-        return response()->json([
-            'contenido' => file_get_contents($path)
-        ]);
+        if (!file_exists($path)) {
+            return response()->json([
+                'error' => 'El archivo no existe',
+                'contenido' => ''
+            ]);
+        } else {
+            return response()->json([
+                'error' => '',
+                'contenido' => file_get_contents($path)
+            ]);
+        }
+
+
     }
 
 }
