@@ -52,7 +52,7 @@ class SeederController extends Controller
     {
         $ruta = request('ruta');
 
-        $path = database_path('seeders/DEV/' . $ruta);
+        $path = database_path('seeders/' . env('APP_STAGE') . '/' . $ruta);
 
         abort_if(!file_exists($path), 404);
 
