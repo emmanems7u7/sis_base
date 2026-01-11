@@ -42,6 +42,8 @@ class CategoriaController extends Controller
             'estado' => 'required|in:0,1',
         ]);
 
+
+
         $this->CatalogoRepository->GuardarCategoria($request);
 
 

@@ -43,7 +43,6 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
         $catalogo->update([
             'categoria_id' => $this->cleanHtml($request->categoria),
             'catalogo_parent' => $this->cleanHtml($request->catalogo_parent),
-            'catalogo_codigo' => $this->cleanHtml($request->catalogo_codigo),
             'catalogo_descripcion' => $this->cleanHtml($request->catalogo_descripcion),
             'catalogo_estado' => $this->cleanHtml($request->catalogo_estado),
         ]);
@@ -51,10 +50,11 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
 
     public function GuardarCategoria($request)
     {
+
         $categoria = Categoria::create([
             'nombre' => $this->cleanHtml($request->input('nombre')),
             'descripcion' => $this->cleanHtml($request->input('descripcion')),
-            'estado' => $this->cleanHtml($request->input('estado')),
+            'estado' => $request->input('estado'),
         ]);
         $this->SeederRepository->guardarEnSeederCategoria($categoria);
         return $categoria;
@@ -64,7 +64,7 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
         $categoria->update([
             'nombre' => $this->cleanHtml($request->input('nombre')),
             'descripcion' => $this->cleanHtml($request->input('descripcion')),
-            'estado' => $this->cleanHtml($request->input('estado')),
+            'estado' => $request->input('estado'),
         ]);
 
     }
@@ -75,7 +75,7 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
         $categoria = Categoria::where('nombre', $nombreCategoria)->first();
 
         if (!$categoria) {
-            return collect(); // Retorna colección vacía si no existe
+            return collect();
         }
 
         $query = Catalogo::where('categoria_id', $categoria->id);
@@ -131,11 +131,11 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
         $query->orderBy('catalogo_descripcion');
 
         if ($offset) {
-            $query->offset($offset); // empiece desde el offset
+            $query->offset($offset);
         }
 
         if ($limit) {
-            $query->limit($limit); // máximo de registros
+            $query->limit($limit);
         }
 
         return $query->get();

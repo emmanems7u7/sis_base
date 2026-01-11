@@ -18,4 +18,12 @@ class Catalogo extends Model
     {
         return $this->belongsTo(Categoria::class);
     }
+
+    public function getDependenciaAttribute()
+    {
+        $descripcion = Catalogo::where('catalogo_codigo', $this->catalogo_parent)
+            ->value('catalogo_descripcion') ?? 'S/N';
+
+        return $descripcion;
+    }
 }

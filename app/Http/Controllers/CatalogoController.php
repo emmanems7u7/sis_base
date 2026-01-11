@@ -6,7 +6,7 @@ use App\Models\Catalogo;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Interfaces\CatalogoInterface;
-
+use Illuminate\Support\Str;
 class CatalogoController extends Controller
 {
 
@@ -23,9 +23,18 @@ class CatalogoController extends Controller
             ['name' => 'Inicio', 'url' => route('home')],
             ['name' => 'Catalogo', 'url' => route('catalogos.index')],
         ];
-        $categorias = Categoria::paginate(3, ['*'], 'categorias');
+        $search_c = $request->get('search_c');
+
+        $categorias = Categoria::when($search_c, function ($query, $search_c) {
+            $query->where('nombre', 'like', "%{$search_c}%")
+                ->orWhere('descripcion', 'like', "%{$search_c}%");
+        })
+
+            ->paginate(9, ['*'], 'categorias')
+            ->withQueryString();
 
         $search = $request->get('search');
+
 
 
         $catalogos = Catalogo::with('categoria')
@@ -36,7 +45,7 @@ class CatalogoController extends Controller
                         $query->where('nombre', 'like', "%{$search}%");
                     });
             })
-            ->paginate(10);
+            ->paginate(15);
         return view('catalogo.index', compact('catalogos', 'categorias', 'breadcrumb'));
     }
 
@@ -48,8 +57,9 @@ class CatalogoController extends Controller
             ['name' => 'Crear Catalogo', 'url' => route('catalogos.index')],
 
         ];
+        $catalogos = Catalogo::all();
         $categorias = Categoria::all();
-        return view('catalogo.create', compact('breadcrumb', 'categorias'));
+        return view('catalogo.create', compact('catalogos', 'breadcrumb', 'categorias'));
 
     }
 
@@ -86,10 +96,11 @@ class CatalogoController extends Controller
             ['name' => 'Crear Catalogo', 'url' => route('catalogos.index')],
 
         ];
+        $catalogos = Catalogo::where('id', '!=', $catalogo->id)->get();
 
         $categorias = Categoria::all();
 
-        return view('catalogo.edit', compact('id', 'catalogo', 'categorias', 'breadcrumb'));
+        return view('catalogo.edit', compact('id', 'catalogo', 'catalogos', 'categorias', 'breadcrumb'));
     }
 
     public function update(Request $request, $id)
@@ -124,6 +135,97 @@ class CatalogoController extends Controller
         $catalogo->delete();
 
         return redirect()->back()->with('success', 'Catálogo eliminado correctamente.');
+    }
+
+    public function ultimoCodigo($categoriaId)
+    {
+        //  extraer ultimo codigo
+        $ultimo = Catalogo::where('categoria_id', $categoriaId)
+            ->orderByDesc('id')
+            ->value('catalogo_codigo');
+
+        if ($ultimo) {
+            return response()->json([
+                'codigo' => $ultimo
+            ]);
+        }
+
+        //  Primera vez construir prefijo desde la categoría
+        $categoria = Categoria::findOrFail($categoriaId);
+
+        $prefijo = $this->generarPrefijoUnico($categoria->nombre);
+
+        return response()->json([
+            'codigo' => $prefijo . '-000'
+        ]);
+    }
+
+    protected function generarPrefijoUnico(string $nombreCategoria): string
+    {
+        $nombre = Str::upper(Str::ascii($nombreCategoria));
+
+        $nombre = preg_replace('/[^A-Z ]/', '', $nombre);
+
+        $nombre = trim(preg_replace('/\s+/', ' ', $nombre));
+
+        if ($nombre === '') {
+            return $this->generarPrefijoSeguro();
+        }
+
+        $palabras = explode(' ', $nombre);
+        $primera = $palabras[0] ?? '';
+
+        if (strlen($primera) < 2) {
+            return $this->generarPrefijoSeguro();
+        }
+
+        $posibles = [];
+
+        if (strlen($primera) >= 3) {
+            $posibles[] = substr($primera, 0, 3);
+        }
+
+        $posibles[] = substr($primera, 0, 2);
+
+        if (strlen($primera) >= 3) {
+            $posibles[] = $primera[0] . $primera[2] . $primera[1];
+            $posibles[] = $primera[0] . $primera[1] . 'A';
+        }
+
+        foreach (range('A', 'Z') as $letra) {
+            $posibles[] = substr($primera, 0, 2) . $letra;
+        }
+
+        foreach (array_unique($posibles) as $prefijo) {
+            if (strlen($prefijo) < 2) {
+                continue;
+            }
+
+            $existe = Catalogo::where('catalogo_codigo', 'like', $prefijo . '-%')->exists();
+            if (!$existe) {
+                return $prefijo;
+            }
+        }
+
+        return $this->generarPrefijoSeguro();
+    }
+
+    protected function generarPrefijoSeguro(): string
+    {
+        foreach (range('A', 'Z') as $a) {
+            foreach (range('A', 'Z') as $b) {
+                foreach (range('A', 'Z') as $c) {
+                    $prefijo = $a . $b . $c;
+
+                    $existe = Catalogo::where('catalogo_codigo', 'like', $prefijo . '-%')->exists();
+                    if (!$existe) {
+                        return $prefijo;
+                    }
+                }
+            }
+        }
+
+        return 'CAT';
     }
 }
 

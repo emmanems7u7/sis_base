@@ -262,6 +262,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/categorias/{id}/edit', [CategoriaController::class, 'edit'])->name('categorias.edit')->middleware('can:categoria.editar');
         Route::put('/categorias/{id}', [CategoriaController::class, 'update'])->name('categorias.update')->middleware('can:categoria.actualizar');
         Route::delete('/categorias/{id}', [CategoriaController::class, 'destroy'])->name('categorias.destroy')->middleware('can:categoria.eliminar');
+
+        Route::get('/catalogos/ultimo-codigo/{categoria}', [CatalogoController::class, 'ultimoCodigo'])
+            ->name('catalogos.ultimoCodigo');
+
     });
 
 
