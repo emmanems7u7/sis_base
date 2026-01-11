@@ -38,13 +38,39 @@
 
                         <a href="{{ route('home') }}" class="btn btn-sm btn-secondary "><i
                             class="fas fa-arrow-left me-1"></i>Volver</a>
-                        <a href="{{ route('categorias.create') }}" class="btn btn-sm btn-primary">{{ __('ui.new_f_text') }}
+                        <a href="{{ route('categorias.create') }}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> {{ __('ui.new_f_text') }}
                             {{ __('lo.categoria') }}</a>
 
-                        <a href="{{ route('catalogos.create') }}" class="btn btn-sm btn-primary">{{ __('ui.new_text') }}
+                        <a href="{{ route('catalogos.create') }}" class="btn btn-sm btn-primary"><i class="fas fa-plus"></i> {{ __('ui.new_text') }}
                             {{ __('lo.catalogo') }}</a>
-                   
 
+                            <a href="{{ route('catalogos.create') }}" class="btn btn-sm btn-warning"><i class="fas fa-plus"></i> Importar Catalogos</a>
+                   
+                            <div class="btn-group" role="group" aria-label="Export options">
+
+<div class="btn-group" role="group">
+    <button id="btnGroupExport" type="button" class="btn btn-sm btn-info dropdown-toggle"
+        data-bs-toggle="dropdown" aria-expanded="false">
+        <i class="fas fa-file-export"></i> Exportar
+    </button>
+    <ul class="dropdown-menu" aria-labelledby="btnGroupExport">
+        <li>
+            <a class="dropdown-item" target="_blank"
+                href="">
+                <i class="fas fa-file-pdf"></i> PDF
+            </a>
+        </li>
+        <li>
+            <a class="dropdown-item" target="_blank"
+                href="">
+                <i class="fas fa-file-excel"></i> Excel
+            </a>
+        </li>
+    </ul>
+</div>
+
+
+</div>
 
             </div>
 
