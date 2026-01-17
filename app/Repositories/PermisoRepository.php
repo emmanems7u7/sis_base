@@ -108,4 +108,9 @@ class PermisoRepository extends BaseRepository implements PermisoInterface
         ]);
 
     }
+    public function eliminarDeSeederPermiso($permiso)
+    {
+        $this->SeederRepository->eliminarDeSeederPermiso($permiso);
+    }
+
 }

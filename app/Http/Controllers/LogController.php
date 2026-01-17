@@ -14,7 +14,7 @@ class LogController extends Controller
         $this->logPath = storage_path('logs');
     }
 
-    // Listar archivos de log
+
     public function index()
     {
         $breadcrumb = [

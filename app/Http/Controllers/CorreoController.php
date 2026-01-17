@@ -15,7 +15,7 @@ class CorreoController extends Controller
     /**
      * Display a listing of the resource.
      */
-    private $rutaPlantillas = 'plantillas_correos';
+
     protected $correoRepository;
     public function __construct(CorreoInterface $CorreoInterface)
     {
@@ -66,34 +66,7 @@ class CorreoController extends Controller
             'estado' => 'required|boolean',
         ]);
 
-        // Sanitizar HTML básico
-        $contenido = strip_tags(
-            $request->contenido,
-            '<p><div><span>
-             <h1><h2><h3><h4><h5><h6>
-             <strong><em>
-             <ul><ol><li>
-             <a><img>
-             <br><hr>
-             <style>
-             <table><thead><tbody><tfoot><tr><th><td><caption><colgroup><col>'
-        );
-        // Crear carpeta si no existe
-        if (!File::exists(public_path($this->rutaPlantillas))) {
-            File::makeDirectory(public_path($this->rutaPlantillas), 0755, true);
-        }
-
-        // Nombre de archivo único
-        $archivoNombre = Str::slug($request->nombre) . '-' . time() . '.blade.php';
-        File::put(public_path($this->rutaPlantillas . '/' . $archivoNombre), $contenido);
-
-        // Guardar en BD
-        PlantillaCorreo::create([
-            'nombre' => $request->nombre,
-            'archivo' => $archivoNombre,
-            'estado' => $request->estado,
-        ]);
-
+        $this->correoRepository->CrearPlantilla($request);
 
         return redirect()->route('plantillas.index')
             ->with('success', 'Plantilla creada correctamente');
@@ -156,28 +129,7 @@ class CorreoController extends Controller
             'estado' => 'required|boolean',
         ]);
 
-        // Sanitizar HTML básico
-        $contenido = strip_tags(
-            $request->contenido,
-            '<p><div><span>
-             <h1><h2><h3><h4><h5><h6>
-             <strong><em>
-             <ul><ol><li>
-             <a><img>
-             <br><hr>
-             <style>
-             <table><thead><tbody><tfoot><tr><th><td><caption><colgroup><col>'
-        );
-        // Reescribir archivo
-        $archivoNombre = $plantilla->archivo ?? Str::slug($request->nombre) . '-' . time() . '.blade.php';
-        File::put(public_path($this->rutaPlantillas . '/' . $archivoNombre), $contenido);
-
-        $plantilla->update([
-            'nombre' => $request->nombre,
-            'archivo' => $archivoNombre,
-            'estado' => $request->estado,
-        ]);
-
+        $plantilla = $this->correoRepository->EditarPlantilla($request, $plantilla);
 
         return redirect()->route('plantillas.index')
             ->with('success', 'Plantilla actualizada');
@@ -189,9 +141,7 @@ class CorreoController extends Controller
     public function destroy(PlantillaCorreo $plantilla)
     {
 
-        if (File::exists(public_path($this->rutaPlantillas . '/' . $plantilla->archivo))) {
-            File::delete(public_path($this->rutaPlantillas . '/' . $plantilla->archivo));
-        }
+        $this->correoRepository->EliminarPlantilla($plantilla);
 
         $plantilla->delete();
 

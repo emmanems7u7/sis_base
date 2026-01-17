@@ -7,11 +7,8 @@ use Illuminate\Http\Request;
 
 interface FormularioInterface
 {
-    public function all();
-    public function find(int $id);
-    public function create(array $data);
-    public function update(int $id, array $data);
-    public function delete(int $id);
+    public function CrearFormulario($request);
+    public function EditarFormulario($request, $formulario);
 
     public function crearRespuesta($form);
     public function guardarCampo($campo, $respuesta_id, Request $request, $form);
@@ -25,5 +22,6 @@ interface FormularioInterface
 
     public function procesarFormularioConFiltros($formulario, Request $request, $pageName = null);
 
+    public function generar_informacion_export($respuestas, $formulario);
 
 }

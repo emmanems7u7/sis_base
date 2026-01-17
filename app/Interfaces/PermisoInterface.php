@@ -11,6 +11,7 @@ interface PermisoInterface
     public function Store_Permiso(string $nombre, string $tipo, ?int $idRelacion = null, bool $soloCrear = false);
     public function EditarPermiso($request, $permission);
 
+    public function eliminarDeSeederPermiso($permiso);
 
 
 

@@ -22,7 +22,7 @@ class LogicaController extends Controller
     }
     public function ejecutar(Request $request)
     {
-        Log::info('🔥 ENTRO A ejecutar-logica-formulario', $request->all());
+        Log::info('ENTRO A ejecutar-logica-formulario', $request->all());
         ignore_user_abort(true);
         set_time_limit(0);
 

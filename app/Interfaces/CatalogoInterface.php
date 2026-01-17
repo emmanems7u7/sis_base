@@ -19,5 +19,6 @@ interface CatalogoInterface
 
     public function eliminarDeSeederCategoria(Categoria $categoria);
 
+    public function generarPrefijoUnico(string $nombreCategoria);
 
 }

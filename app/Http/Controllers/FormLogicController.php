@@ -2,12 +2,10 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Formulario;
 use App\Models\FormLogicRule;
-use App\Models\FormLogicAction;
-use App\Models\FormLogicCondition;
 use Illuminate\Http\Request;
 use App\Interfaces\CatalogoInterface;
+use App\Interfaces\FormLogicInterface;
 use App\Models\Modulo;
 use App\Models\PlantillaCorreo;
 use App\Models\User;
@@ -16,10 +14,14 @@ class FormLogicController extends Controller
 {
 
     protected $CatalogoRepository;
-    public function __construct(CatalogoInterface $catalogoInterface, )
+    protected $FormLogicRepository;
+
+
+    public function __construct(CatalogoInterface $catalogoInterface, FormLogicInterface $formLogicInterface)
     {
 
         $this->CatalogoRepository = $catalogoInterface;
+        $this->FormLogicRepository = $formLogicInterface;
 
     }
 
@@ -58,7 +60,6 @@ class FormLogicController extends Controller
 
     public function store(Request $request, Modulo $modulo)
     {
-        // dd($request);
         $request->validate([
             'nombre' => 'required|string|max:255',
             'formulario_id' => 'required|exists:formularios,id',
@@ -66,19 +67,9 @@ class FormLogicController extends Controller
             'activo' => 'nullable',
             'acciones_json' => 'required|string',
         ]);
-        $acciones = json_decode($request->acciones_json, true);
-        //dd($acciones);
 
-        // Crear regla
-        $rule = FormLogicRule::create([
-            'nombre' => $request->nombre,
-            'form_id' => $request->formulario_id,
-            'evento' => $request->evento,
-            'activo' => $request->has('activo'),
-            'parametros' => $request->parametros ?? null,
-        ]);
-        //dd($acciones);
-        $this->guardarAccionesYCondiciones($rule, $acciones);
+
+        $rule = $this->FormLogicRepository->CrearRegla($request);
 
         return redirect()->route('modulo.administrar', $modulo->id)->with('success', 'Regla creada correctamente.');
     }
@@ -269,106 +260,12 @@ class FormLogicController extends Controller
             'acciones_json' => 'required|string',
         ]);
 
-        $acciones = json_decode($request->acciones_json, true);
-        $form_logic = FormLogicRule::findOrFail($form_logic);
-        $form_logic->update([
-            'nombre' => $request->nombre,
-            'form_id' => $request->formulario_id,
-            'evento' => $request->evento,
-            'activo' => $request->has('activo'),
-            'parametros' => $request->parametros ?? null,
-        ]);
+        $rule = $this->FormLogicRepository->EditarRegla($request, $form_logic);
 
-        // Eliminar acciones existentes y sus condiciones
-        $form_logic->actions()->delete();
-
-        $this->guardarAccionesYCondiciones($form_logic, $acciones);
 
         return redirect()->route('modulo.administrar', $modulo->id)->with('success', 'Regla actualizada correctamente.');
     }
 
-    // Función para guardar acciones y condiciones
-    protected function guardarAccionesYCondiciones(FormLogicRule $rule, array $acciones)
-    {
-
-
-        foreach ($acciones as $actionData) {
-            // Preparamos los parámetros extra según el tipo de acción
-            $parametrosExtra = [];
-
-            switch ($actionData['tipo_accion_id']) {
-                case 'TAC-001': // modificar_campo
-                    $parametrosExtra = [
-
-                        'operacion' => $actionData['operacion'] ?? 'actualizar',
-                        'tipo_valor' => $actionData['tipo_valor'] ?? 'static',
-                        'valor' => $actionData['valor'] ?? null,
-                        'valor_text' => $actionData['valor_text'] ?? null,
-                        'filtros_relacion' => $actionData['filtros_relacion'] ?? [],
-                        'campo_ref_id' => $actionData['campo_ref_id'] ?? [],
-                        'tipo_accion_text' => $actionData['tipo_accion_text'] ?? [],
-                        'form_ref_text' => $actionData['form_ref_text'] ?? [],
-                        'campo_ref_text' => $actionData['campo_ref_text'] ?? [],
-                        'operacion_text' => $actionData['operacion_text'] ?? [],
-                        'condiciones' => $actionData['condiciones'] ?? [],
-
-
-                    ];
-                    break;
-
-
-                case 'TAC-005': // crear_registros
-                    $parametrosExtra = [
-                        'usar_relacion' => $actionData['usar_relacion'] ?? false,
-                        'tipo_accion_text' => $actionData['tipo_accion_text'] ?? '',
-                        'formulario_relacion_seleccionado' => $actionData['formulario_relacion_seleccionado'] ?? null,
-                        'formulario_relacion_text' => $actionData['formulario_relacion_text'] ?? '',
-                        'campos' => $actionData['campos'] ?? [],
-                        'filtros_relacion' => $actionData['filtros_relacion'] ?? [],
-                        'condiciones' => $actionData['condiciones'] ?? [],
-                    ];
-                    break;
-
-                case 'TAC-003': // enviar_email
-                    $parametrosExtra = [
-
-                        'email_subject' => $actionData['email_subject'] ?? null,
-                        'email_body' => $actionData['email_body'] ?? null,
-                        'email_template' => $actionData['email_template'] ?? null,
-
-                        // destinatarios
-                        'email_usuarios' => $actionData['email_usuarios'] ?? [],
-                        'email_roles' => $actionData['email_roles'] ?? [],
-
-                        // detalle preparado en frontend
-                        //'email_detalle' => $actionData['email_detalle'] ?? [],
-
-                        // condiciones propias de la acción
-                        'condiciones' => $actionData['condiciones'] ?? [],
-
-
-                    ];
-                    break;
-                default:
-                    // Para otros tipos de acción simplemente guardamos todo el actionData
-                    $parametrosExtra = $actionData;
-                    break;
-            }
-
-
-            if ($actionData['form_ref_id'] == '') {
-                $actionData['form_ref_id'] = null;
-            }
-            // Creamos el registro en FormLogicAction
-            $action = FormLogicAction::create([
-                'rule_id' => $rule->id,
-                'form_ref_id' => $actionData['form_ref_id'] ?? null,
-                'tipo_accion' => $actionData['tipo_accion_id'] ?? '',
-                'parametros' => $parametrosExtra, // cast array/json en el modelo
-            ]);
-        }
-        //dd($acciones);
-    }
 
     public function destroy(FormLogicRule $rule)
     {

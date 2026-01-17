@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Providers;
+use App\Interfaces\CamposFormInterface;
+use App\Repositories\CamposFormRepository;
 use App\Interfaces\SeederInterface;
 use App\Repositories\SeederRepository;
 use App\Interfaces\FormLogicInterface;
@@ -44,6 +46,8 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(FormLogicInterface::class, FormLogicRepository::class);
         $this->app->bind(NotificationInterface::class, NotificationRepository::class);
         $this->app->bind(SeederInterface::class, SeederRepository::class);
+        $this->app->bind(CamposFormInterface::class, CamposFormRepository::class);
+
 
 
 

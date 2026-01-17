@@ -50,7 +50,6 @@ class ConfCorreoController extends Controller
         if ($config) {
             $config->update($request->all());
         } else {
-            // Si no existe configuración, la crea
             ConfCorreo::create($request->all());
         }
 
@@ -75,37 +74,7 @@ class ConfCorreoController extends Controller
     }
 
 
-    public function enviarCorreoPrueba($plantillaId, $destinatario)
-    {
-
-        $plantilla = PlantillaCorreo::find($plantillaId);
-
-        if (!$plantilla) {
-            return response()->json(['error' => 'Plantilla no encontrada.'], 404);
-        }
 
 
-        $datos = [
-            'nombre' => 'Juan Pérez',
-            'email' => 'juan.perez@example.com',
-            'fecha_registro' => '2025-04-11',
-        ];
 
-
-        $contenidoConDatos = $this->reemplazarVariables($plantilla->contenido, $datos);
-        // Enviar el correo utilizando el Mailable
-        Mail::to($destinatario)->send(new CorreoDesdePlantilla($plantilla->asunto, $contenidoConDatos));
-
-        return response()->json(['success' => 'Correo enviado con éxito.']);
-    }
-
-    private function reemplazarVariables($contenido, $datos)
-    {
-
-        foreach ($datos as $key => $value) {
-            $contenido = str_replace("{{ $key }}", $value, $contenido);
-        }
-
-        return $contenido;
-    }
 }

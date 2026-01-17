@@ -9,7 +9,10 @@ use App\Models\Formulario;
 use App\Models\RespuestasCampo;
 use App\Models\RespuestasForm;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 
+use Carbon\Carbon;
 class FormularioRepository implements FormularioInterface
 {
     protected $model;
@@ -22,38 +25,29 @@ class FormularioRepository implements FormularioInterface
     }
 
 
-    public function all()
+    public function CrearFormulario($request)
     {
-        return $this->model->all();
-    }
-
-    public function find(int $id)
-    {
-        return $this->model->findOrFail($id);
-    }
-
-    public function create(array $data)
-    {
-        return $this->model->create($data);
-    }
-
-    public function update(int $id, array $data)
-    {
-        $entity = $this->find($id);
-        $entity->update($data);
-        return $entity;
-    }
-
-    public function delete(int $id)
-    {
-        $entity = $this->find($id);
-        return $entity->delete();
+        $formulario = Formulario::create([
+            'nombre' => $request->nombre,
+            'descripcion' => $request->descripcion,
+            'slug' => Str::slug($request->nombre),
+            'estado' => $request->estado,
+        ]);
+        return $formulario;
     }
 
 
-    /* =============================================================
-      FUNCIONES REUTILIZABLES
-   ============================================================= */
+    public function EditarFormulario($request, $formulario)
+    {
+        $formulario->update([
+            'nombre' => $request->nombre,
+            'descripcion' => $request->descripcion,
+            'slug' => Str::slug($request->nombre),
+            'estado' => $request->estado,
+        ]);
+
+    }
+
 
     public function crearRespuesta($form)
     {
@@ -295,10 +289,8 @@ class FormularioRepository implements FormularioInterface
 
     public function procesarFormularioConFiltros($formulario, Request $request, $pageName = null)
     {
-        // Mapear campos por nombre
         $camposPorNombre = $formulario->campos->keyBy('nombre');
 
-        // Query base de respuestas
         $query = RespuestasForm::where('form_id', $formulario->id)
             ->with('camposRespuestas.campo', 'actor');
 
@@ -349,7 +341,7 @@ class FormularioRepository implements FormularioInterface
             });
         }
 
-        // PAGINACIÓN (nombre de página independiente si se pasa)
+        // PAGINACIÓN 
         $respuestas = $query->orderBy('created_at', 'desc')
             ->paginate(15, ['*'], $pageName ?? 'page')
             ->withQueryString();
@@ -366,4 +358,68 @@ class FormularioRepository implements FormularioInterface
             'respuestas' => $respuestas,
         ];
     }
+
+    public function generar_informacion_export($respuestas, $formulario)
+    {
+
+        $datos = [];
+        foreach ($respuestas as $respuesta) {
+            $fila = [];
+
+            foreach ($formulario->campos->sortBy('posicion') as $campo) {
+                $valores = $respuesta->camposRespuestas
+                    ->where('cf_id', $campo->id)
+                    ->pluck('valor')
+                    ->toArray();
+
+                $tipoCampo = strtolower($campo->campo_nombre);
+                $display = [];
+
+                foreach ($valores as $v) {
+                    switch ($tipoCampo) {
+                        case 'checkbox':
+                        case 'radio':
+                        case 'selector':
+                            $desc = $campo->opciones_catalogo->where('catalogo_codigo', $v)->first()?->catalogo_descripcion;
+                            $display[] = $desc ?? $v;
+                            break;
+
+                        case 'imagen':
+                            $path = public_path("archivos/formulario_{$formulario->id}/imagenes/{$v}");
+                            if (file_exists($path)) {
+                                $base64 = base64_encode(file_get_contents($path));
+                                $type = mime_content_type($path);
+                                $display[] = "<img src='data:{$type};base64,{$base64}' style='max-width:80px; max-height:80px;' />";
+                            }
+                            break;
+
+                        case 'video':
+                        case 'archivo':
+                            $display[] = $v; // Solo mostrar nombre
+                            break;
+
+                        case 'fecha':
+                            $display[] = Carbon::parse($v)->format('d/m/Y');
+                            break;
+
+                        default:
+                            $display[] = $v; // Text, Number, Textarea, Email, Password, Color, Hora, Enlace
+                    }
+                }
+
+                $fila[$campo->etiqueta] = implode(' ', $display);
+            }
+
+            $fila['Actor'] = $respuesta->actor->name ?? 'Anónimo';
+            $fila['Registrado'] = $respuesta->created_at->format('d/m/Y H:i');
+
+            $datos[] = $fila;
+
+
+
+        }
+        return $datos;
+
+    }
+
 }

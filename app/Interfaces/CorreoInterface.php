@@ -8,5 +8,8 @@ interface CorreoInterface
 
     public function EditarConfCorreo($correoId, $request);
 
+    public function CrearPlantilla($request);
+    public function EditarPlantilla($request, $plantilla);
+    public function EliminarPlantilla($plantilla);
 
 }

@@ -8,7 +8,6 @@ use App\Models\RespuestasForm;
 
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Str;
 use App\Interfaces\CatalogoInterface;
 use App\Exports\ExportPDF;
 use Carbon\Carbon;
@@ -63,12 +62,7 @@ class FormularioController extends Controller
             'estado' => 'required|string|exists:catalogos,catalogo_codigo',
         ]);
 
-        Formulario::create([
-            'nombre' => $request->nombre,
-            'descripcion' => $request->descripcion,
-            'slug' => Str::slug($request->nombre),
-            'estado' => $request->estado,
-        ]);
+        $formulario = $this->FormularioRepository->CrearFormulario($request);
 
         return redirect()->route('formularios.index')->with('success', 'Formulario creado correctamente.');
     }
@@ -92,13 +86,8 @@ class FormularioController extends Controller
             'descripcion' => 'nullable|string',
             'estado' => 'required|string|exists:catalogos,catalogo_codigo',
         ]);
+        $formulario = $this->FormularioRepository->EditarFormulario($request, $formulario);
 
-        $formulario->update([
-            'nombre' => $request->nombre,
-            'descripcion' => $request->descripcion,
-            'slug' => Str::slug($request->nombre),
-            'estado' => $request->estado,
-        ]);
 
         return redirect()->route('formularios.index')->with('success', 'Formulario actualizado correctamente.');
     }
@@ -114,13 +103,10 @@ class FormularioController extends Controller
     {
         $formulario = Formulario::with('campos')->findOrFail($id);
 
-        // Procesar los campos para agregar opciones de catálogo o de formulario referenciado
         $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
 
-        // Asignar los campos procesados al formulario
         $formulario->campos = $camposProcesados;
 
-        // Retornar JSON
         return response()->json([
             'nombre' => $formulario->nombre,
             'descripcion' => $formulario->descripcion,
@@ -132,15 +118,16 @@ class FormularioController extends Controller
 
     public function exportPdf(Formulario $form)
     {
-        // Cargar campos y respuestas
         $formulario = Formulario::with('campos.opciones_catalogo', 'respuestas.camposRespuestas.campo')->findOrFail($form->id);
+
         $respuestas = $formulario->respuestas()->with('camposRespuestas.campo')->get();
-        $datos = $this->generar_informacion_export($respuestas, $formulario);
+
+        $datos = $this->FormularioRepository->generar_informacion_export($respuestas, $formulario);
+
         $user = auth()->user();
 
         $fecha = Carbon::now()->format('d-m-Y H:i:s');
 
-        // Exportar con tu librería
         return ExportPDF::exportPdf(
             'formularios.export_respuestas', // vista Blade
             [
@@ -157,10 +144,12 @@ class FormularioController extends Controller
     public function exportExcel(Formulario $form)
     {
 
-        // Cargar campos y respuestas
         $formulario = Formulario::with('campos.opciones_catalogo', 'respuestas.camposRespuestas.campo')->findOrFail($form->id);
+
         $respuestas = $formulario->respuestas()->with('camposRespuestas.campo')->get();
-        $datos = $this->generar_informacion_export($respuestas, $formulario);
+
+        $datos = $this->FormularioRepository->generar_informacion_export($respuestas, $formulario);
+
         $user = auth()->user();
 
         $fecha = Carbon::now()->format('d-m-Y H:i:s');
@@ -178,77 +167,11 @@ class FormularioController extends Controller
 
 
     }
-    public function generar_informacion_export($respuestas, $formulario)
-    {
-
-        // Preparar datos en forma de tabla dinámica
-        $datos = [];
-        foreach ($respuestas as $respuesta) {
-            $fila = [];
-
-            // Primero agregamos los campos del formulario
-            foreach ($formulario->campos->sortBy('posicion') as $campo) {
-                $valores = $respuesta->camposRespuestas
-                    ->where('cf_id', $campo->id)
-                    ->pluck('valor')
-                    ->toArray();
-
-                $tipoCampo = strtolower($campo->campo_nombre);
-                $display = [];
-
-                foreach ($valores as $v) {
-                    switch ($tipoCampo) {
-                        case 'checkbox':
-                        case 'radio':
-                        case 'selector':
-                            $desc = $campo->opciones_catalogo->where('catalogo_codigo', $v)->first()?->catalogo_descripcion;
-                            $display[] = $desc ?? $v;
-                            break;
-
-                        case 'imagen':
-                            $path = public_path("archivos/formulario_{$formulario->id}/imagenes/{$v}");
-                            if (file_exists($path)) {
-                                $base64 = base64_encode(file_get_contents($path));
-                                $type = mime_content_type($path);
-                                $display[] = "<img src='data:{$type};base64,{$base64}' style='max-width:80px; max-height:80px;' />";
-                            }
-                            break;
-
-                        case 'video':
-                        case 'archivo':
-                            $display[] = $v; // Solo mostrar nombre
-                            break;
-
-                        case 'fecha':
-                            $display[] = \Carbon\Carbon::parse($v)->format('d/m/Y');
-                            break;
-
-                        default:
-                            $display[] = $v; // Text, Number, Textarea, Email, Password, Color, Hora, Enlace
-                    }
-                }
-
-                $fila[$campo->etiqueta] = implode(' ', $display);
-            }
-
-            // Finalmente agregamos Actor y Registrado al final
-            $fila['Actor'] = $respuesta->actor->name ?? 'Anónimo';
-            $fila['Registrado'] = $respuesta->created_at->format('d/m/Y H:i');
-
-            $datos[] = $fila;
-
-
-
-        }
-        return $datos;
-
-    }
 
     public function obtenerCampos($id)
     {
         $formulario = Formulario::with('campos')->findOrFail($id);
 
-        // Si usas el servicio CamposFormCat:
         $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
 
         return response()->json($camposProcesados->map(function ($campo) {
@@ -292,10 +215,8 @@ class FormularioController extends Controller
             return response()->json(['error' => 'Formulario no encontrado'], 404);
         }
 
-        // Procesar campos con catálogos o referencias
         $formulario->campos = $this->FormularioRepository->CamposFormCat($formulario->campos);
 
-        // Formularios relacionados
         $camposConReferencia = $formulario->campos->filter(fn($campo) => $campo->form_ref_id !== null);
         $formIdsRelacionados = $camposConReferencia->pluck('form_ref_id')->unique();
 
@@ -308,9 +229,6 @@ class FormularioController extends Controller
             'formulariosRelacionados' => $formulariosRelacionados
         ]);
     }
-    /**
-     * Mostrar detalle de la acción ejecutada.
-     */
 
     public function detalle($accion_id = null)
     {
@@ -320,7 +238,6 @@ class FormularioController extends Controller
             ['name' => 'Formularios', 'url' => route('formularios.index')],
         ];
         if ($accion_id) {
-            // Retorna como colección para que el foreach funcione
             $acciones = collect([AuditoriaAccion::find($accion_id)]);
         } else {
             $acciones = AuditoriaAccion::orderBy('created_at', 'desc')->paginate(15);

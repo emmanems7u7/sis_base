@@ -6,7 +6,7 @@ use App\Models\Catalogo;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 use App\Interfaces\CatalogoInterface;
-use Illuminate\Support\Str;
+
 class CatalogoController extends Controller
 {
 
@@ -150,82 +150,15 @@ class CatalogoController extends Controller
             ]);
         }
 
-        //  Primera vez construir prefijo desde la categoría
         $categoria = Categoria::findOrFail($categoriaId);
 
-        $prefijo = $this->generarPrefijoUnico($categoria->nombre);
+        $prefijo = $this->CatalogoRepository->generarPrefijoUnico($categoria->nombre);
 
         return response()->json([
             'codigo' => $prefijo . '-000'
         ]);
     }
 
-    protected function generarPrefijoUnico(string $nombreCategoria): string
-    {
-        $nombre = Str::upper(Str::ascii($nombreCategoria));
 
-        $nombre = preg_replace('/[^A-Z ]/', '', $nombre);
-
-        $nombre = trim(preg_replace('/\s+/', ' ', $nombre));
-
-        if ($nombre === '') {
-            return $this->generarPrefijoSeguro();
-        }
-
-        $palabras = explode(' ', $nombre);
-        $primera = $palabras[0] ?? '';
-
-        if (strlen($primera) < 2) {
-            return $this->generarPrefijoSeguro();
-        }
-
-        $posibles = [];
-
-        if (strlen($primera) >= 3) {
-            $posibles[] = substr($primera, 0, 3);
-        }
-
-        $posibles[] = substr($primera, 0, 2);
-
-        if (strlen($primera) >= 3) {
-            $posibles[] = $primera[0] . $primera[2] . $primera[1];
-            $posibles[] = $primera[0] . $primera[1] . 'A';
-        }
-
-        foreach (range('A', 'Z') as $letra) {
-            $posibles[] = substr($primera, 0, 2) . $letra;
-        }
-
-        foreach (array_unique($posibles) as $prefijo) {
-            if (strlen($prefijo) < 2) {
-                continue;
-            }
-
-            $existe = Catalogo::where('catalogo_codigo', 'like', $prefijo . '-%')->exists();
-            if (!$existe) {
-                return $prefijo;
-            }
-        }
-
-        return $this->generarPrefijoSeguro();
-    }
-
-    protected function generarPrefijoSeguro(): string
-    {
-        foreach (range('A', 'Z') as $a) {
-            foreach (range('A', 'Z') as $b) {
-                foreach (range('A', 'Z') as $c) {
-                    $prefijo = $a . $b . $c;
-
-                    $existe = Catalogo::where('catalogo_codigo', 'like', $prefijo . '-%')->exists();
-                    if (!$existe) {
-                        return $prefijo;
-                    }
-                }
-            }
-        }
-
-        return 'CAT';
-    }
 }
 
