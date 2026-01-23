@@ -160,37 +160,54 @@
 
                 {{-- Contenedor de 2 columnas de secciones --}}
                 <div class="row row-cols-1 row-cols-md-2 g-4">
-                    @foreach ($permisosPorSeccion as $seccion => $permisos)
-                        <div class="col">
-                            <div class="border-bottom pb-2">
-                                <h6 class="mb-2 text-muted">{{ ucfirst($seccion) }}</h6>
+                @foreach ($permisosPorSeccion as $seccion => $permisos)
+    <div class="col"> 
+        <div class="border-bottom pb-2">
+            {{-- Encabezado de sección --}}
+            <h6 class="mb-2"> <strong>
+                @php
+                    // Tomamos el primer permiso de la sección
+                    $primerPermiso = $permisos->first();
 
-                                {{-- Permisos distribuidos horizontalmente --}}
-                                <div class="d-flex flex-wrap" id="seccion_permiso_{{ $seccion }}">
-                                    @foreach ($permisos as $permiso)
-                                        <div class="form-check mb-2 me-3" style="min-width: 150px; flex: 0 0 auto; border-start: 2px solid #dee2e6;">
-                                            <input class="form-check-input"
-                                                type="checkbox"
-                                                name="permissions[]"
-                                                value="{{ $permiso->name }}"
-                                                id="permiso_{{ $permiso->id }}"
-                                                {{ $role->hasPermissionTo($permiso) ? 'checked' : '' }}
-                                                onclick="verificarPermiso(this, '{{ $permiso->id }}', '{{ $role->id }}')">
+                    // Si es dinámico, usamos nombreParaVista() y extraemos la parte antes del punto
+                    if ($primerPermiso->dinamico == 1) {
+                        $nombreSeccion = explode('.', $primerPermiso->nombreParaVista())[0];
+                        $nombreSeccion = 'Permisos del formulario: ' .$nombreSeccion;
+                    
+                    } else {
+                        $nombreSeccion = ucfirst($seccion); // si no es dinámico, mantenemos el nombre original
+                    }
+                @endphp
 
-                                            <label class="form-check-label" for="permiso_{{ $permiso->id }}">
-                                                {{ $permiso->name }}
-                                            </label>
+                {{ $nombreSeccion }}
+                </strong> </h6>
 
-                                            <div id="menuc_{{ $permiso->id }}" class="ps-3 mt-1">
-                                                <div id="menu_{{ $permiso->id }}"></div>
-                                            </div>
-                                        </div>
-                                    @endforeach
-                                </div>
+            {{-- Permisos distribuidos horizontalmente --}}
+            <div class="d-flex flex-wrap" id="seccion_permiso_{{ $seccion }}">
+                @foreach ($permisos as $permiso)
+                    <div class="form-check mb-2 me-3" style="min-width: 150px; flex: 0 0 auto; border-start: 2px solid #dee2e6;">
+                        <input class="form-check-input"
+                            type="checkbox"
+                            name="permissions[]"
+                            value="{{ $permiso->name }}"
+                            id="permiso_{{ $permiso->id }}"
+                            {{ $role->hasPermissionTo($permiso) ? 'checked' : '' }}
+                            onclick="verificarPermiso(this, '{{ $permiso->id }}', '{{ $role->id }}')">
 
-                            </div>
-                        </div>
-                    @endforeach
+                        <label class="form-check-label" for="permiso_{{ $permiso->id }}">
+                            @if($permiso->dinamico == 1)
+                                {{ $permiso->nombreParaVista() }}
+                            @else
+                                {{ $permiso->name }}
+                            @endif
+                        </label>
+                    </div>
+                @endforeach
+            </div>
+
+        </div>
+    </div>
+@endforeach
                 </div>
             @endif
 

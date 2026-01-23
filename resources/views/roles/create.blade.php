@@ -138,7 +138,23 @@
                                 @foreach ($permisosPorSeccion as $seccion => $permisos)
                                     <div class="col">
                                         <div class="border-bottom pb-2">
-                                            <h6 class="mb-2"> <strong>{{ ucfirst($seccion) }}</strong> </h6>
+                                            <h6 class="mb-2"> <strong>
+
+
+                                                    @php
+                                                        $primerPermiso = $permisos->first();
+
+                                                        if ($primerPermiso->dinamico == 1) {
+                                                            $nombreSeccion = explode('.', $primerPermiso->nombreParaVista())[0];
+                                                            $nombreSeccion = 'Permisos del formulario: ' .$nombreSeccion;
+                                                        } else {
+                                                            $nombreSeccion = ucfirst($seccion); // si no es dinámico, mantenemos el nombre original
+                                                        }
+                                                    @endphp
+
+                                                    {{ $nombreSeccion }} 
+
+                                                </strong> </h6>
 
                                             {{-- Permisos distribuidos horizontalmente --}}
                                             <div class="d-flex flex-wrap" id="seccion_permiso_{{ $seccion }}">
@@ -149,12 +165,17 @@
                                                             value="{{ $permiso->name }}" id="permiso_{{ $permiso->id }}" onclick="">
 
                                                         <label class="form-check-label" for="permiso_{{ $permiso->id }}">
-                                                            {{ $permiso->name }}
+                                                            @if($permiso->dinamico == 1)
+                                                                {{ $permiso->nombreParaVista() }}
+
+                                                            @else
+
+                                                                {{ $permiso->name }}
+
+                                                            @endif
                                                         </label>
 
-                                                        <div id="menuc_{{ $permiso->id }}" class="ps-3 mt-1">
-                                                            <div id="menu_{{ $permiso->id }}"></div>
-                                                        </div>
+
                                                     </div>
                                                 @endforeach
                                             </div>

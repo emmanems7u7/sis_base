@@ -31,5 +31,15 @@
     @enderror
 </div>
 
+{{-- ===============================
+Checkbox para crear permisos automáticamente
+=============================== --}}
+<div class="form-check mb-3">
+    <input class="form-check-input" type="checkbox" name="crear_permisos" id="crear_permisos" {{ old('crear_permisos') ? 'checked' : '' }}>
+    <label class="form-check-label" for="crear_permisos">
+        Crear también los permisos para este formulario
+    </label>
+</div>
+
 <button type="submit" class="btn btn-success">Guardar</button>
 <a href="{{ route('formularios.index') }}" class="btn btn-secondary">Cancelar</a>

@@ -155,16 +155,18 @@ class SeederRepository extends BaseRepository implements SeederInterface
     {
         $data = $this->resolverSeeder('Menus', 'SeederMenu');
         File::ensureDirectoryExists(database_path("seeders/{$data['carpeta']}"));
+        $padre_id = $menu->padre_id !== null ? $menu->padre_id : 'null';
+        $modulo_id = $menu->modulo_id !== null ? $menu->modulo_id : 'null';
 
         $registro = <<<PHP
             [
                 'id' => {$menu->id},
                 'nombre' => '{$menu->nombre}',
                 'orden' => {$menu->orden},
-                'padre_id' => {$menu->padre_id},
+                'padre_id' => {$padre_id},
                 'seccion_id' => {$menu->seccion_id},
                 'ruta' => '{$menu->ruta}',
-                'modulo_id' => {$menu->modulo_id},
+                'modulo_id' => {$modulo_id},
             ],
 PHP;
 
@@ -250,13 +252,15 @@ PHP;
     {
         $data = $this->resolverSeeder('Permisos', 'SeederPermisos');
         File::ensureDirectoryExists(database_path("seeders/{$data['carpeta']}"));
+        $id_relacion_f = $id_relacion !== null ? $id_relacion : 'null';
 
         $registro = <<<PHP
             [
                 'id' => {$permiso->id},
                 'name' => '{$permiso->name}',
                 'tipo' => '{$permiso->tipo}',
-                'id_relacion' => {$id_relacion},
+                'id_relacion' => {$id_relacion_f},
+                'dinamico' => {$permiso->dinamico},
                 'guard_name' => '{$permiso->guard_name}',
             ],
 PHP;

@@ -9,23 +9,25 @@ class DatabaseSeeder extends Seeder
         //SEEDERS GENERALES
         $this->call(\Database\Seeders\GEN\GenSeeder::class);
 
+        /*
+                //SEEDERS POR ENTORNO
+                switch (strtoupper(env('APP_STAGE'))) {
+                    case 'DEV':
+                        $this->call(\Database\Seeders\DEV\DevSeeder::class);
+                        break;
 
-        //SEEDERS POR ENTORNO
-        switch (strtoupper(env('APP_STAGE'))) {
-            case 'DEV':
-                $this->call(\Database\Seeders\DEV\DevSeeder::class);
-                break;
+                    case 'QA':
+                        $this->call(\Database\Seeders\QA\QaSeeder::class);
+                        break;
 
-            case 'QA':
-                $this->call(\Database\Seeders\QA\QaSeeder::class);
-                break;
+                    case 'PRODUCCION':
+                        $this->call(\Database\Seeders\PROD\ProdSeeder::class);
+                        break;
 
-            case 'PRODUCCION':
-                $this->call(\Database\Seeders\PROD\ProdSeeder::class);
-                break;
+                    default:
+                        throw new \Exception('Entorno no soportado: ' . env('APP_ENV'));
+                }
 
-            default:
-                throw new \Exception('Entorno no soportado: ' . env('APP_ENV'));
-        }
+        */
     }
 }

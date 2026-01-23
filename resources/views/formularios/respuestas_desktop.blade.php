@@ -71,20 +71,9 @@
 
                     <td>{{ $respuesta->created_at->format('d/m/Y H:i') }}</td>
                     <td>
-                        <a href="{{ route('respuestas.edit', ['respuesta' => $respuesta , 'modulo' => 0 ]) }}" class="btn btn-sm btn-warning">
-                            <i class="fas fa-pencil-alt"></i> Editar
-                        </a>
+                        <!-- Botones de acciones -->
 
-                        <a href="#" class="btn btn-sm btn-danger"
-                            onclick="confirmarEliminacion('eliminarRespuesta_{{ $respuesta->id }}', '¿Estás seguro de que deseas eliminar esta respuesta?')">
-                            <i class="fas fa-trash-alt"></i> Eliminar
-                        </a>
-
-                        <form id="eliminarRespuesta_{{ $respuesta->id }}" method="POST"
-                            action="{{ route('respuestas.destroy', $respuesta) }}" style="display: none;">
-                            @csrf
-                            @method('DELETE')
-                        </form>
+                        @include('formularios.partials.Botones', ['modulo' => 0])
                     </td>
                 </tr>
             @empty

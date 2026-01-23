@@ -60,13 +60,10 @@
                 </div>
 
                 <div class="card-footer">
-                    <a href="{{ route('respuestas.edit', ['respuesta' => $respuesta , 'modulo' => 0 ]) }}" class="btn btn-sm btn-warning me-1">
-                        <i class="fas fa-pencil-alt"></i> Editar
-                    </a>
-                    <a href="#" class="btn btn-sm btn-danger"
-                       onclick="confirmarEliminacion('eliminarRespuesta_{{ $respuesta->id }}', '¿Estás seguro de que deseas eliminar esta respuesta?')">
-                        <i class="fas fa-trash-alt"></i> Eliminar
-                    </a>
+                    <!-- Botones de acciones -->
+                       @include('formularios.partials.Botones',['modulo' => 0])
+
+
                 </div>
             </div>
             </div>

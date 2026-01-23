@@ -3,7 +3,7 @@ namespace App\Repositories;
 
 use App\Interfaces\PermisoInterface;
 use Spatie\Permission\Models\Role;
-use Spatie\Permission\Models\Permission;
+
 use App\Models\Menu;
 use App\Models\Seccion;
 use Illuminate\Support\Facades\File;
@@ -11,30 +11,37 @@ use Illuminate\Support\Str;
 
 
 use App\Interfaces\SeederInterface;
-
+use App\Models\Categoria;
+use App\Models\Permission;
+use App\Interfaces\CatalogoInterface;
 
 class PermisoRepository extends BaseRepository implements PermisoInterface
 {
     protected $permissions;
     protected $SeederRepository;
 
+    protected $CatalogoRepository;
 
 
-    public function __construct(SeederInterface $seederRepository)
+
+    public function __construct(SeederInterface $seederRepository, CatalogoInterface $catalogoInterface)
     {
         parent::__construct();
         $this->permissions = Permission::all();
         $this->SeederRepository = $seederRepository;
+        $this->CatalogoRepository = $catalogoInterface;
     }
     public function GetPermisos($role = null)
     {
-        // Solo permisos que no tienen id_relacion (independientes)
         $permisos = Permission::whereNull('id_relacion')
             ->where('tipo', 'permiso')
             ->get();
 
         return $permisos->map(function ($permiso) use ($role) {
             $permiso->checked = $role ? $role->hasPermissionTo($permiso) : false;
+
+            $permiso->nombreParaVistaStr = $permiso->nombreParaVista();
+
             return $permiso;
         });
     }
@@ -120,29 +127,107 @@ class PermisoRepository extends BaseRepository implements PermisoInterface
     }
     function CrearPermiso($request)
     {
-        $this->Store_Permiso($request->name, 'permiso', null, true);
+        $this->Store_Permiso(
+            $request->name,
+            'permiso',
+            null,
+            true
+        );
     }
 
-    public function Store_Permiso(string $nombre, string $tipo, ?int $idRelacion = null, bool $soloCrear = false): Permission
-    {
+    public function Store_Permiso(
+        string $nombre = null,
+        string $tipo,
+        ?int $idRelacion = null,
+        bool $soloCrear = false
+    ): Permission {
+
         $data = [
             'name' => $this->cleanHtml($nombre),
             'tipo' => $tipo,
             'guard_name' => 'web',
+            'dinamico' => 0,
+
         ];
 
         if (!$soloCrear) {
+
             $permiso = Permission::firstOrCreate(
-                ['name' => $data['name'], 'tipo' => $tipo],
+                [
+                    'name' => $data['name'],
+                    'tipo' => $tipo
+                ],
+
                 ['id_relacion' => $idRelacion] + $data
             );
+            $this->SeederRepository->guardarEnSeederPermiso($permiso, $idRelacion);
+            return $permiso;
+
         } else {
-            $permiso = Permission::create($data);
+
+            if ($nombre == null) {
+                $dinamico = 1;
+
+            } else {
+
+                $dinamico = 0;
+            }
+
+            $permisosRequest = request()->input('permisos', []);
+            $ultimoPermiso = null;
+
+            foreach ($permisosRequest as $permisoStr) {
+
+                $ultimoPermiso = Permission::create(
+                    [
+                        'name' => $this->cleanHtml($permisoStr),
+                        'tipo' => $tipo,
+                        'guard_name' => 'web',
+                        'id_relacion' => null,
+                        'dinamico' => $dinamico,
+
+                    ]
+                );
+
+                $this->SeederRepository->guardarEnSeederPermiso($ultimoPermiso, null);
+            }
+
+            return $ultimoPermiso;
         }
 
-        $this->SeederRepository->guardarEnSeederPermiso($permiso, $idRelacion);
 
-        return $permiso;
+    }
+
+
+    public function CrearPermisosFormulario($formulario)
+    {
+
+        // Obtener la categoría de permisos
+        $categoria = Categoria::where('nombre', 'Tipos de permisos para roles')->firstOrFail();
+
+        // Obtener los permisos del catálogo
+        $catalogo_permisos = $this->CatalogoRepository
+            ->obtenerCatalogosPorCategoriaID($categoria->id, true);
+
+        // Recorrer cada permiso del catálogo y crear permiso dinámico
+        $ultimoPermiso = null;
+
+        foreach ($catalogo_permisos as $permisoC) {
+            $permisoStr = $formulario->id . '.' . $permisoC->catalogo_descripcion;
+
+            $ultimoPermiso = Permission::create([
+                'name' => $permisoStr,
+                'tipo' => 'permiso',
+                'guard_name' => 'web',
+                'id_relacion' => null,
+                'dinamico' => 1,
+            ]);
+
+            // Guardar en seeder
+            $this->SeederRepository->guardarEnSeederPermiso($ultimoPermiso, null);
+        }
+
+
     }
 
     public function EditarPermiso($request, $permission)

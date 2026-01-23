@@ -14,6 +14,8 @@ use Carbon\Carbon;
 use App\Exports\ExportExcel;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Interfaces\FormularioInterface;
+use App\Interfaces\PermisoInterface;
+
 use App\Models\AuditoriaAccion;
 
 use function Laravel\Prompts\form;
@@ -22,13 +24,18 @@ class FormularioController extends Controller
 {
 
     protected $FormularioRepository;
+    protected $PermisoRepository;
 
     protected $CatalogoRepository;
-    public function __construct(CatalogoInterface $catalogoInterface, FormularioInterface $formularioInterface)
-    {
+    public function __construct(
+        CatalogoInterface $catalogoInterface,
+        FormularioInterface $formularioInterface,
+        PermisoInterface $permisoInterface
+    ) {
 
         $this->CatalogoRepository = $catalogoInterface;
         $this->FormularioRepository = $formularioInterface;
+        $this->PermisoRepository = $permisoInterface;
 
     }
     public function index()
@@ -60,11 +67,16 @@ class FormularioController extends Controller
             'nombre' => 'required|string|max:255',
             'descripcion' => 'nullable|string',
             'estado' => 'required|string|exists:catalogos,catalogo_codigo',
+            'crear_permisos' => 'nullable|in:on',
         ]);
 
         $formulario = $this->FormularioRepository->CrearFormulario($request);
 
-        return redirect()->route('formularios.index')->with('success', 'Formulario creado correctamente.');
+        if ($request->has('crear_permisos') && $request->input('crear_permisos') == 'on') {
+            $this->PermisoRepository->CrearPermisosFormulario($formulario);
+        }
+
+        return redirect()->route('formularios.index')->with('status', 'Formulario creado correctamente.');
     }
 
     public function edit(Formulario $formulario)
