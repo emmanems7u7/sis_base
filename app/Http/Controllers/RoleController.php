@@ -39,7 +39,7 @@ class RoleController extends Controller
 
         $this->RoleRepository->CrearRol($request);
 
-        return redirect()->route('roles.index')->with('success', 'Rol creado correctamente.');
+        return redirect()->route('roles.index')->with('status', 'Rol creado correctamente.');
     }
     public function create()
     {
@@ -94,7 +94,7 @@ class RoleController extends Controller
     public function update(Request $request, $id)
     {
         $this->RoleRepository->EditarRol($request, $id);
-        return redirect()->back()->with('success', 'Rol actualizado correctamente.');
+        return redirect()->back()->with('status', 'Rol actualizado correctamente.');
     }
 
 
