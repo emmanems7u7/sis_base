@@ -21,7 +21,6 @@ return new class extends Migration {
             $table->integer('conf_duracion_max');
             $table->integer('conf_tiempo_bloqueo');
             $table->string('conf_defecto', 50);
-            $table->string('accion_usuario', 50);
             $table->timestamps();
         });
     }

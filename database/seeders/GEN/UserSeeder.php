@@ -17,20 +17,17 @@ class UserSeeder extends Seeder
     {
         for ($i = 1; $i <= 5; $i++) {
             User::create([
-                'name' => 'usuario' . $i, // Nombre fijo por ahora
-                'email' => 'usuario' . $i . '@correo.com', // Email único
-                'password' => Hash::make('password' . $i), // Contraseña con hash
-
-                'usuario_fecha_ultimo_acceso' => Carbon::now()->subDays(rand(1, 30)), // Fecha aleatoria de último acceso
-                'usuario_fecha_ultimo_password' => Carbon::now()->subDays(rand(10, 60)), // Fecha aleatoria de último cambio de contraseña
-                'usuario_nombres' => fake()->firstName, // Nombre aleatorio
-                'usuario_app' => fake()->lastName, // Apellido paterno aleatorio
-                'usuario_apm' => fake()->lastName, // Apellido materno aleatorio
-                'usuario_telefono' => fake()->phoneNumber, // Teléfono aleatorio
-                'usuario_direccion' => fake()->address, // Dirección aleatoria
-                'accion_fecha' => Carbon::now(), // Fecha actual
-                'accion_usuario' => 'system', // Usuario de acción
-                'usuario_activo' => 1, // Usuario activo
+                'name' => 'usuario' . $i,
+                'email' => 'usuario' . $i . '@correo.com',
+                'password' => Hash::make('password' . $i),
+                'usuario_fecha_ultimo_acceso' => Carbon::now()->subDays(rand(1, 30)),
+                'usuario_fecha_ultimo_password' => Carbon::now()->subDays(rand(10, 60)),
+                'usuario_nombres' => fake()->firstName,
+                'usuario_app' => fake()->lastName,
+                'usuario_apm' => fake()->lastName,
+                'usuario_telefono' => fake()->phoneNumber,
+                'usuario_direccion' => fake()->address,
+                'usuario_activo' => 1,
             ]);
         }
     }

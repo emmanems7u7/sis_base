@@ -32,8 +32,6 @@ class User extends Authenticatable
         'usuario_apm',
         'usuario_telefono',
         'usuario_direccion',
-        'accion_fecha',
-        'accion_usuario',
         'usuario_activo',
     ];
 

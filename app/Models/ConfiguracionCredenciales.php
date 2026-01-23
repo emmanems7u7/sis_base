@@ -16,6 +16,5 @@ class ConfiguracionCredenciales extends Model
         'conf_duracion_max',
         'conf_tiempo_bloqueo',
         'conf_defecto',
-        'accion_usuario',
     ];
 }

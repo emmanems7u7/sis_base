@@ -12,7 +12,6 @@ class Catalogo extends Model
         'catalogo_codigo',
         'catalogo_descripcion',
         'catalogo_estado',
-        'accion_usuario',
     ];
     public function categoria()
     {

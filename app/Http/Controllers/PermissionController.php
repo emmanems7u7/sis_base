@@ -27,7 +27,7 @@ class PermissionController extends Controller
         ];
         $permissions = Permission::when($search, function ($query, $search) {
             return $query->where('name', 'like', "%{$search}%");
-        })->paginate(5);
+        })->paginate(30);
 
         $permisos = $this->PermisoRepository->GetPermisosTipo('permiso');
 

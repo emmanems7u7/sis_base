@@ -62,8 +62,7 @@ class UserController extends Controller
         $user = $this->userRepository->CrearUsuario($request);
 
         $user->assignRole($request->input('role'));
-        // Redirigir al usuario con un mensaje de éxito
-        return redirect()->route('users.index')->with('success', 'Usuario registrado exitosamente!');
+        return redirect()->route('users.index')->with('status', 'Usuario registrado exitosamente!');
     }
 
 
@@ -98,9 +97,8 @@ class UserController extends Controller
         $user = $this->userRepository->EditarUsuario($request, $id, $perfil);
 
         if ($perfil == 0) {
-            $user->syncRoles([]); // Elimina todos los roles
+            $user->syncRoles([]);
 
-            // Asignar el nuevo rol
             $user->assignRole($request->input('role'));
         }
 
@@ -161,8 +159,6 @@ class UserController extends Controller
             'foto_perfil',
             'usuario_fecha_ultimo_acceso',
             'usuario_fecha_ultimo_password',
-            'accion_fecha',
-            'accion_usuario',
             'usuario_activo',
             'email_verified_at',
             'two_factor_expires_at',

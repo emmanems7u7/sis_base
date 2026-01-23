@@ -348,7 +348,6 @@ PHP;
                 'catalogo_codigo' => '{$catalogo->catalogo_codigo}',
                 'catalogo_descripcion' => '{$catalogo->catalogo_descripcion}',
                 'catalogo_estado' => '{$catalogo->catalogo_estado}',
-                'accion_usuario' => '{$catalogo->accion_usuario}',
             ],
 PHP;
 

@@ -25,9 +25,6 @@ return new class extends Migration {
                 ->comment('Contenido HTML del correo');
 
 
-            $table->string('accion_usuario', 50)
-                ->comment('Usuario que realizó la acción.');
-
             $table->timestamps();
         });
     }

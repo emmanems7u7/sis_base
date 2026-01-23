@@ -29,7 +29,6 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
             'catalogo_codigo' => $this->cleanHtml($request->input('catalogo_codigo')),
             'catalogo_descripcion' => $this->cleanHtml($request->input('catalogo_descripcion')),
             'catalogo_estado' => $this->cleanHtml($request->input('catalogo_estado')),
-            'accion_usuario' => auth()->user()->name ?? 'sistema',
 
         ]);
         $this->SeederRepository->guardarEnSeederCatalogo($catalogo);

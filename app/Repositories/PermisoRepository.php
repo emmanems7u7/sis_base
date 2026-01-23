@@ -26,11 +26,56 @@ class PermisoRepository extends BaseRepository implements PermisoInterface
         $this->permissions = Permission::all();
         $this->SeederRepository = $seederRepository;
     }
+    public function GetPermisos($role = null)
+    {
+        // Solo permisos que no tienen id_relacion (independientes)
+        $permisos = Permission::whereNull('id_relacion')
+            ->where('tipo', 'permiso')
+            ->get();
+
+        return $permisos->map(function ($permiso) use ($role) {
+            $permiso->checked = $role ? $role->hasPermissionTo($permiso) : false;
+            return $permiso;
+        });
+    }
     public function GetPermisosTipo($tipo)
     {
 
         return $this->permissions->where('tipo', $tipo);
     }
+    public function GetPermisosMenu($role = null)
+    {
+        $permisosSeccion = Permission::where('tipo', 'seccion')->get();
+        $permisosMenu = Permission::where('tipo', 'menu')->get();
+        $secciones = Seccion::with('menus')->get();
+
+        return $permisosSeccion->map(function ($permisoSeccion) use ($permisosMenu, $secciones, $role) {
+
+            $seccion = $secciones->firstWhere('id', $permisoSeccion->id_relacion);
+
+            if (!$seccion) {
+                $permisoSeccion->menus = collect();
+                $permisoSeccion->checked = false;
+                return $permisoSeccion;
+            }
+
+            // Mapear menús de la sección a permisos de tipo 'menu'
+            $menus = $seccion->menus->map(function ($menu) use ($permisosMenu, $role) {
+                $permisoMenu = $permisosMenu->firstWhere('id_relacion', $menu->id);
+                if ($permisoMenu) {
+                    $permisoMenu->checked = $role ? $role->hasPermissionTo($permisoMenu) : false;
+                    return $permisoMenu;
+                }
+                return null;
+            })->filter(); // elimina nulls
+
+            $permisoSeccion->checked = $role ? $role->hasPermissionTo($permisoSeccion) : false;
+            $permisoSeccion->menus = $menus;
+
+            return $permisoSeccion;
+        });
+    }
+
     public function GetPermisoMenu($id, $rol_id)
     {
 

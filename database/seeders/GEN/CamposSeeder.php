@@ -47,7 +47,6 @@ class CamposSeeder extends Seeder
                 'catalogo_codigo' => 'CAMPF-' . str_pad($index + 12, 3, '0', STR_PAD_LEFT),
                 'catalogo_descripcion' => $descripcion,
                 'catalogo_estado' => 1,
-                'accion_usuario' => 'seeder_' . Str::random(5),
             ]);
         }
     }

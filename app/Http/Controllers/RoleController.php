@@ -28,6 +28,7 @@ class RoleController extends Controller
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
             ['name' => 'Roles', 'url' => route('roles.index')],
+
         ];
         return view('roles.index', compact('roles', 'breadcrumb', 'permissions'));
     }
@@ -43,16 +44,19 @@ class RoleController extends Controller
     public function create()
     {
 
-        $role = Role::all()->load('permissions');
+        $role = Role::with('permissions')->get();
+
 
         $permisosPorTipo = [
-            'permiso' => $this->PermisoRepository->GetPermisosTipo('permiso'),
-            'seccion' => $this->PermisoRepository->GetPermisosTipo('seccion'),
+            'permiso' => $this->PermisoRepository->GetPermisos(),
+            'seccion' => $this->PermisoRepository->GetPermisosMenu(),
         ];
 
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
             ['name' => 'Roles', 'url' => route('roles.index')],
+            ['name' => 'Crear Rol', 'url' => route('roles.index')],
+
         ];
 
         return view('roles.create', compact('role', 'permisosPorTipo', 'breadcrumb'));
@@ -62,17 +66,19 @@ class RoleController extends Controller
     public function edit($id)
     {
 
-        $role = Role::findOrFail($id)->load('permissions');
+        $role = Role::with('permissions')->findOrFail($id);
 
 
         $permisosPorTipo = [
-            'permiso' => $this->PermisoRepository->GetPermisosTipo('permiso'),
-            'seccion' => $this->PermisoRepository->GetPermisosTipo('seccion'),
+            'permiso' => $this->PermisoRepository->GetPermisos($role),
+            'seccion' => $this->PermisoRepository->GetPermisosMenu($role),
         ];
 
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
             ['name' => 'Roles', 'url' => route('roles.index')],
+            ['name' => 'Editar Rol', 'url' => route('roles.index')],
+
         ];
         return view('roles.edit', compact('role', 'permisosPorTipo', 'breadcrumb'));
     }

@@ -31,8 +31,6 @@ class UserRepository extends BaseRepository implements UserInterface
             'usuario_apm' => $this->cleanHtml($request->input('usuario_apm')),
             'usuario_telefono' => $this->cleanHtml($request->input('usuario_telefono')),
             'usuario_direccion' => $this->cleanHtml($request->input('usuario_direccion')),
-            'accion_fecha' => now(),
-            'accion_usuario' => Auth::user()->name,
             'usuario_activo' => 1,
             'fecha_nacimiento' => $this->cleanHtml($request->input('fecha_nacimiento')),
             'genero' => $this->cleanHtml($request->input('genero')),
@@ -92,8 +90,6 @@ class UserRepository extends BaseRepository implements UserInterface
             'usuario_apm' => $request->input('usuario_apm'),
             'usuario_telefono' => $request->input('usuario_telefono'),
             'usuario_direccion' => $request->input('usuario_direccion'),
-            'accion_fecha' => now(),
-            'accion_usuario' => Auth::user()->name,
             'usuario_activo' => 1,
             'foto_perfil' => $foto_perfil,
             'fecha_nacimiento' => $request->input('fecha_nacimiento'),
@@ -121,9 +117,6 @@ class UserRepository extends BaseRepository implements UserInterface
             'usuario_apm' => $request->input('usuario_apm'),
             'usuario_telefono' => $request->input('usuario_telefono'),
             'usuario_direccion' => $request->input('usuario_direccion'),
-
-            'accion_fecha' => now(),
-            'accion_usuario' => Auth::user()->name,
             'usuario_activo' => 1,
         ]);
     }

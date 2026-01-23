@@ -30,7 +30,6 @@ class FormulariosSeeder extends Seeder
                 'catalogo_codigo' => 'EFORM-' . str_pad($index + 1, 3, '0', STR_PAD_LEFT),
                 'catalogo_descripcion' => $descripcion,
                 'catalogo_estado' => 1,
-                'accion_usuario' => 'seeder_' . Str::random(5),
             ]);
         }
     }

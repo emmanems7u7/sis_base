@@ -46,19 +46,10 @@ return new class extends Migration {
                 ->after('usuario_telefono')
                 ->comment('Dirección del usuario');
 
-            $table->dateTime('accion_fecha')
-                ->nullable()
-                ->after('usuario_direccion')
-                ->comment('Fecha de última acción');
-
-            $table->string('accion_usuario', 20)
-                ->nullable()
-                ->after('accion_fecha')
-                ->comment('Usuario que realizó la acción');
 
             $table->unsignedInteger('usuario_activo')
                 ->default(1)
-                ->after('accion_usuario')
+                ->after('usuario_telefono')
                 ->comment('1 = activo, 0 = inactivo');
         });
 
@@ -78,8 +69,6 @@ return new class extends Migration {
                 'usuario_apm',
                 'usuario_telefono',
                 'usuario_direccion',
-                'accion_fecha',
-                'accion_usuario',
                 'usuario_activo',
             ]);
         });

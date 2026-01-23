@@ -21,7 +21,6 @@ class ConfiguracionCredencialesSeeder extends Seeder
             'conf_duracion_max' => 90,
             'conf_tiempo_bloqueo' => 300,
             'conf_defecto' => 'contraseña_000',
-            'accion_usuario' => 'usuario.gestion',
         ]);
     }
 }

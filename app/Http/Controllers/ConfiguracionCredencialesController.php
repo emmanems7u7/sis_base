@@ -41,9 +41,9 @@ class ConfiguracionCredencialesController extends Controller
             'conf_duracion_max' => $request->conf_duracion_max,
             'conf_tiempo_bloqueo' => $request->conf_tiempo_bloqueo,
             'conf_defecto' => $request->conf_defecto,
-            'accion_usuario' => auth()->user()->name ?? 'sistema',
+
         ]);
 
-        return redirect()->route('configuracion.credenciales.index')->with('success', 'Configuración actualizada correctamente.');
+        return redirect()->route('configuracion.credenciales.index')->with('status', 'Configuración actualizada correctamente.');
     }
 }
