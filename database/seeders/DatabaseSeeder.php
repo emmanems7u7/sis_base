@@ -7,7 +7,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         //SEEDERS GENERALES
-        $this->call(\Database\Seeders\GEN\GenSeeder::class);
+        $this->call(\Database\Seeders\GEN\GENSeeder::class);
 
         /*
                 //SEEDERS POR ENTORNO
