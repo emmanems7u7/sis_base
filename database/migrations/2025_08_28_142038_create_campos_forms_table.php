@@ -12,9 +12,11 @@ return new class extends Migration {
     {
         Schema::create('campos_forms', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('form_id')->constrained('formularios')->onDelete('cascade');
+            $table->foreignId('form_id')->nullable()->constrained('formularios')->onDelete('cascade');
+
             $table->string('nombre');
             $table->string('etiqueta');
+
             $table->string('tipo', 50)->nullable()->comment('Clave foránea a catalogos.catalogo_codigo');
             $table->foreign('tipo')->references('catalogo_codigo')->on('catalogos')
                 ->onUpdate('cascade')
@@ -24,9 +26,12 @@ return new class extends Migration {
 
             $table->integer('posicion')->default(0);
             $table->boolean('requerido')->default(false);
+
             $table->foreignId('categoria_id')
+                ->nullable()
                 ->constrained('categorias')
                 ->onDelete('cascade');
+
             $table->json('config')->nullable();
             $table->timestamps();
         });

@@ -125,15 +125,31 @@ class RespuestasFormRepository implements RespuestasFormInterface
         $rules = [];
 
         foreach ($campos as $campo) {
+
             $tipo = strtolower($campo->campo_nombre);
             $required = $campo->requerido ? 'required' : 'nullable';
 
-            // Si es importación desde archivo, omitimos multimedia
+            // ========================================
+            // Valor existente (solo edición)
+            // ========================================
+            $valorExistente = null;
+
+            if ($respuestaId) {
+                $valorExistente = \DB::table('respuestas_campos')
+                    ->where('respuesta_id', $respuestaId)
+                    ->where('cf_id', $campo->id)
+                    ->value('valor');
+            }
+
+            // ========================================
+            // Importación desde archivo: omitir multimedia
+            // ========================================
             if ($modo === 'archivo' && in_array($tipo, ['archivo', 'imagen', 'video'])) {
                 continue;
             }
 
             switch ($tipo) {
+
                 case 'text':
                 case 'textarea':
                     $rules[$campo->nombre] = [$required, 'string', 'max:255'];
@@ -159,7 +175,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
                 case 'archivo':
                 case 'imagen':
                 case 'video':
-                    // Solo para store normal
+
                     $extensiones_permitidas = $this->CatalogoRepository
                         ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true);
 
@@ -168,9 +184,20 @@ class RespuestasFormRepository implements RespuestasFormInterface
                         ->filter()
                         ->toArray();
 
-                    $extensionesStr = !empty($extensiones) ? implode(',', $extensiones) : '';
+                    $extensionesStr = !empty($extensiones)
+                        ? implode(',', $extensiones)
+                        : '';
 
-                    $fileRules = [$required, 'file', 'max:50240']; // 50 MB aprox.
+                    $fileRules = ['file', 'max:50240']; // 50 MB
+
+                    // required SOLO si:
+                    // - el campo es requerido
+                    // - NO existe archivo guardado
+                    if ($campo->requerido && empty($valorExistente)) {
+                        $fileRules[] = 'required';
+                    } else {
+                        $fileRules[] = 'nullable';
+                    }
 
                     if (!empty($extensionesStr)) {
                         $fileRules[] = 'mimes:' . $extensionesStr;
@@ -180,18 +207,32 @@ class RespuestasFormRepository implements RespuestasFormInterface
                     break;
 
                 case 'color':
-                    $rules[$campo->nombre] = [$required, 'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'];
+                    $rules[$campo->nombre] = [
+                        $required,
+                        'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'
+                    ];
                     break;
 
                 case 'email':
                     $uniqueRule = $respuestaId
                         ? "unique:respuestas_campos,valor,{$respuestaId},respuesta_id,cf_id,{$campo->id}"
                         : "unique:respuestas_campos,valor,NULL,id,cf_id,{$campo->id}";
-                    $rules[$campo->nombre] = [$required, 'email', 'max:255', $uniqueRule];
+
+                    $rules[$campo->nombre] = [
+                        $required,
+                        'email',
+                        'max:255',
+                        $uniqueRule
+                    ];
                     break;
 
                 case 'password':
-                    $rules[$campo->nombre] = [$required, 'string', 'min:6', 'max:255'];
+                    $rules[$campo->nombre] = [
+                        $required,
+                        'string',
+                        'min:6',
+                        'max:255'
+                    ];
                     break;
 
                 case 'enlace':

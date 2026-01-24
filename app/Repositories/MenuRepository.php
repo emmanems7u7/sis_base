@@ -34,10 +34,13 @@ class MenuRepository extends BaseRepository implements MenuInterface
             'modulo_id' => $this->cleanHtml($request->input('modulo_id', null)),
         ]);
 
+
         if ($menu->modulo_id == null) {
-            $this->SeederRepository->guardarEnSeederMenu($menu);
-            $this->permisoRepository->Store_Permiso($menu->nombre, 'menu', $menu->id);
+            //EVALUAR VALIDACION GENERO UN ERROR
         }
+
+        $this->SeederRepository->guardarEnSeederMenu($menu);
+        $this->permisoRepository->Store_Permiso($menu->nombre, 'menu', $menu->id);
 
     }
 

@@ -389,7 +389,7 @@ class RespuestasFormController extends Controller
 
         $generador = $this->RespuestasFormInterface->GeneraPlantilla($campos, $form);
 
-        $nombreArchivo = $generador['nombre_archivo'];
+        $nombreArchivo = $generador['nombreArchivo'];
 
         return response($generador['contenido'])
             ->header('Content-Type', 'text/plain')

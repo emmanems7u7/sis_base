@@ -195,6 +195,28 @@
 
     @include('formularios.campos.modal_busqueda')
 
+    <script>
+        let editId = null;
 
+        // Mostrar selector de categoría según tipo
+        const tipoCampo = document.getElementById('tipoCampo');
+        const categoriaCampo = document.getElementById('ContenedorCategoria');
+
+        tipoCampo.addEventListener('change', function () {
+
+            const tipoTexto = this.options[this.selectedIndex].textContent.trim();
+            if (['Radio', 'Checkbox', 'Selector', 'Imagen', 'Video', 'Archivo'].includes(tipoTexto)) {
+
+                categoriaCampo.style.display = '';
+                document.getElementById('categoriaCampo').style.display = 'inline-block';
+            } else {
+
+
+                categoriaCampo.style.display = 'none';
+                categoriaCampo.value = '';
+            }
+        });
+
+    </script>
 
 @endsection

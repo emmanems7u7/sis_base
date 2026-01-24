@@ -183,26 +183,60 @@
 
             {{-- ARCHIVO --}}
             @case('archivo')
-                <input type="file" name="{{ $campo->nombre }}"
-                    class="form-control"
-                   {{ $esRequerido ? 'required' : '' }}>
+
+            @if($valor)
+                <div class="mb-2">
+                    <a href="{{ asset('archivos/formulario_'.$form.'/archivos/'.$valor) }}"
+                    target="_blank"
+                    class="btn btn-outline-primary btn-sm">
+                        Ver archivo actual
+                    </a>
+                </div>
+            @endif
+
+            <input type="file"
+                name="{{ $campo->nombre }}"
+                class="form-control"
+                {{ $esRequerido && !$valor ? 'required' : '' }}>
             @break
 
             {{-- IMAGEN --}}
             @case('imagen')
-                <input type="file" name="{{ $campo->nombre }}"
-                    accept="image/*"
-                    class="form-control"
-                   {{ $esRequerido ? 'required' : '' }}>
+
+            @if($valor)
+                <div class="mb-2">
+                    <img src="{{ asset('archivos/formulario_'.$form.'/imagenes/'.$valor) }}"
+                        class="img-thumbnail"
+                        style="max-height: 150px">
+                </div>
+            @endif
+
+            <input type="file"
+                name="{{ $campo->nombre }}"
+                accept="image/*"
+                class="form-control"
+                {{ $esRequerido && !$valor ? 'required' : '' }}>
             @break
 
             {{-- VIDEO --}}
             @case('video')
-                <input type="file" name="{{ $campo->nombre }}"
-                    accept="video/*"
-                    class="form-control"
-                   {{ $esRequerido ? 'required' : '' }}>
+
+            @if($valor)
+                <div class="mb-2">
+                    <video controls style="max-width: 100%; max-height: 200px">
+                        <source src="{{ asset('archivos/formulario_'.$form.'/videos/'.$valor) }}">
+                        Tu navegador no soporta video.
+                    </video>
+                </div>
+            @endif
+
+            <input type="file"
+                name="{{ $campo->nombre }}"
+                accept="video/*"
+                class="form-control"
+                {{ $esRequerido && !$valor ? 'required' : '' }}>
             @break
+
 
             {{-- ENLACE --}}
             @case('enlace')
