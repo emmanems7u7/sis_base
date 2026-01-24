@@ -90,6 +90,9 @@
 
                             <td>{{ $respuesta->created_at->format('d/m/Y H:i') }}</td>
                             <td>
+
+
+                            
                              @include('formularios.partials.Botones', ['modulo' => $modulo->id])
 
 
