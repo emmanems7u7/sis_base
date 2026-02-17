@@ -72,7 +72,6 @@ class RespuestasFormController extends Controller
         $campos = $resultado['formulario']->campos;
 
         DB::disconnect();
-        dd($resultado);
         return view('formularios.respuestas_formulario', array_merge($resultado, compact('isMobile', 'breadcrumb', 'campos')));
     }
 
