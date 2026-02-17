@@ -332,4 +332,13 @@ class ModuloController extends Controller
             'configuracion' => $modulo->configuracion,
         ]);
     }
+    public function GetFormularios(Modulo $modulo)
+    {
+        return response()->json(
+            $modulo->formularios()
+                ->wherePivot('activo', 1)
+                ->select('formularios.id', 'formularios.nombre')
+                ->get()
+        );
+    }
 }

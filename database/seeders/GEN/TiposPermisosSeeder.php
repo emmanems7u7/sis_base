@@ -5,15 +5,17 @@ namespace Database\Seeders\GEN;
 
 use App\Models\Catalogo;
 use App\Models\Categoria;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Database\Seeders\Traits\RunsOnce;
+
 
 class TiposPermisosSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
-    public function run(): void
+    use RunsOnce;
+    protected function handle()
     {
 
 

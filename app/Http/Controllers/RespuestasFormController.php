@@ -72,7 +72,7 @@ class RespuestasFormController extends Controller
         $campos = $resultado['formulario']->campos;
 
         DB::disconnect();
-
+        dd($resultado);
         return view('formularios.respuestas_formulario', array_merge($resultado, compact('isMobile', 'breadcrumb', 'campos')));
     }
 
@@ -144,7 +144,7 @@ class RespuestasFormController extends Controller
         ));
     }
 
-    public function store(Request $request, $form, $modulo)
+    public function store(Request $request, $form, $modulo, $tipo)
     {
 
         // Buscar los modelos
@@ -215,18 +215,24 @@ class RespuestasFormController extends Controller
 
 
             //Definir retorno de ruta 
-            if ($moduloModelo) {
+            if ($tipo == 0) {
+                if ($moduloModelo) {
 
-                return redirect()->route('modulo.index', $moduloModelo->id)
-                    ->with([
-                        'status' => 'Registro creado correctamente.',
-                        'formulario_id' => $formularioModelo->id
-                    ]);
+                    return redirect()->route('modulo.index', $moduloModelo->id)
+                        ->with([
+                            'status' => 'Registro creado correctamente.',
+                            'formulario_id' => $formularioModelo->id
+                        ]);
+                } else {
+
+                    return redirect()->route('formularios.respuestas.formulario', $form)
+                        ->with('status', 'Registro creado correctamente.');
+                }
             } else {
-
-                return redirect()->route('formularios.respuestas.formulario', $form)
+                return redirect()->route('home')
                     ->with('status', 'Registro creado correctamente.');
             }
+
 
 
         } catch (\Exception $e) {

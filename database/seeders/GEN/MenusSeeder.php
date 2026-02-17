@@ -2,16 +2,18 @@
 
 namespace Database\Seeders\GEN;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Carbon\Carbon;
+use Database\Seeders\Traits\RunsOnce;
+
 class MenusSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
-    public function run(): void
+    use RunsOnce;
+    protected function handle()
     {
         DB::table('menus')->insert([
             [

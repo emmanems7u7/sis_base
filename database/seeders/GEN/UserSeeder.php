@@ -8,14 +8,24 @@ use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
 use Carbon\Carbon;
+use Database\Seeders\Traits\RunsOnce;
+
 class UserSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
-    public function run(): void
+    use RunsOnce;
+    protected function handle()
     {
-        for ($i = 1; $i <= 5; $i++) {
+        User::factory()->create([
+            'name' => 'admin',
+            'email' => 'admin@admin.com',
+            'password' => Hash::make('1'),
+        ]);
+
+
+        for ($i = 1; $i <= 30; $i++) {
             User::create([
                 'name' => 'usuario' . $i,
                 'email' => 'usuario' . $i . '@correo.com',

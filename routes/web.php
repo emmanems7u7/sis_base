@@ -26,6 +26,7 @@ use App\Http\Controllers\ArtisanController;
 use App\Http\Controllers\UserPersonalizacionController;
 use App\Http\Controllers\FormularioController;
 use App\Http\Controllers\CamposFormController;
+
 use App\Http\Controllers\RespuestasFormController;
 use App\Http\Controllers\ModuloController;
 use App\Http\Controllers\LogController;
@@ -33,6 +34,10 @@ use App\Http\Controllers\FormLogicController;
 use App\Http\Controllers\LogicaController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\SeederController;
+use App\Http\Controllers\ContenedorGridController;
+use App\Http\Controllers\FilaController;
+use App\Http\Controllers\ColumnaController;
+use App\Http\Controllers\WidgetController;
 
 /*
 |--------------------------------------------------------------------------
@@ -332,7 +337,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('formularios.registrar');
 
 
-    Route::post('/formularios/{form}/responder/{modulo}', [RespuestasFormController::class, 'store'])
+    Route::post('/formularios/{form}/responder/{modulo}/{tipo}', [RespuestasFormController::class, 'store'])
         ->name('formularios.responder');
 
 
@@ -435,6 +440,42 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/seeders/ver', [SeederController::class, 'verSeeder'])
         ->name('seeders.ver');
+
+
+
+    // Contenedores
+    Route::get('/contenedores', [ContenedorGridController::class, 'index'])->name('contenedores.index');
+    Route::get('/contenedor/create', [ContenedorGridController::class, 'create'])->name('contenedor.create');
+    Route::post('/contenedor/store', [ContenedorGridController::class, 'store'])->name('contenedor.store');
+    Route::get('/contenedor/{id}/edit', [ContenedorGridController::class, 'edit'])->name('contenedor.edit');
+    Route::get('/contenedor/{id}/conf', [ContenedorGridController::class, 'conf'])->name('contenedor.conf');
+
+    // Filas
+    Route::post('/fila/store', [FilaController::class, 'store'])->name('fila.store');
+    Route::post('/fila/ordenar', [FilaController::class, 'ordenar'])->name('fila.ordenar');
+    Route::delete('/fila/{id}', [FilaController::class, 'destroy']);
+    // Columnas
+    Route::post('/columna/store', [ColumnaController::class, 'store'])->name('columna.store');
+    Route::post('/columna/ordenar', [ColumnaController::class, 'ordenar'])->name('columna.ordenar');
+    Route::delete('/columna/{id}', [ColumnaController::class, 'destroy']);
+
+    // Widgets
+    Route::get('/widgets', action: [WidgetController::class, 'index'])->name('widgets.index'); // Para la lista
+    Route::get('/widgets/create', [WidgetController::class, 'create'])->name('widgets.create');
+    Route::post('/widgets/store', [WidgetController::class, 'store'])->name('widgets.store');
+    Route::get('/widgets/{widget}/edit', [WidgetController::class, 'edit'])->name('widgets.edit');
+    Route::put('/widgets/{widget}', [WidgetController::class, 'update'])->name('widgets.update');
+    Route::delete('/widgets/{widget}', [WidgetController::class, 'destroy'])
+        ->name('widgets.destroy');
+    Route::get('/modulo/{modulo}/formularios', [ModuloController::class, 'GetFormularios'])
+        ->name('modulo.formularios');
+
+    Route::post('/columna/asignar-widget', [ColumnaController::class, 'asignarWidget']);
+    Route::post('/columna/quitar-widget', [ColumnaController::class, 'quitarWidget']);
+
+
+    Route::get('/formulario/{formulario}/campos', [FormularioController::class, 'GetCampos'])
+        ->name('formulario.camposJ');
 });
 
 

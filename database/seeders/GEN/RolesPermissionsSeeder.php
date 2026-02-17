@@ -2,16 +2,18 @@
 
 namespace Database\Seeders\GEN;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Database\Seeders\Traits\RunsOnce;
+
 class RolesPermissionsSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
-    public function run(): void
+    use RunsOnce;
+    protected function handle()
     {
 
         $permissionManageSecciones = Permission::create(['name' => 'manage secciones']);

@@ -24,17 +24,18 @@
 
         <div class="card mt-3 shadow-lg">
             <div class="card-body">
-                <form action="{{ route('formularios.responder', ['form' => $formulario->id, 'modulo' => $modulo ]) }}" method="POST"
-                    enctype="multipart/form-data">
+                <form
+                    action="{{ route('formularios.responder', ['form' => $formulario->id, 'modulo' => $modulo, 'tipo' => 0]) }}"
+                    method="POST" enctype="multipart/form-data">
                     @csrf
                     @include('formularios._campos', ['campos' => $formulario->campos->sortBy('posicion'), 'valores' => []])
 
                     @if(!$moduloModelo)
-                    <a href="{{ route('formularios.index') }}" class="btn btn-secondary mt-3"><i
-                            class="fas fa-arrow-left me-1"></i>Volver</a>
+                        <a href="{{ route('formularios.index') }}" class="btn btn-secondary mt-3"><i
+                                class="fas fa-arrow-left me-1"></i>Volver</a>
                     @else
-                    <a href="{{ route('modulo.index', $moduloModelo->id) }}" class="btn btn-secondary mt-3"><i
-                            class="fas fa-arrow-left me-1"></i>Volver</a>
+                        <a href="{{ route('modulo.index', $moduloModelo->id) }}" class="btn btn-secondary mt-3"><i
+                                class="fas fa-arrow-left me-1"></i>Volver</a>
                     @endif
 
                     <button type="submit" class="btn btn-primary mt-3">Registrar</button>

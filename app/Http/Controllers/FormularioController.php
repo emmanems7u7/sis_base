@@ -242,6 +242,16 @@ class FormularioController extends Controller
         ]);
     }
 
+    public function getCampos(Formulario $formulario)
+    {
+        return response()->json(
+            $formulario->campos()
+                ->select('id', 'etiqueta', 'tipo')
+                ->orderBy('posicion')
+                ->get()
+        );
+    }
+
     public function detalle($accion_id = null)
     {
 

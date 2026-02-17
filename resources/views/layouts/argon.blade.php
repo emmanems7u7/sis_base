@@ -823,7 +823,7 @@
     <script src="{{asset('argon/js/plugins/smooth-scrollbar.min.js')}}"></script>
     <script src="{{asset('argon/js/plugins/chartjs.min.js')}}"></script>
     <script src="{{asset('js/campos.js')}}"></script>
-
+    <script src="{{asset('js/iconos.js')}}"></script>
 
 
     

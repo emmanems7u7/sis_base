@@ -2,17 +2,18 @@
 
 namespace Database\Seeders\GEN;
 
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\Categoria;
 use App\Models\Catalogo;
-use Illuminate\Support\Str;
+use Database\Seeders\Traits\RunsOnce;
+
 class TipoDocumentoSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
-    public function run(): void
+    use RunsOnce;
+    protected function handle()
     {
         $categoria = Categoria::create([
             'nombre' => 'Tipo Documentos',

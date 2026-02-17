@@ -3,11 +3,14 @@
 namespace Database\Seeders\GEN;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use Database\Seeders\Traits\RunsOnce;
 
 
 class CatalogoSeeder extends Seeder
 {
-    public function run()
+
+    use RunsOnce;
+    protected function handle()
     {
 
 

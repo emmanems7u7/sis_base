@@ -1,15 +1,17 @@
 <?php
 
 namespace Database\Seeders\GEN;
-use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
 use App\Models\ConfiguracionCredenciales;
+use Database\Seeders\Traits\RunsOnce;
+
 class ConfiguracionCredencialesSeeder extends Seeder
 {
     /**
      * Run the database seeds.
      */
-    public function run(): void
+    use RunsOnce;
+    protected function handle()
     {
         ConfiguracionCredenciales::create([
             'conf_long_min' => 4,

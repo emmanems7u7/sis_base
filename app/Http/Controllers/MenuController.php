@@ -122,4 +122,6 @@ class MenuController extends Controller
         }
         return redirect()->route('menus.index')->with('status', 'Menú eliminado exitosamente.');
     }
+
+
 }

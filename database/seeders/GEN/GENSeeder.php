@@ -14,16 +14,10 @@ class GENSeeder extends Seeder
     {
 
 
-        User::factory()->create([
-            'name' => 'admin',
-            'email' => 'admin@admin.com',
-            'password' => Hash::make('1'),
-        ]);
 
         //Contenido minimo para levantar sistema
-
-        $this->call(RolesPermissionsSeeder::class);
         $this->call(UserSeeder::class);
+        $this->call(RolesPermissionsSeeder::class);
         $this->call(CategoriaSeeeder::class);
         $this->call(CatalogoSeeder::class);
         $this->call(PermissionSeeder::class);
@@ -43,6 +37,9 @@ class GENSeeder extends Seeder
         $this->call(TipoAccionSeeder::class);
         $this->call(EstadosActivoInactivoSeeder::class);
         $this->call(TiposPermisosSeeder::class);
+
+        $this->call(class: WidgetsSeeder::class);
+
 
     }
 }
