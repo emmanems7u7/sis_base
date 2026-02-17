@@ -52,10 +52,11 @@ class SeederRepository extends BaseRepository implements SeederInterface
 
                         use Illuminate\Database\Seeder;
                         use {$modelo_ruta};
-
+                        use Database\Seeders\Traits\RunsOnce;
                         class {$clase} extends Seeder
                         {
-                            public function run(): void
+                            use RunsOnce;
+                            protected function handle(): void
                             {
                                 \${$variable} = [
                         {$registro}
