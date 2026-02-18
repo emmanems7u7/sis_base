@@ -170,6 +170,8 @@ class RespuestasFormController extends Controller
         try {
             $respuesta = $this->FormularioRepository->crearRespuesta($form);
 
+
+
             foreach ($campos as $campo) {
                 $this->FormularioRepository->guardarCampo($campo, $respuesta->id, $request, $form);
             }
@@ -537,33 +539,38 @@ class RespuestasFormController extends Controller
                 }
 
                 // Guardar o actualizar
+
                 if ($valor !== null) {
-                    if (is_array($valor)) {
-                        foreach ($valor as $v) {
-                            if ($old) {
-                                $old->update(['valor' => $v]);
-                            } else {
-                                RespuestasCampo::create([
-                                    'respuesta_id' => $respuesta->id,
-                                    'cf_id' => $campo->id,
-                                    'valor' => $v,
-                                ]);
-                            }
-                        }
-                    } else {
-                        if ($old) {
-                            $old->update(['valor' => $valor]);
-                        } else {
+                    // Convertir todo a array para unificar lógica
+                    $valoresNuevos = is_array($valor) ? $valor : [$valor];
+
+                    // Obtener todos los valores antiguos de este campo
+                    $valoresAntiguos = RespuestasCampo::where('respuesta_id', $respuesta->id)
+                        ->where('cf_id', $campo->id)
+                        ->pluck('valor')
+                        ->toArray();
+
+                    // 1️ Agregar valores que no existían
+                    foreach ($valoresNuevos as $v) {
+                        if (!in_array($v, $valoresAntiguos)) {
                             RespuestasCampo::create([
                                 'respuesta_id' => $respuesta->id,
                                 'cf_id' => $campo->id,
-                                'valor' => $valor,
+                                'valor' => $v,
                             ]);
                         }
                     }
+
+                    // 2️ Eliminar los valores que ya no están seleccionados
+                    $valoresAEliminar = array_diff($valoresAntiguos, $valoresNuevos);
+                    if (!empty($valoresAEliminar)) {
+                        RespuestasCampo::where('respuesta_id', $respuesta->id)
+                            ->where('cf_id', $campo->id)
+                            ->whereIn('valor', $valoresAEliminar)
+                            ->delete();
+                    }
                 }
             }
-
 
 
             DB::commit();
@@ -592,6 +599,7 @@ class RespuestasFormController extends Controller
             return redirect()->back()->withErrors('Error al actualizar la respuesta: ' . $e->getMessage());
         }
     }
+
 
 
 

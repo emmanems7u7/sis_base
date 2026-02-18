@@ -185,4 +185,22 @@ class CamposFormController extends Controller
             'tiene_respuestas' => $tieneRespuestas
         ]);
     }
+
+    public function toggleVisible(Request $request)
+    {
+        $campo = CamposForm::findOrFail($request->campo_id);
+
+        $config = $campo->config ?? [];
+
+        $config['visible_listado'] = (bool) $request->visible_listado;
+
+        $campo->config = $config;
+        $campo->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Configuración actualizada correctamente'
+        ]);
+    }
+
 }

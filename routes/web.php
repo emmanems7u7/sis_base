@@ -348,6 +348,9 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/campos/{campo}/check-respuestas', [CamposFormController::class, 'checkRespuestas'])
         ->name('campos.checkRespuestas');
 
+    Route::post('/toggle-visible/campos', [CamposFormController::class, 'toggleVisible'])
+        ->name('campos.toggleVisible');
+
 
     Route::get('/respuestas/{respuesta}/edit/{modulo}', [RespuestasFormController::class, 'edit'])
         ->name('respuestas.edit');
@@ -416,6 +419,8 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/formularios/{form_id}/respuestas/{respuesta_id}', [FormularioController::class, 'obtenerFila'])
         ->name('formularios.obtenerFila');
 
+
+    Route::get('/formularios/{form_id}/respuestas/{respuesta_id}/visor', [FormularioController::class, 'obtenerFilaVisor'])->name('formularios.obtenerFilaVisor');
 
     Route::get('/form-destino/info/{formDestinoId}', [FormularioController::class, 'getInfo'])
         ->name('form-destino.info');

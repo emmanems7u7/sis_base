@@ -91,6 +91,29 @@ class WidgetController extends Controller
                 break;
             case 'WID-006':
                 break;
+            case 'WID-007':
+                $configuracion = [
+                    'campo_x_id' => $request->configuracion['campo_x_id'] ?? null,
+                    'campo_y_id' => $request->configuracion['campo_y_id'] ?? null,
+                    'periodo' => $request->configuracion['periodo'] ?? 'mes',
+                    'titulo' => $request->configuracion['titulo'] ?? null,
+                ];
+                break;
+            case 'WID-008':
+                $configuracion = [
+                    'campo_x_id' => $request->configuracion['campo_x_id'] ?? null,
+                    'campo_y_id' => $request->configuracion['campo_y_id'] ?? null,
+                    'tipo' => $request->configuracion['tipo'] ?? 'conteo',
+                    'titulo' => $request->configuracion['titulo'] ?? null,
+                ];
+                break;
+            case 'WID-009':
+                $configuracion = [
+                    'campo_x_id' => $request->configuracion['campo_x_id'] ?? null,
+                    'campo_y_id' => $request->configuracion['campo_y_id'] ?? null,
+                    'titulo' => $request->configuracion['titulo'] ?? null,
+                ];
+                break;
             case 'WID-010':
                 break;
 

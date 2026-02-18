@@ -5,6 +5,8 @@ namespace App\Repositories;
 use App\Interfaces\RespuestasFormInterface;
 use App\Models\RespuestasForm;
 use App\Interfaces\CatalogoInterface;
+use App\Models\Formulario;
+
 class RespuestasFormRepository implements RespuestasFormInterface
 {
     protected $model;
@@ -316,7 +318,10 @@ class RespuestasFormRepository implements RespuestasFormInterface
             . implode(',', $columnas) . PHP_EOL
             . implode(',', $ejemplo);
 
-        $nombreArchivo = 'plantilla_formulario_' . $form . '.txt';
+        $formulario = Formulario::find($form);
+
+
+        $nombreArchivo = 'plantilla_' . $formulario->nombre . '_' . now() . '.txt';
 
         return [
             'nombreArchivo' => $nombreArchivo,

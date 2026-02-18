@@ -4,7 +4,7 @@
 @section('content')
 
 
-    @include('formularios.modal_busqueda',[ 'formulario' => $formulario, 'campos' => $formulario->campos, 'modulo' => 0])
+    @include('formularios.modal_busqueda', ['formulario' => $formulario, 'campos' => $formulario->campos, 'modulo' => 0])
 
     <div class="row">
         <div class="col-md-6 mt-2 order-2 order-md-1">
@@ -13,10 +13,11 @@
                     <h5>Respuestas del Formulario: {{ $formulario->nombre }}</h5>
                     <a href="{{ route('formularios.index') }}" class="btn btn-sm btn-secondary "><i
                             class="fas fa-arrow-left me-1"></i>Volver</a>
-                    <a href="{{ route('formularios.registrar', ['form' => $formulario, 'modulo' => 0]) }}" class="btn btn-sm btn-success">
+                    <a href="{{ route('formularios.registrar', ['form' => $formulario, 'modulo' => 0]) }}"
+                        class="btn btn-sm btn-success">
                         <i class="fas fa-plus"></i> Registrar
                     </a>
-                    
+
                     <div class="btn-group" role="group" aria-label="Export options">
 
                         <div class="btn-group" role="group">
@@ -65,6 +66,10 @@
             </div>
         </div>
     </div>
+
+
+    {{-- modal para ver registros --}}
+    @include('formularios.partials.modal_ver')
 
 
     {{-- Tabla para pantallas grandes --}}

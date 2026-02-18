@@ -169,23 +169,41 @@
                     </span>
 
                     <div class="card-body">
+
                         @include('formularios.campos.lista_campos', ['campo' => $campo])
                     </div>
                     <div class="card-footer">
-                        <div class="d-flex gap-1">
-                            <button class="btn btn-sm btn-warning btnEditarCampo" data-id="{{ $campo->id }}">Editar</button>
+                        <div class="d-flex justify-content-between align-items-center">
 
+                            <!-- Botones -->
+                            <div class="d-flex gap-1">
+                                <button class="btn btn-sm btn-warning btnEditarCampo" data-id="{{ $campo->id }}">
+                                    Editar
+                                </button>
 
+                                <a type="button" class="btn btn-sm btn-danger"
+                                    onclick="eliminarCampo('eliminarCampo_{{ $campo->id }}',{{ $campo->id }})">
+                                    Eliminar
+                                </a>
 
+                                    <form id="eliminarCampo_{{ $campo->id }}"
+                                        action="{{ route('campos.destroy', $campo) }}" method="POST" style="display: none;">
+                                        @csrf
+                                        @method('DELETE')
+                            </div>
 
-                            <a type="button" class="btn btn-sm btn-danger " id=""
-                                onclick="eliminarCampo('eliminarCampo_{{ $campo->id }}',{{ $campo->id }})">Eliminar</a>
+                            <!-- Check visible en listado -->
+                            <div class="form-check m-0">
+                            <input class="form-check-input toggle-visible-listado" type="checkbox"
+    data-id="{{ $campo->id }}" {{ $campo->config['visible_listado'] ?? false ? 'checked' : '' }}>
+                                <label class="form-check-label small" for="visible_listado_{{ $campo->id }}">
+                                    Visible en listado
+                                </label>
+                                <i class="fas fa-question-circle text-primary" data-bs-toggle="tooltip" data-bs-placement="top"
+                                    title="Activa esta opción para que el campo aparezca en el listado principal. Si está desactivada, el campo se mostrará únicamente al presionar el botón 'Ver'. Esto es util si tienes muchos campos">
+                                </i>
+                            </div>
 
-                            <form id="eliminarCampo_{{ $campo->id }}" method="POST"
-                                action="{{ route('campos.destroy', $campo) }}" style="display: none;">
-                                @csrf
-                                @method('DELETE')
-                            </form>
                         </div>
                     </div>
                 </div>
@@ -217,6 +235,43 @@
             }
         });
 
+    </script>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+
+            document.querySelectorAll('.toggle-visible-listado').forEach(function (checkbox) {
+
+                checkbox.addEventListener('change', function () {
+
+                    let campoId = this.dataset.id;
+                    let visible = this.checked ? 1 : 0;
+
+                    fetch("{{ route('campos.toggleVisible') }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                        },
+                        body: JSON.stringify({
+                            campo_id: campoId,
+                            visible_listado: visible
+                        })
+                    })
+                        .then(response => response.json())
+                        .then(data => {
+                            alertify.success(data.message);
+                        })
+                        .catch(error => {
+                            console.error("Error:", error);
+                        });
+
+                });
+
+            });
+
+        });
     </script>
 
 @endsection

@@ -6,6 +6,7 @@
 
                 <th>Quién llenó</th>
                 @foreach($formulario->campos->sortBy('posicion') as $campo)
+
                     <th>{{ $campo->etiqueta }}</th>
                 @endforeach
                 <th>Fecha Registro</th>

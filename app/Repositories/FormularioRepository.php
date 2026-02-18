@@ -61,7 +61,6 @@ class FormularioRepository implements FormularioInterface
     {
         $tipo = strtolower($campo->campo_nombre);
         $name = $campo->nombre;
-
         if (in_array($tipo, ['imagen', 'video', 'archivo']) && $request->hasFile($name)) {
             $file = $request->file($name);
             $filename = uniqid($tipo . '_') . '.' . $file->getClientOriginalExtension();
@@ -74,9 +73,15 @@ class FormularioRepository implements FormularioInterface
                 mkdir($path, 0777, true);
             $file->move($path, $filename);
             $this->guardarValorSimple($campo, $respuesta_id, $filename);
+
+
+
         } elseif ($request->has($name)) {
+
             $valor = $request->input($name);
+
             if (is_array($valor)) {
+
                 foreach ($valor as $v)
                     $this->guardarValorSimple($campo, $respuesta_id, $v);
             } else {
@@ -166,37 +171,7 @@ class FormularioRepository implements FormularioInterface
         foreach ($campos as $campo) {
 
 
-            if ($campo->categoria_id) {
-                $campo->opciones_catalogo = $this->CatalogoRepository
-                    ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true, $limit, $offset);
-
-
-            } elseif ($campo->form_ref_id) {
-                $campoReferencia = CamposForm::where('form_id', $campo->form_ref_id)
-                    ->orderBy('posicion', 'asc')
-                    ->first();
-
-                if ($campoReferencia) {
-                    $campo->opciones_catalogo = $campo->opcionesFormularioQuery() // esto devuelve query builder
-                        ->offset($offset)
-                        ->limit($limit)
-                        ->get()
-                        ->map(function ($respuesta) use ($campoReferencia) {
-                            $valorCampo = $respuesta->camposRespuestas
-                                ->firstWhere('cf_id', $campoReferencia->id);
-
-                            return (object) [
-                                'catalogo_codigo' => $respuesta->id,
-                                'catalogo_descripcion' => $valorCampo->valor ?? 'Sin nombre',
-                            ];
-                        });
-                } else {
-                    $campo->opciones_catalogo = collect();
-                }
-
-            } else {
-                $campo->opciones_catalogo = collect();
-            }
+            $campo = $this->ProcesarCampo($campo, $limit, $offset);
 
             $resultado->push($campo);
         }
@@ -205,6 +180,42 @@ class FormularioRepository implements FormularioInterface
     }
 
 
+
+    public function ProcesarCampo($campo, $limit = 20, $offset = 0)
+    {
+        if ($campo->categoria_id) {
+            $campo->opciones_catalogo = $this->CatalogoRepository
+                ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true, $limit, $offset);
+
+
+        } elseif ($campo->form_ref_id) {
+            $campoReferencia = CamposForm::where('form_id', $campo->form_ref_id)
+                ->orderBy('posicion', 'asc')
+                ->first();
+
+            if ($campoReferencia) {
+                $campo->opciones_catalogo = $campo->opcionesFormularioQuery() // esto devuelve query builder
+                    ->offset($offset)
+                    ->limit($limit)
+                    ->get()
+                    ->map(function ($respuesta) use ($campoReferencia) {
+                        $valorCampo = $respuesta->camposRespuestas
+                            ->firstWhere('cf_id', $campoReferencia->id);
+
+                        return (object) [
+                            'catalogo_codigo' => $respuesta->id,
+                            'catalogo_descripcion' => $valorCampo->valor ?? 'Sin nombre',
+                        ];
+                    });
+            } else {
+                $campo->opciones_catalogo = collect();
+            }
+
+        } else {
+            $campo->opciones_catalogo = collect();
+        }
+        return $campo;
+    }
 
     public function convertirValorParaFiltro($campo, $valorUsuario)
     {
@@ -346,9 +357,16 @@ class FormularioRepository implements FormularioInterface
             ->paginate(15, ['*'], $pageName ?? 'page')
             ->withQueryString();
 
-        // PROCESAR CAMPOS
-        $formulario = Formulario::with(['campos' => fn($q) => $q->orderBy('posicion')])
-            ->findOrFail($formulario->id);
+        // PROCESAR CAMPOS 
+        // SE VALIDA QUE SOLO SE CARGUEN LOS CAMPOS QUE TENGAN CONFIG->VISIBLE_LISTADO = true PARA OPTIMIZAR RENDIMIENTO EN CASO DE FORMULARIOS CON MUCHOS CAMPOS
+
+        $formulario = Formulario::with([
+            'campos' => function ($q) {
+                $q->whereJsonContains('config->visible_listado', true)
+                    ->orderBy('posicion');
+            }
+        ])->findOrFail($formulario->id);
+
 
         $camposProcesados = $this->CamposFormCat($formulario->campos);
         $formulario->campos = $camposProcesados;

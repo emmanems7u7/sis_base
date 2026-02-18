@@ -101,13 +101,18 @@ class FormularioController extends Controller
         $formulario = $this->FormularioRepository->EditarFormulario($request, $formulario);
 
 
-        return redirect()->route('formularios.index')->with('success', 'Formulario actualizado correctamente.');
+        return redirect()->route('formularios.index')->with('status', 'Formulario actualizado correctamente.');
     }
 
     public function destroy(Formulario $formulario)
     {
+
+        $this->PermisoRepository->EliminarPermisosFormulario($formulario);
+
         $formulario->delete();
-        return redirect()->route('formularios.index')->with('success', 'Formulario eliminado correctamente.');
+
+
+        return redirect()->route('formularios.index')->with('status', 'Formulario eliminado correctamente.');
     }
 
 
@@ -141,7 +146,7 @@ class FormularioController extends Controller
         $fecha = Carbon::now()->format('d-m-Y H:i:s');
 
         return ExportPDF::exportPdf(
-            'formularios.export_respuestas', // vista Blade
+            'formularios.export_respuestas',
             [
                 'formulario' => $formulario,
                 'respuestas' => $datos,
@@ -218,6 +223,92 @@ class FormularioController extends Controller
         ]);
     }
 
+
+    public function obtenerFilaVisor($form_id, $respuesta_id)
+    {
+        $respuesta = RespuestasForm::with([
+            'camposRespuestas',
+            'camposRespuestas.campo.opciones_catalogo',
+            'formulario.campos'
+        ])
+            ->where('form_id', $form_id)
+            ->where('id', $respuesta_id)
+            ->first();
+
+        if (!$respuesta) {
+            return response()->json(['error' => 'No se encontró la respuesta'], 404);
+        }
+
+        $formulario = $respuesta->formulario;
+        $resultado = [];
+
+        foreach ($formulario->campos->sortBy('posicion') as $campo) {
+
+            $valores = $respuesta->camposRespuestas
+                ->where('cf_id', $campo->id)
+                ->pluck('valor')
+                ->toArray();
+
+            $tipoCampo = strtolower($campo->campo_nombre);
+            $displayValores = [];
+
+            foreach ($valores as $v) {
+
+                switch ($tipoCampo) {
+
+                    case 'checkbox':
+                    case 'radio':
+                    case 'selector':
+
+                        $campo = $this->FormularioRepository->ProcesarCampo($campo, 10, 0);
+
+                        $desc = $campo->opciones_catalogo->where('catalogo_codigo', $v)->first()?->catalogo_descripcion;
+
+                        $displayValores[] = $desc ?? $v;
+
+                        break;
+
+                    case 'imagen':
+                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/imagenes/{$v}");
+                        break;
+
+                    case 'video':
+                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/videos/{$v}");
+                        break;
+
+                    case 'archivo':
+                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/archivos/{$v}");
+                        break;
+
+                    case 'enlace':
+                        $displayValores[] = $v;
+                        break;
+
+                    case 'fecha':
+                        $displayValores[] = Carbon::parse($v)->format('d/m/Y');
+                        break;
+
+                    case 'hora':
+                        $displayValores[] = $v;
+                        break;
+
+                    default:
+                        $displayValores[] = $v;
+                }
+            }
+
+            $resultado[] = [
+                'etiqueta' => $campo->etiqueta,
+                'tipo' => $tipoCampo,
+                'valores' => $displayValores
+            ];
+        }
+
+        return response()->json([
+            'nombre_formulario' => $formulario->nombre,
+            'campos' => $resultado
+        ]);
+    }
 
     public function getInfo($formDestinoId)
     {

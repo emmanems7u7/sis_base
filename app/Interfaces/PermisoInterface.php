@@ -20,6 +20,7 @@ interface PermisoInterface
     public function GetPermisosMenu($role = null);
 
     public function CrearPermisosFormulario($formulario);
+    public function EliminarPermisosFormulario($formulario);
 
 
 

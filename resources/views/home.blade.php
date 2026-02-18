@@ -152,6 +152,60 @@
                         @break
 
 
+                    
+@case('WID-007')
+<canvas id="chart-{{ $loop->index }}"></canvas>
+
+<script>
+new Chart(document.getElementById('chart-{{ $loop->index }}'), {
+    type: 'line',
+    data: {
+        labels: @json($widget['data']['labels']),
+        datasets: [{
+            label: "{{ $widget['data']['titulo'] }}",
+            data: @json($widget['data']['values']),
+            fill: false
+        }]
+    }
+});
+</script>
+@break
+
+@case('WID-008')
+<canvas id="chart-{{ $loop->index }}"></canvas>
+
+<script>
+new Chart(document.getElementById('chart-{{ $loop->index }}'), {
+    type: 'bar',
+    data: {
+        labels: @json($widget['data']['labels']),
+        datasets: [{
+            label: "{{ $widget['data']['titulo'] }}",
+            data: @json($widget['data']['values'])
+        }]
+    }
+});
+</script>
+
+@break
+@case('WID-009')
+<canvas id="chart-{{ $loop->index }}"></canvas>
+
+<script>
+new Chart(document.getElementById('chart-{{ $loop->index }}'), {
+    type: 'pie',
+    data: {
+        labels: @json($widget['data']['labels']),
+        datasets: [{
+            data: @json($widget['data']['values'])
+        }]
+    }
+});
+</script>
+@break
+
+
+
                         {{-- ❓ DEFAULT --}}
                         @default
                             <div class="card shadow-sm text-center p-3">

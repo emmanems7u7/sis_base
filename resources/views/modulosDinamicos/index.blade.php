@@ -44,6 +44,8 @@
         </div>
     </div>
 
+    {{-- modal para ver registros --}}
+    @include('formularios.partials.modal_ver')
 
     <div class="mt-2">
         @if($isMobile)

@@ -59,7 +59,7 @@ class CamposForm extends Model
     {
         return $this->formularioReferencia
             ? $this->formularioReferencia->respuestas()->with('camposRespuestas.campo')
-            : collect(); // o mejor retornar un query vacío si es posible
+            : collect();
     }
 
 

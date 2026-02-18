@@ -19,7 +19,6 @@
                 <div class="card-body">
 
 
-                    <i class="fas fa-file-upload me-2 fa-sm text-info"></i>
                     <div class="small">
                         <strong>Carga masiva:</strong> selecciona un archivo <code>.txt</code> o <code>.csv</code> con los
                         datos separados por comas. <br>

@@ -230,6 +230,36 @@ class PermisoRepository extends BaseRepository implements PermisoInterface
 
     }
 
+    public function EliminarPermisosFormulario($formulario)
+    {
+        // Obtener categoría
+        $categoria = Categoria::where('nombre', 'Tipos de permisos para roles')->firstOrFail();
+
+        // Obtener catálogo
+        $catalogo_permisos = $this->CatalogoRepository
+            ->obtenerCatalogosPorCategoriaID($categoria->id, true);
+
+        foreach ($catalogo_permisos as $permisoC) {
+
+            $permisoStr = $formulario->id . '.' . $permisoC->catalogo_descripcion;
+
+            $permiso = Permission::where('name', $permisoStr)
+                ->where('dinamico', 1)
+                ->first();
+
+            if ($permiso) {
+
+                //Eliminar del seeder
+                $this->SeederRepository->eliminarDeSeederPermiso($permiso);
+
+                // Eliminar relaciones con roles
+                $permiso->roles()->detach();
+
+                $permiso->delete();
+            }
+        }
+    }
+
     public function EditarPermiso($request, $permission)
     {
 

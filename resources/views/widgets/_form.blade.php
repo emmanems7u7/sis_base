@@ -124,6 +124,59 @@
         </select>
 
     </div>
+
+    <div id="config-grafico-barra" class="tipo-config" style="display:none;">
+        <h6>Configuración Gráfico de Barra</h6>
+
+        <select id="campo_barra_x" name="configuracion[campo_x_id]" class="form-select mb-2">
+            <option value="">-- Campo Categoría (Eje X) --</option>
+        </select>
+
+        <select id="campo_barra_y" name="configuracion[campo_y_id]" class="form-select mb-2">
+            <option value="">-- Campo Valor (Eje Y) --</option>
+        </select>
+
+        <select name="configuracion[tipo]" class="form-select mb-2">
+            <option value="conteo">Conteo</option>
+            <option value="suma">Suma</option>
+        </select>
+
+        <input type="text" name="configuracion[titulo]" class="form-control mb-2" placeholder="Título del gráfico">
+    </div>
+
+    <div id="config-grafico-linea" class="tipo-config" style="display:none;">
+        <h6>Configuración Gráfico de Línea</h6>
+
+        <select id="campo_linea_x" name="configuracion[campo_x_id]" class="form-select mb-2">
+            <option value="">-- Campo Fecha (Eje X) --</option>
+        </select>
+
+        <select id="campo_linea_y" name="configuracion[campo_y_id]" class="form-select mb-2">
+            <option value="">-- Campo Numérico (Eje Y) --</option>
+        </select>
+
+        <select name="configuracion[periodo]" class="form-select mb-2">
+            <option value="mes">Por mes</option>
+            <option value="anio">Por año</option>
+        </select>
+
+        <input type="text" name="configuracion[titulo]" class="form-control mb-2" placeholder="Título del gráfico">
+    </div>
+
+
+    <div id="config-grafico-pastel" class="tipo-config" style="display:none;">
+        <h6>Configuración Gráfico Pastel</h6>
+
+        <select id="campo_pastel_x" name="configuracion[campo_x_id]" class="form-select mb-2">
+            <option value="">-- Campo Categoría --</option>
+        </select>
+
+        <select id="campo_pastel_y" name="configuracion[campo_y_id]" class="form-select mb-2">
+            <option value="">-- Campo Valor (Opcional para suma) --</option>
+        </select>
+
+        <input type="text" name="configuracion[titulo]" class="form-control mb-2" placeholder="Título del gráfico">
+    </div>
 </div>
 
 <button type="submit" class="btn btn-primary">Guardar Widget</button>
@@ -173,12 +226,17 @@
                     activarBloque('config-contador');
                     break;
 
-                case 'WID-020': // Gráfico barras
+                case 'WID-007': // Gráfico línea
+                    activarBloque('config-grafico-linea');
+                    break;
+                case 'WID-008': // Gráfico barra
                     activarBloque('config-grafico-barra');
                     break;
 
-                case 'WID-021': // Gráfico línea
-                    activarBloque('config-grafico-linea');
+
+
+                case 'WID-009': // Gráfico pastel
+                    activarBloque('config-grafico-pastel');
                     break;
             }
         }
@@ -226,11 +284,34 @@
 
         const formularioSelect = document.getElementById('formulario_id');
         const campoEstadistica = document.getElementById('campo_estadistica');
+
+        const campo_barra_x = document.getElementById('campo_barra_x');
+        const campo_barra_y = document.getElementById('campo_barra_y');
+        const campo_linea_x = document.getElementById('campo_linea_x');
+        const campo_linea_y = document.getElementById('campo_linea_y');
+        const campo_pastel_x = document.getElementById('campo_pastel_x');
+        const campo_pastel_y = document.getElementById('campo_pastel_y');
+
+
+
+
+
+
+
+
         const campoFiltro = document.getElementById('campo_filtro');
 
         function resetCampos() {
             campoEstadistica.innerHTML = '<option value="">-- Seleccionar campo --</option>';
             campoFiltro.innerHTML = '<option value="">-- Campo filtro --</option>';
+
+            campo_barra_x.innerHTML = '<option value="">-- Campo Categoría (Eje X) --</option>';
+            campo_barra_y.innerHTML = '<option value="">-- Campo Valor (Eje Y) --</option>';
+            campo_linea_x.innerHTML = '<option value="">-- Campo Fecha (Eje X) --</option>';
+            campo_linea_y.innerHTML = '<option value="">-- Campo Numérico (Eje Y) --</option>';
+            campo_pastel_x.innerHTML = '<option value="">-- Campo Categoría --</option>';
+            campo_pastel_y.innerHTML = '<option value="">-- Campo Valor (Opcional para suma) --</option>';
+
         }
 
         formularioSelect.addEventListener('change', function () {
@@ -257,6 +338,38 @@
                         opt2.value = campo.id;
                         opt2.textContent = campo.etiqueta;
                         campoFiltro.appendChild(opt2);
+
+
+                        const opt3 = document.createElement('option');
+                        opt3.value = campo.id;
+                        opt3.textContent = campo.etiqueta;
+                        campo_barra_x.appendChild(opt3);
+
+                        const opt4 = document.createElement('option');
+                        opt4.value = campo.id;
+                        opt4.textContent = campo.etiqueta;
+                        campo_barra_y.appendChild(opt4);
+
+                        const opt5 = document.createElement('option');
+                        opt5.value = campo.id;
+                        opt5.textContent = campo.etiqueta;
+                        campo_linea_x.appendChild(opt5);
+
+                        const opt6 = document.createElement('option');
+                        opt6.value = campo.id;
+                        opt6.textContent = campo.etiqueta;
+                        campo_linea_y.appendChild(opt6);
+
+                        const opt7 = document.createElement('option');
+                        opt7.value = campo.id;
+                        opt7.textContent = campo.etiqueta;
+                        campo_pastel_x.appendChild(opt7);
+
+                        const opt8 = document.createElement('option');
+                        opt8.value = campo.id;
+                        opt8.textContent = campo.etiqueta;
+                        campo_pastel_y.appendChild(opt8);
+
                     });
                 })
                 .catch(err => console.error(err));

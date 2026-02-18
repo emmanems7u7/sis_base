@@ -69,7 +69,6 @@ class HomeController extends Controller
                 $grid[] = $filaData;
             }
         }
-
         return view('home', [
             'grid' => $grid,
             'breadcrumb' => [
@@ -153,6 +152,11 @@ class HomeController extends Controller
                     ],
                 ];
 
+            case 'WID-007': // Barra
+            case 'WID-008': // Línea
+            case 'WID-009': // Pastel
+                return $this->resolverGrafico($widget);
+
 
             default:
                 return [
@@ -162,6 +166,111 @@ class HomeController extends Controller
                     ],
                 ];
         }
+    }
+
+    private function resolverGrafico($widget): array
+    {
+        $config = $widget->configuracion;
+
+        $campoX = $config['campo_x_id'] ?? null;
+        $campoY = $config['campo_y_id'] ?? null;
+        $tipoGrafico = $widget->tipo;
+
+        if (!$campoX) {
+            return [
+                'tipo' => $tipoGrafico,
+                'data' => []
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | GRÁFICO DE BARRA (WID-008)
+        |--------------------------------------------------------------------------
+        */
+        if ($tipoGrafico === 'WID-008') {
+
+            $query = RespuestasCampo::where('cf_id', $campoX);
+
+            if ($campoY) {
+                // SUMA
+                $datos = $query
+                    ->selectRaw('valor as label, SUM(CAST(valor as DECIMAL(10,2))) as total')
+                    ->groupBy('valor')
+                    ->pluck('total', 'label');
+            } else {
+                // CONTEO
+                $datos = $query
+                    ->selectRaw('valor as label, COUNT(*) as total')
+                    ->groupBy('valor')
+                    ->pluck('total', 'label');
+            }
+
+            return [
+                'tipo' => $tipoGrafico,
+                'data' => [
+                    'labels' => $datos->keys(),
+                    'values' => $datos->values(),
+                    'titulo' => $config['titulo'] ?? 'Gráfico de Barra'
+                ]
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | GRÁFICO DE PASTEL (WID-009)
+        |--------------------------------------------------------------------------
+        */
+        if ($tipoGrafico === 'WID-009') {
+
+            $datos = RespuestasCampo::where('cf_id', $campoX)
+                ->selectRaw('valor as label, COUNT(*) as total')
+                ->groupBy('valor')
+                ->pluck('total', 'label');
+
+            return [
+                'tipo' => $tipoGrafico,
+                'data' => [
+                    'labels' => $datos->keys(),
+                    'values' => $datos->values(),
+                    'titulo' => $config['titulo'] ?? 'Gráfico Pastel'
+                ]
+            ];
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | GRÁFICO DE LÍNEA (WID-007)
+        |--------------------------------------------------------------------------
+        */
+        if ($tipoGrafico === 'WID-007') {
+
+            $periodo = $config['periodo'] ?? 'mes';
+
+            $formato = $periodo === 'anio'
+                ? '%Y'
+                : '%Y-%m';
+
+            $datos = RespuestasCampo::where('cf_id', $campoY)
+                ->selectRaw("DATE_FORMAT(created_at, '{$formato}') as label, COUNT(*) as total")
+                ->groupBy('label')
+                ->orderBy('label')
+                ->pluck('total', 'label');
+
+            return [
+                'tipo' => $tipoGrafico,
+                'data' => [
+                    'labels' => $datos->keys(),
+                    'values' => $datos->values(),
+                    'titulo' => $config['titulo'] ?? 'Gráfico de Línea'
+                ]
+            ];
+        }
+
+        return [
+            'tipo' => $tipoGrafico,
+            'data' => []
+        ];
     }
 
     private function resolverEstadistica($widget): array
