@@ -93,4 +93,9 @@ class User extends Authenticatable
         return "{$this->usuario_nombres} {$this->usuario_app} {$this->usuario_apm}";
     }
 
+    public function getNameEmailAttribute(): string
+    {
+        return "{$this->name}" . ' ' . '(' . "{$this->email}" . ')';
+    }
+
 }

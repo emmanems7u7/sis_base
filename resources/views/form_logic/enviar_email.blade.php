@@ -1,4 +1,4 @@
-<div id="modal-email-block">
+<div id="modal-email-block" class="d-none">
 
     <!-- FILA USUARIOS + ROLES -->
     <div class="row">
@@ -28,7 +28,10 @@
 
         <!-- ROLES -->
         <div class="col-md-6 mb-3">
-            <label>Roles del sistema</label>
+            <label>Roles del sistema</label> <i class="fas fa-info-circle ms-1" data-bs-toggle="tooltip"
+                data-bs-placement="top"
+                data-bs-original-title=" Se enviará el correo a todos los usuarios con los roles seleccionados, puede dejarlo vacio.">
+            </i>
 
             <div class="border rounded p-2" style="max-height: 180px; overflow-y:auto;">
                 @foreach($roles as $rol)
@@ -43,7 +46,7 @@
             </div>
 
             <small class="text-muted">
-                Se enviará el correo a todos los usuarios con los roles seleccionados
+
             </small>
         </div>
 
@@ -127,11 +130,19 @@
             usuariosSeleccionados.push(userId);
 
             const li = document.createElement('li');
+            li.dataset.id = userId;
             li.className = 'list-group-item d-flex justify-content-between align-items-center';
-            li.innerHTML = `
-            ${userText}
-            <button class="btn btn-sm btn-danger">X</button>
-        `;
+
+            const span = document.createElement('span');
+            span.textContent = userText;
+
+            const button = document.createElement('button');
+            button.className = 'btn btn-xs btn-danger';
+            button.textContent = 'X';
+
+            li.appendChild(span);
+            li.appendChild(button);
+
             li.querySelector('button').onclick = () => {
                 alertify.confirm(
                     'Confirmación',

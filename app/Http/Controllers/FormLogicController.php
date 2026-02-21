@@ -179,8 +179,15 @@ class FormLogicController extends Controller
 
 
                     // 🔹 Textos visibles (puedes mejorar luego con consultas reales)
-                    $usuariosText = collect($usuarios)->map(fn($id) => "Usuario #{$id}")->toArray();
-                    $rolesText = collect($roles)->map(fn($id) => "Rol #{$id}")->toArray();
+    
+                    $usuariosText = User::whereIn('id', $usuarios)
+                        ->get()
+                        ->pluck('name_email')
+                        ->toArray();
+
+                    $rolesText = Role::whereIn('id', $roles)
+                        ->pluck('name')
+                        ->toArray();
 
                     return (object) [
                         'id' => $action->id,

@@ -109,6 +109,8 @@ class FormLogicRepository implements FormLogicInterface
                     break;
 
                 case 'TAC-003': // enviar_email
+
+
                     $parametrosExtra = [
 
                         'email_subject' => $actionData['email_subject'] ?? null,
@@ -116,6 +118,7 @@ class FormLogicRepository implements FormLogicInterface
                         'email_template' => $actionData['email_template'] ?? null,
 
                         'email_usuarios' => $actionData['email_usuarios'] ?? [],
+
                         'email_roles' => $actionData['email_roles'] ?? [],
 
 
