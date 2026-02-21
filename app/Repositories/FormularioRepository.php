@@ -175,7 +175,6 @@ class FormularioRepository implements FormularioInterface
 
             $resultado->push($campo);
         }
-
         return $resultado;
     }
 
@@ -184,6 +183,8 @@ class FormularioRepository implements FormularioInterface
     public function ProcesarCampo($campo, $limit = 20, $offset = 0)
     {
         if ($campo->categoria_id) {
+
+
             $campo->opciones_catalogo = $this->CatalogoRepository
                 ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true, $limit, $offset);
 
@@ -194,19 +195,43 @@ class FormularioRepository implements FormularioInterface
                 ->first();
 
             if ($campoReferencia) {
-                $campo->opciones_catalogo = $campo->opcionesFormularioQuery() // esto devuelve query builder
+
+                $formulario = Formulario::find($campo->form_ref_id);
+                $configConcatenado = $formulario->config['configuracion_concatenado'] ?? null;
+
+                $campo->opciones_catalogo = $campo->opcionesFormularioQuery()
                     ->offset($offset)
                     ->limit($limit)
                     ->get()
-                    ->map(function ($respuesta) use ($campoReferencia) {
-                        $valorCampo = $respuesta->camposRespuestas
-                            ->firstWhere('cf_id', $campoReferencia->id);
+                    ->map(function ($respuesta) use ($configConcatenado, $campoReferencia) {
+
+                        $respuestaReferencia = RespuestasForm::with('camposRespuestas')->find($respuesta->id);
+                        $camposRespuesta = $respuestaReferencia?->camposRespuestas;
+
+                        if (!$configConcatenado || !$camposRespuesta) {
+                            $valorCampo = optional($respuesta->camposRespuestas
+                                ->where('cf_id', $campoReferencia->id)
+                                ->first())->valor ?? $respuesta->valor;
+                        } else {
+
+                            $valoresPorId = $camposRespuesta->pluck('valor', 'cf_id')->toArray();
+                            $estructura = $configConcatenado['estructura'];
+
+                            // Reemplazamos cada cf_id por su valor
+                            $valorCampo = preg_replace_callback(
+                                '/\d+/',
+                                fn($matches) => $valoresPorId[$matches[0]] ?? $matches[0],
+                                $estructura
+                            );
+                        }
 
                         return (object) [
                             'catalogo_codigo' => $respuesta->id,
-                            'catalogo_descripcion' => $valorCampo->valor ?? 'Sin nombre',
+                            'resp_valor' => $respuesta->valor,
+                            'catalogo_descripcion' => $valorCampo ?? 'Sin nombre',
                         ];
                     });
+
             } else {
                 $campo->opciones_catalogo = collect();
             }
@@ -352,14 +377,12 @@ class FormularioRepository implements FormularioInterface
             });
         }
 
-        // PAGINACIÓN 
+        // PAGINACIÓN
         $respuestas = $query->orderBy('created_at', 'desc')
             ->paginate(15, ['*'], $pageName ?? 'page')
             ->withQueryString();
 
-        // PROCESAR CAMPOS 
-        // SE VALIDA QUE SOLO SE CARGUEN LOS CAMPOS QUE TENGAN CONFIG->VISIBLE_LISTADO = true PARA OPTIMIZAR RENDIMIENTO EN CASO DE FORMULARIOS CON MUCHOS CAMPOS
-
+        // Cargar solo campos visibles en listado
         $formulario = Formulario::with([
             'campos' => function ($q) {
                 $q->whereJsonContains('config->visible_listado', true)
@@ -367,15 +390,91 @@ class FormularioRepository implements FormularioInterface
             }
         ])->findOrFail($formulario->id);
 
+        foreach ($respuestas as $respuesta) {
+            foreach ($respuesta->camposRespuestas as $campoResp) {
+                $campoResp->valor = $this->resolverValor($campoResp);
+            }
+        }
+        /*
+                // DEBUG para verificar
+                foreach ($respuestas as $respuesta) {
+                    dump([
+                        'respuesta_id' => $respuesta->id,
+                        'campos' => $respuesta->camposRespuestas->map(fn($c) => [
+                            'cf_id' => $c->cf_id,
+                            'valor' => $c->valor,
+                            'campo_nombre' => $c->campo->campo_nombre ?? null,
+                            'form_ref_id' => $c->campo->form_ref_id ?? null,
+                            'categoria_id' => $c->campo->categoria_id ?? null,
 
-        $camposProcesados = $this->CamposFormCat($formulario->campos);
-        $formulario->campos = $camposProcesados;
+                        ]),
+                    ]);
+                }
 
+
+
+                dd($respuestas->items());*/
         return [
             'formulario' => $formulario,
             'respuestas' => $respuestas,
         ];
     }
+    public function resolverValor($campoRespOrCampo, $valor = null)
+    {
+
+        if ($valor === null) {
+            $campoResp = $campoRespOrCampo;
+            $campo = $campoResp->campo;
+            $valor = $campoResp->valor;
+        } else {
+
+            $campo = $campoRespOrCampo;
+        }
+
+
+        if ($campo && $campo->form_ref_id) {
+
+            $formulario = Formulario::find($campo->form_ref_id);
+
+            $respuestaReferencia = RespuestasForm::with('camposRespuestas')->find($valor);
+            $camposRespuesta = $respuestaReferencia?->camposRespuestas;
+
+            $configConcatenado = $formulario->config['configuracion_concatenado'] ?? null;
+
+            if (!$configConcatenado || !$camposRespuesta) {
+                return $respuestaReferencia?->camposRespuestas?->first()?->valor ?? $valor;
+            }
+
+            $valoresPorId = $camposRespuesta->pluck('valor', 'cf_id')->toArray();
+
+            $estructura = $configConcatenado['estructura'];
+
+            $resultado = preg_replace_callback(
+                '/\d+/', // coincidimos números que son cf_id
+                function ($matches) use ($valoresPorId) {
+                    $id = $matches[0];
+                    return $valoresPorId[$id] ?? $id; // si no existe, dejamos el id
+                },
+                $estructura
+            );
+
+            return $resultado;
+
+
+
+        }
+
+
+        if ($campo && $campo->categoria_id) {
+            $catalogo = $this->CatalogoRepository
+                ->obtenerCatalogoPorCategoriaID($campo->categoria_id, $valor);
+            return $catalogo?->catalogo_descripcion ?? $valor;
+        }
+
+
+        return $valor;
+    }
+
 
     public function generar_informacion_export($respuestas, $formulario)
     {

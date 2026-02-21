@@ -6,8 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 
 class Formulario extends Model
 {
-    protected $fillable = ['nombre', 'descripcion', 'slug', 'estado'];
-
+    protected $fillable = ['nombre', 'descripcion', 'slug', 'estado', 'config'];
+    protected $casts = [
+        'config' => 'array',
+    ];
     public function campos()
     {
         return $this->hasMany(CamposForm::class, 'form_id');

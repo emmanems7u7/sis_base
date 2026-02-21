@@ -86,6 +86,10 @@
                 {{-- Tipo de acción --}}
                 <div class="col-12">
                     <label class="form-label small text-muted">Tipo de Acción</label>
+                    <i class="fas fa-info-circle ms-1" data-bs-toggle="tooltip"
+                        data-bs-placement="top"
+                        data-bs-original-title="Para crear una nueva Accion en la regla actual debe seleccionar primero el tipo de acción.">
+                    </i>
                     <select id="modal-tipo-accion" class="form-select shadow-sm" required>
                         <option value="" disabled selected>Seleccionar tipo de Acción</option>
                         @foreach ($tipo_acciones as $tipo_accion)

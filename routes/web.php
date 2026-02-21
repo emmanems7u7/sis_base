@@ -292,6 +292,8 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('formularios/{formulario}', [FormularioController::class, 'destroy'])->name('formularios.destroy');
 
 
+    Route::post('/formularios/{formulario}/guardar-concatenado', [FormularioController::class, 'guardarConcatenado'])
+        ->name('formularios.guardar-concatenado');
 
 
 

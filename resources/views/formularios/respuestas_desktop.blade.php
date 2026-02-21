@@ -31,12 +31,7 @@
                             $displayValores = [];
                             foreach ($valores as $v) {
                                 switch ($tipoCampo) {
-                                    case 'checkbox':
-                                    case 'radio':
-                                    case 'selector':
-                                        $desc = $campo->opciones_catalogo->where('catalogo_codigo', $v)->first()?->catalogo_descripcion;
-                                        $displayValores[] = $desc ?? $v;
-                                        break;
+
 
                                     case 'imagen':
                                         $displayValores[] = "<img src='" . asset("archivos/formulario_{$formulario->id}/imagenes/{$v}") . "' style='max-width:50px; max-height:50px;' class='rounded me-1 mb-1'>";

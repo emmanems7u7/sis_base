@@ -1,7 +1,10 @@
-<div id="cy" style="width: 100%; height: 600px; border:1px solid #ccc;"></div>
+<div id="cy" style="width: 100%; height: 750px; border:1px solid #ccc;"></div>
+
 <script src="https://unpkg.com/cytoscape/dist/cytoscape.min.js"></script>
+
 <script>
     document.addEventListener("DOMContentLoaded", function () {
+
         const formularios = @json($grafo['formularios']);
         const relaciones = @json($grafo['relaciones']);
 
@@ -9,7 +12,7 @@
         const nodes = Object.values(formularios).map(form => ({
             data: {
                 id: 'form_' + form.id,
-                label: form.nombre + '\nCampos: ' + form.campos.map(c => c.nombre).join(', ')
+                label: `${form.nombre}\n\nCampos:\n${form.campos.map(c => '• ' + c.nombre).join('\n')}`
             }
         }));
 
@@ -37,10 +40,11 @@
                         'text-halign': 'center',
                         'width': 'label',
                         'height': 'label',
-                        'padding': '10px',
+                        'padding': '18px',
                         'shape': 'roundrectangle',
                         'text-wrap': 'wrap',
-                        'font-size': '12px'
+                        'font-size': '14px',
+                        'font-weight': '600'
                     }
                 },
                 {
@@ -52,9 +56,9 @@
                         'target-arrow-shape': 'triangle',
                         'curve-style': 'bezier',
                         'label': 'data(label)',
-                        'font-size': '10px',
+                        'font-size': '13px',
                         'text-background-color': '#fff',
-                        'text-background-opacity': 0.7,
+                        'text-background-opacity': 0.8,
                         'text-rotation': 'autorotate'
                     }
                 }
@@ -62,9 +66,11 @@
             layout: {
                 name: 'breadthfirst',
                 directed: true,
-                padding: 10,
-                spacingFactor: 1.8
+                padding: 20,
+                spacingFactor: 1.2,
+                nodeDimensionsIncludeLabels: true
             }
         });
+
     });
 </script>

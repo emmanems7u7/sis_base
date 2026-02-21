@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Interfaces\CamposFormInterface;
 use App\Models\CamposForm;
 use App\Interfaces\CatalogoInterface;
+use App\Models\Formulario;
 use Illuminate\Support\Str;
 class CamposFormRepository implements CamposFormInterface
 {
@@ -28,21 +29,45 @@ class CamposFormRepository implements CamposFormInterface
                 $campo->opciones_catalogo = $this->CatalogoRepository
                     ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true);
             } elseif ($campo->form_ref_id) {
+
+
                 // Campo que referencia a otro formulario
                 $campoReferencia = CamposForm::where('form_id', $campo->form_ref_id)
                     ->orderBy('posicion', 'asc')
                     ->first();
 
                 if ($campoReferencia) {
-                    $campo->opciones_catalogo = $campo->opcionesFormularioQuery() // Query Builder
+
+
+                    $formulario = Formulario::find($campo->form_ref_id);
+                    $configConcatenado = $formulario->config['configuracion_concatenado'] ?? null;
+
+                    $campo->opciones_catalogo = $campo->opcionesFormularioQuery()
+                        ->with('camposRespuestas')
                         ->get()
-                        ->map(function ($respuesta) use ($campoReferencia) {
-                            $valorCampo = $respuesta->camposRespuestas
-                                ->firstWhere('cf_id', $campoReferencia->id);
+                        ->map(function ($respuesta) use ($campoReferencia, $configConcatenado) {
+
+                            $camposRespuesta = $respuesta?->camposRespuestas;
+
+
+                            if (!$configConcatenado || !$camposRespuesta) {
+                                $valorCampo = optional($camposRespuesta
+                                    ->firstWhere('cf_id', $campoReferencia->id))
+                                    ->valor ?? $respuesta->valor;
+                            } else {
+                                $valoresPorId = $camposRespuesta->pluck('valor', 'cf_id')->toArray();
+                                $estructura = $configConcatenado['estructura'];
+
+                                $valorCampo = preg_replace_callback(
+                                    '/\d+/',
+                                    fn($matches) => $valoresPorId[$matches[0]] ?? $matches[0],
+                                    $estructura
+                                );
+                            }
 
                             return (object) [
                                 'catalogo_codigo' => $respuesta->id,
-                                'catalogo_descripcion' => $valorCampo->valor ?? 'Sin nombre',
+                                'catalogo_descripcion' => $valorCampo ?? 'Sin nombre',
                             ];
                         });
                 } else {

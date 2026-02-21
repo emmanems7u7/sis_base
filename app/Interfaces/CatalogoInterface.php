@@ -15,6 +15,12 @@ interface CatalogoInterface
     public function getNombreCatalogo($catalogo_codigo);
 
     public function obtenerCatalogosPorCategoriaID($id, $soloActivos = false, $limit = null, $offset = 0);
+
+    public function obtenerCatalogoPorCategoriaID(
+        $categoria_id,
+        $catalogo_codigo,
+        $soloActivos = false
+    );
     public function buscarPorDescripcion($categoriaId, $descripcion);
 
     public function eliminarDeSeederCategoria(Categoria $categoria);

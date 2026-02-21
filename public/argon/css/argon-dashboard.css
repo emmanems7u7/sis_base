@@ -28578,3 +28578,27 @@ pre[class*=language-] {
 }
 
 
+    /* Campos y separadores más compactos */
+    #camposDisponibles .campo-item,
+    #separadoresDisponibles .separador-item {
+        font-size: 0.7rem;
+        padding: 0.25rem 0.5rem;
+        cursor: grab;
+        user-select: none;
+    }
+
+    /* Constructor más limpio */
+    #constructorConcatenado {
+        min-height: 50px;
+        border-radius: 0.35rem;
+        border: 1px solid #dee2e6;
+        padding: 0.5rem;
+        background-color: #f8f9fa;
+    }
+
+    /* Ajuste de padding de pestañas */
+    .nav-tabs .nav-link {
+        margin-right: 0.25rem;
+        padding: 0.35rem 0.75rem;
+        font-size: 0.85rem;
+    }

@@ -138,17 +138,11 @@
 
         // Mostrar/ocultar bloques según tipo de acción
         const tipoAccionSelect = document.getElementById('modal-tipo-accion');
-        tipoAccionSelect.addEventListener('change', () => {
+
+        function CargaTipoAccion() {
             const tipo = tipoAccionSelect.value;
 
-            // Ocultar todos los bloques
-            document.getElementById('modal-modificar-campo').classList.add('d-none');
-            document.getElementById('modal-email-block').classList.add('d-none');
-
-            // Mostrar según selección
-            document.getElementById('modal-modificar-campo')?.classList.add('d-none');
-            document.getElementById('modal-email-block')?.classList.add('d-none');
-            document.getElementById('modal-crear-registros')?.classList.add('d-none');
+            restaurarInicio()
 
 
             switch (tipo) {
@@ -172,7 +166,7 @@
             contenedor_mensaje.classList.add('d-none')
             contenedor_condiciones.classList.remove('d-none')
             contenedor_botones.classList.remove('d-none')
-        });
+        }
 
         document.getElementById('cancelar-edicion-accion')
             ?.addEventListener('click', function () {
@@ -195,12 +189,28 @@
                 });
 
                 // Restaurar texto del botón principal
-                document.getElementById('guardar-accion-modal').textContent = 'Agregar Acción';
-                contenedor_botones.classList.add('d-none')
-                contenedor_condiciones.classList.add('d-none')
-                contenedor_mensaje.classList.remove('d-none')
+                restaurarInicio()
+                document.getElementById('modal-tipo-accion').value = '';
+                limpiarModal()
+                alertify.success('Acción creada correctamente.')
             });
+        function restaurarInicio() {
 
+            // Ocultar todos los bloques
+            document.getElementById('modal-modificar-campo').classList.add('d-none');
+            document.getElementById('modal-email-block').classList.add('d-none');
+
+            // Mostrar según selección
+            document.getElementById('modal-modificar-campo')?.classList.add('d-none');
+            document.getElementById('modal-email-block')?.classList.add('d-none');
+            document.getElementById('modal-crear-registros')?.classList.add('d-none');
+
+            document.getElementById('guardar-accion-modal').textContent = 'Agregar Acción';
+            contenedor_botones.classList.add('d-none')
+            contenedor_condiciones.classList.add('d-none')
+            contenedor_mensaje.classList.remove('d-none')
+
+        }
 
         // 🔹 Cargar acciones iniciales si estamos editando
         if (accionesIniciales && accionesIniciales.length) {
@@ -325,8 +335,13 @@
             }
         }
 
+        document.getElementById('modal-form-ref').addEventListener('change',
+            async () => {
+                await inicializarModalOptimizado();
+            });
+
+
         function limpiarModal() {
-            document.getElementById('modal-tipo-accion').value = '';
             document.getElementById('modal-modificar-campo').classList.add('d-none');
             document.getElementById('modal-email-block').classList.add('d-none');
             document.getElementById('condiciones-modal-container').innerHTML = '';
@@ -697,8 +712,6 @@
             if (editingIndex !== null) {
                 accionesArray[editingIndex] = accionObj;
                 accionesJSONInput.value = JSON.stringify(accionesArray);
-                console.log(accionesArray)
-                console.log(accionObj)
 
                 crearCardVisual(accionObj, editingIndex);
                 editingIndex = null;
@@ -712,9 +725,8 @@
                 crearCardVisual(accionObj, accionesArray.length - 1);
             }
 
-            modal.hide();
-
-
+            restaurarInicio()
+            limpiarModal();
         });
 
 
@@ -803,9 +815,42 @@
             // Reasignar índices de las columnas
             Array.from(accionesList.children).forEach((c, i) => c.dataset.index = i);
         }
+        function eliminarAccion(index) {
 
+            if (index < 0 || index >= accionesArray.length) return;
 
+            alertify.confirm(
+                'Confirmar eliminación',
+                '¿Está seguro de eliminar esta acción?',
+                function () {
 
+                    accionesArray.splice(index, 1);
+
+                    accionesJSONInput.value = JSON.stringify(accionesArray);
+
+                    accionesList.innerHTML = '';
+
+                    accionesArray.forEach((accion, i) => {
+                        crearCardVisual(accion, i);
+                    });
+
+                    editingIndex = null;
+
+                    // 6️⃣ Mostrar mensaje vacío si ya no hay acciones
+                    if (accionesArray.length === 0) {
+                        document.getElementById('contenedor_mensaje')?.classList.remove('d-none');
+                        document.getElementById('contenedor_botones')?.classList.add('d-none');
+                        document.getElementById('contenedor_condiciones')?.classList.add('d-none');
+                    }
+
+                    alertify.success('Acción eliminada correctamente');
+
+                },
+                function () {
+                    alertify.message('Eliminación cancelada');
+                }
+            ).set('labels', { ok: 'Sí, eliminar', cancel: 'Cancelar' });
+        }
         function generarContenidoAccion(accionObj, index) {
 
             let contenido = `<h6><strong>Acción #${index + 1} - ${accionObj.tipo_accion_text}</strong></h6><hr>`;
@@ -1090,12 +1135,9 @@
 
 
             limpiarModal();
+            CargaTipoAccion()
             await inicializarModalOptimizado();
 
-        });
-
-        document.getElementById('modal-form-ref').addEventListener('change', async () => {
-            await inicializarModalOptimizado();
         });
 
 
@@ -1178,7 +1220,7 @@
                                     <h5 class="card-title">Formulario: ${form.nombre}</h5>
                                     <div id="filtros-container" class="mb-3"></div>
                                     <div id="campos-generados" class="row g-3 mb-3"></div>
-                                    <button class="btn btn-secondary" id="btn-filtrar-relacion">Filtrar</button>
+                                    <button type="button" class="btn btn-secondary" id="btn-filtrar-relacion">Filtrar</button>
                                 </div>
                             </div>
                         `;

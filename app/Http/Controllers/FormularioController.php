@@ -243,57 +243,41 @@ class FormularioController extends Controller
         $resultado = [];
 
         foreach ($formulario->campos->sortBy('posicion') as $campo) {
-
             $valores = $respuesta->camposRespuestas
                 ->where('cf_id', $campo->id)
                 ->pluck('valor')
                 ->toArray();
 
-            $tipoCampo = strtolower($campo->campo_nombre);
             $displayValores = [];
-
             foreach ($valores as $v) {
+                $valorResuelto = $this->FormularioRepository->resolverValor($campo, $v);
 
+                // Manejo de tipos especiales (archivos, fecha, etc.)
+                $tipoCampo = strtolower($campo->campo_nombre);
                 switch ($tipoCampo) {
-
-                    case 'checkbox':
-                    case 'radio':
-                    case 'selector':
-
-                        $campo = $this->FormularioRepository->ProcesarCampo($campo, 10, 0);
-
-                        $desc = $campo->opciones_catalogo->where('catalogo_codigo', $v)->first()?->catalogo_descripcion;
-
-                        $displayValores[] = $desc ?? $v;
-
-                        break;
-
                     case 'imagen':
-                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/imagenes/{$v}");
+                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/imagenes/{$valorResuelto}");
                         break;
 
                     case 'video':
-                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/videos/{$v}");
+                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/videos/{$valorResuelto}");
                         break;
 
                     case 'archivo':
-                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/archivos/{$v}");
+                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/archivos/{$valorResuelto}");
                         break;
 
                     case 'enlace':
-                        $displayValores[] = $v;
+                    case 'hora':
+                        $displayValores[] = $valorResuelto;
                         break;
 
                     case 'fecha':
-                        $displayValores[] = Carbon::parse($v)->format('d/m/Y');
-                        break;
-
-                    case 'hora':
-                        $displayValores[] = $v;
+                        $displayValores[] = Carbon::parse($valorResuelto)->format('d/m/Y');
                         break;
 
                     default:
-                        $displayValores[] = $v;
+                        $displayValores[] = $valorResuelto;
                 }
             }
 
@@ -303,7 +287,6 @@ class FormularioController extends Controller
                 'valores' => $displayValores
             ];
         }
-
         return response()->json([
             'nombre_formulario' => $formulario->nombre,
             'campos' => $resultado
@@ -357,6 +340,43 @@ class FormularioController extends Controller
         }
 
         return view('auditoria.index', compact('acciones', 'breadcrumb'));
+    }
+
+    public function guardarConcatenado(Request $request, Formulario $formulario)
+    {
+        $request->validate([
+            'ids' => 'required|array',
+            'estructura' => 'required|string',
+        ]);
+
+        $ids = $request->input('ids');
+        $estructura = $request->input('estructura');
+
+        $config = $formulario->config;
+
+        if (is_string($config)) {
+            $config = json_decode($config, true);
+        }
+
+        if (!is_array($config)) {
+            $config = [];
+        }
+
+        $config = array_merge($config, [
+            'configuracion_concatenado' => [
+                'ids' => $ids,
+                'estructura' => $estructura
+            ]
+        ]);
+
+        $formulario->config = $config;
+        $formulario->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Concatenado guardado correctamente',
+            'data' => $config['configuracion_concatenado']
+        ]);
     }
 
 }
