@@ -1,7 +1,8 @@
 /.phpunit.cache
-
 /public/archivos/
 /public/plantillas_correos/
+/public/update/
+/public/uploads/
 
 /public/hot
 /public/storage
