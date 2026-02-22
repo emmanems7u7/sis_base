@@ -381,6 +381,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/import/subir', [RespuestasFormController::class, 'subirArchivo'])->name('import.subir');
     Route::post('/import/procesar', [RespuestasFormController::class, 'procesarChunk'])->name('import.procesar');
 
+    Route::post('/formularios/{form}/validar-registro', [RespuestasFormController::class, 'validarRegistro'])
+        ->name('formularios.validarRegistro');
+
 
     Route::get('/modulos', [ModuloController::class, 'index'])->name('modulos.index');
     Route::get('/modulos/crear', [ModuloController::class, 'create'])->name('modulos.create');

@@ -1,5 +1,5 @@
 
-
+<div id="formulario-dinamico">
 <div class="row g-4">
 @foreach($campos as $campo)
 @php
@@ -20,10 +20,20 @@
     =============================== */
     // si se envía por include → manda
     // si no → usa el valor del campo
-    $esRequerido = isset($requerido)
+
+    if(!$formulario->config['registro_multiple'])
+    {
+        $esRequerido = isset($requerido)
         ? (bool) $requerido
         : (bool) $campo->requerido;
-
+    }
+    else{
+        $esRequerido = false;
+    }
+   
+    $esRequerido_ = isset($requerido)
+        ? (bool) $requerido
+        : (bool) $campo->requerido;
     /* ===============================
        VALOR
     =============================== */
@@ -35,7 +45,7 @@
     <div class="{{ $colClass }}">
         <label class="form-label fw-bold">
             {{ $campo->etiqueta }}
-            @if($esRequerido)
+            @if($esRequerido_)
                 <span class="text-danger">*</span>
             @endif
         </label>
@@ -44,7 +54,7 @@
 
             {{-- TEXTO --}}
             @case('text')
-                <input type="text" name="{{ $campo->nombre }}"
+                <input type="text" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
                     class="form-control"
                     value="{{ $valor }}"
                     placeholder="{{ $campo->config['placeholder'] ?? '' }}"
@@ -53,7 +63,7 @@
 
             {{-- NUMBER --}}
             @case('number')
-                <input type="number" name="{{ $campo->nombre }}"
+                <input type="number" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
                     class="form-control"
                     value="{{ $valor }}"
                     placeholder="{{ $campo->config['placeholder'] ?? '' }}"
@@ -62,7 +72,7 @@
 
             {{-- TEXTAREA --}}
             @case('textarea')
-                <textarea name="{{ $campo->nombre }}"
+                <textarea name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
                     class="form-control"
                     placeholder="{{ $campo->config['placeholder'] ?? '' }}"
                    {{ $esRequerido ? 'required' : '' }}>{{ $valor }}</textarea>
@@ -104,7 +114,7 @@
                     @foreach($campo->opciones_catalogo as $opcion)
                         <div class="form-check">
                             <input type="radio"
-                                name="{{ $campo->nombre }}"
+                                name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
                                 value="{{ $opcion->catalogo_codigo }}"
                                 class="form-check-input campo-formulario"
                                 id="{{ $campo->nombre }}_{{ $opcion->catalogo_codigo }}"
@@ -125,7 +135,7 @@
             {{-- SELECTOR --}}
             @case('selector')
                 <div class="d-flex align-items-center gap-2">
-                    <select name="{{ $campo->nombre }}"
+                    <select name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
                         class="form-select tom-select campo-dinamico"
                         data-campo-id="{{ $campo->id }}"
                        {{ $esRequerido ? 'required' : '' }}>
@@ -150,7 +160,7 @@
 
             {{-- EMAIL --}}
             @case('email')
-                <input type="email" name="{{ $campo->nombre }}"
+                <input type="email" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
                     class="form-control"
                     value="{{ $valor }}"
                     placeholder="{{ $campo->config['placeholder'] ?? '' }}"
@@ -159,7 +169,7 @@
 
             {{-- PASSWORD --}}
             @case('password')
-                <input type="password" name="{{ $campo->nombre }}"
+                <input type="password" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
                     class="form-control"
                     placeholder="{{ $campo->config['placeholder'] ?? '' }}"
                    {{ $esRequerido ? 'required' : '' }}>
@@ -167,7 +177,7 @@
 
             {{-- FECHA --}}
             @case('fecha')
-                <input type="date" name="{{ $campo->nombre }}"
+                <input type="date" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
                     class="form-control"
                     value="{{ $valor ? \Carbon\Carbon::parse($valor)->format('Y-m-d') : '' }}"
                    {{ $esRequerido ? 'required' : '' }}>
@@ -175,7 +185,7 @@
 
             {{-- HORA --}}
             @case('hora')
-                <input type="time" name="{{ $campo->nombre }}"
+                <input type="time" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
                     class="form-control"
                     value="{{ $valor ? \Carbon\Carbon::parse($valor)->format('H:i') : '' }}"
                    {{ $esRequerido ? 'required' : '' }}>
@@ -194,10 +204,15 @@
                 </div>
             @endif
 
+            <div id="preview_{{ $campo->nombre }}" class="mb-2"></div>
+
             <input type="file"
                 name="{{ $campo->nombre }}"
+                id="{{ $campo->nombre }}"
+                data-preview="preview_{{ $campo->nombre }}"
                 class="form-control"
                 {{ $esRequerido && !$valor ? 'required' : '' }}>
+
             @break
 
             {{-- IMAGEN --}}
@@ -211,11 +226,16 @@
                 </div>
             @endif
 
+            <div id="preview_{{ $campo->nombre }}" class="mb-2"></div>
+
             <input type="file"
                 name="{{ $campo->nombre }}"
+                id="{{ $campo->nombre }}"
                 accept="image/*"
+                data-preview="preview_{{ $campo->nombre }}"
                 class="form-control"
                 {{ $esRequerido && !$valor ? 'required' : '' }}>
+
             @break
 
             {{-- VIDEO --}}
@@ -230,17 +250,22 @@
                 </div>
             @endif
 
+            <div id="preview_{{ $campo->nombre }}" class="mb-2"></div>
+
             <input type="file"
                 name="{{ $campo->nombre }}"
+                id="{{ $campo->nombre }}"
                 accept="video/*"
+                data-preview="preview_{{ $campo->nombre }}"
                 class="form-control"
                 {{ $esRequerido && !$valor ? 'required' : '' }}>
+
             @break
 
 
             {{-- ENLACE --}}
             @case('enlace')
-                <input type="url" name="{{ $campo->nombre }}"
+                <input type="url" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
                     class="form-control"
                     value="{{ $valor }}"
                     placeholder="https://..."
@@ -249,7 +274,7 @@
 
             {{-- COLOR --}}
             @case('color')
-                <input type="color" name="{{ $campo->nombre }}"
+                <input type="color" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
                     class="form-control form-control-color"
                     value="{{ $valor }}"
                    {{ $esRequerido ? 'required' : '' }}>
@@ -260,7 +285,61 @@
 @endforeach
 
 </div>
+</div>
 
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    document.querySelectorAll('input[type="file"]').forEach(input => {
+
+        input.addEventListener('change', function (e) {
+
+            const file = e.target.files[0];
+            const previewId = e.target.dataset.preview;
+            const previewContainer = document.getElementById(previewId);
+
+            if (!file || !previewContainer) return;
+
+            previewContainer.innerHTML = '';
+            const reader = new FileReader();
+
+            reader.onload = function (event) {
+
+                if (file.type.startsWith('image/')) {
+
+                    previewContainer.innerHTML = `
+                        <img src="${event.target.result}"
+                             class="img-thumbnail"
+                             style="max-height:150px;">
+                    `;
+
+                } else if (file.type.startsWith('video/')) {
+
+                    previewContainer.innerHTML = `
+                        <video controls style="max-width:100%; max-height:200px">
+                            <source src="${event.target.result}">
+                        </video>
+                    `;
+
+                } else {
+
+                    previewContainer.innerHTML = `
+                        <a href="${event.target.result}"
+                           target="_blank"
+                           class="btn btn-outline-secondary btn-sm">
+                           Ver archivo seleccionado
+                        </a>
+                    `;
+                }
+            };
+
+            reader.readAsDataURL(file);
+        });
+    });
+
+});
+</script>
 @include('formularios.campos.modal_busqueda')
 
 

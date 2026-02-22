@@ -122,7 +122,65 @@ class RespuestasFormRepository implements RespuestasFormInterface
         return $filasSeleccionadas;
     }
 
-    public function validacion($campos, $respuestaId = null, $modo = 'store')
+    public function filaDesdeArray(array $registroData)
+    {
+        $filasSeleccionadas = [];
+
+        foreach ($registroData as $nombreCampo => $valor) {
+
+            // ============================================
+            // 1️⃣ Si es referencia simple (select)
+            // ============================================
+            if (is_numeric($valor)) {
+
+                $fila = RespuestasForm::with('camposRespuestas.campo')
+                    ->find($valor);
+
+                if ($fila) {
+
+                    $datos = [];
+
+                    foreach ($fila->camposRespuestas as $cr) {
+                        $datos[$cr->campo->nombre] =
+                            $cr->valor . ' - ' . $cr->id;
+                    }
+
+                    $filasSeleccionadas[$nombreCampo] = $datos;
+                }
+            }
+
+            // ============================================
+            // 2️⃣ Si es referencia múltiple (checkbox)
+            // ============================================
+            if (is_array($valor)) {
+
+                foreach ($valor as $id) {
+
+                    if (is_numeric($id)) {
+
+                        $fila = RespuestasForm::with('camposRespuestas.campo')
+                            ->find($id);
+
+                        if ($fila) {
+
+                            $datos = [];
+
+                            foreach ($fila->camposRespuestas as $cr) {
+                                $datos[$cr->campo->nombre] =
+                                    $cr->valor . ' - ' . $cr->id;
+                            }
+
+                            $filasSeleccionadas[$nombreCampo][] = $datos;
+                        }
+                    }
+                }
+            }
+        }
+
+        return $filasSeleccionadas;
+    }
+
+    public function validacion($formulario, $campos, $respuestaId = null, $modo = 'store')
     {
         $rules = [];
 
@@ -149,6 +207,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
             if ($modo === 'archivo' && in_array($tipo, ['archivo', 'imagen', 'video'])) {
                 continue;
             }
+
 
             switch ($tipo) {
 
@@ -190,11 +249,11 @@ class RespuestasFormRepository implements RespuestasFormInterface
                         ? implode(',', $extensiones)
                         : '';
 
-                    $fileRules = ['file', 'max:50240']; // 50 MB
+                    $fileRules = ['file', 'max:50240']; // 50MB
 
-                    // required SOLO si:
-                    // - el campo es requerido
-                    // - NO existe archivo guardado
+                    // required solo si:
+                    // - es requerido
+                    // - no existe archivo guardado
                     if ($campo->requerido && empty($valorExistente)) {
                         $fileRules[] = 'required';
                     } else {
@@ -205,7 +264,17 @@ class RespuestasFormRepository implements RespuestasFormInterface
                         $fileRules[] = 'mimes:' . $extensionesStr;
                     }
 
-                    $rules[$campo->nombre] = $fileRules;
+                    if ($formulario->config['registro_multiple']) {
+
+                        // Para registros dinámicos
+                        $rules["registros.*.{$campo->nombre}"] = $fileRules;
+
+                    } else {
+
+                        // Para formulario normal
+                        $rules[$campo->nombre] = $fileRules;
+                    }
+
                     break;
 
                 case 'color':

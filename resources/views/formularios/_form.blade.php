@@ -21,7 +21,7 @@
     <select name="estado" id="estado" class="form-select @error('estado') is-invalid @enderror">
         <option value="" selected>Seleccione un estado</option>
         @foreach ($estado_formularios as $estado)
-            <option value="{{ $estado->catalogo_codigo }}" {{ old('estado', $paciente?->estado ?? '') == $estado->catalogo_codigo ? 'selected' : '' }}>
+            <option value="{{ $estado->catalogo_codigo }}" {{ old('estado', $formulario?->estado ?? '') == $estado->catalogo_codigo ? 'selected' : '' }}>
                 {{ $estado->catalogo_descripcion }}
             </option>
         @endforeach
@@ -31,15 +31,38 @@
     @enderror
 </div>
 
-{{-- ===============================
-Checkbox para crear permisos automáticamente
-=============================== --}}
+
+@php
+    // Determinar si los permisos ya fueron creados
+    $permisosCreados = $formulario->config['crear_permisos'] ?? false;
+    $registroMultiple = $formulario->config['registro_multiple'] ?? false;
+@endphp
+
 <div class="form-check mb-3">
-    <input class="form-check-input" type="checkbox" name="crear_permisos" id="crear_permisos" {{ old('crear_permisos') ? 'checked' : '' }}>
+    <input 
+        class="form-check-input" 
+        type="checkbox" 
+        name="crear_permisos" 
+        id="crear_permisos" 
+        {{ old('crear_permisos', $permisosCreados) ? 'checked' : '' }}
+        {{ $permisosCreados ? 'disabled' : '' }} 
+    >
     <label class="form-check-label" for="crear_permisos">
         Crear también los permisos para este formulario
     </label>
 </div>
 
+<div class="form-check mb-3">
+    <input 
+        class="form-check-input" 
+        type="checkbox" 
+        name="registro_multiple" 
+        id="registro_multiple" 
+        {{ old('registro_multiple', $registroMultiple) ? 'checked' : '' }}
+    >
+    <label class="form-check-label" for="registro_multiple">
+        Permitir registros múltiples para este formulario
+    </label>
+</div>
 <button type="submit" class="btn btn-success">Guardar</button>
 <a href="{{ route('formularios.index') }}" class="btn btn-secondary">Cancelar</a>

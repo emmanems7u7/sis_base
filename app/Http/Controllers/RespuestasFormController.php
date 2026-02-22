@@ -13,6 +13,7 @@ use App\Interfaces\CatalogoInterface;
 use App\Interfaces\FormularioInterface;
 use App\Interfaces\FormLogicInterface;
 use App\Interfaces\RespuestasFormInterface;
+use Illuminate\Support\Facades\Validator;
 
 use App\Models\FormLogicCondition;
 
@@ -147,106 +148,345 @@ class RespuestasFormController extends Controller
             'modulo'
         ));
     }
+    /*
+        public function store(Request $request, $form, $modulo, $tipo)
+        {
+
+            // Buscar los modelos
+            $formularioModelo = Formulario::find($form);
+            $moduloModelo = $modulo > 0 ? Modulo::find($modulo) : null;
+
+            $this->RespuestasFormInterface->validacion_modulo_form($formularioModelo, $moduloModelo, $modulo);
+
+
+            $campos = CamposForm::where('form_id', $form)->get();
+
+            $rules = $this->RespuestasFormInterface->validacion($campos);
+
+            $request->validate($rules);
+
+            $errores = $this->FormularioRepository->validarOpcionesCatalogo($campos, $request);
+
+            if (!empty($errores)) {
+                return redirect()->back()->withErrors($errores)->withInput();
+            }
+
+
+            DB::beginTransaction();
+            try {
+                $respuesta = $this->FormularioRepository->crearRespuesta($form);
+
+
+
+                foreach ($campos as $campo) {
+                    $this->FormularioRepository->guardarCampo($campo, $respuesta->id, $request, $form);
+                }
+
+
+                $filasSeleccionadas = $this->RespuestasFormInterface->fila($request);
+
+                $evento = 'on_create';
+
+                $resultado = $this->FormLogicInterface->ValidarLogica($respuesta, $filasSeleccionadas, $evento);
+
+                //Eliminar valores vacíos o nulos
+                $resultado = array_filter($resultado, fn($msg) => !empty(trim($msg)));
+
+                //Si hay mensajes de error, cancelar la transacción y retornar
+                if (!empty($resultado)) {
+
+                    DB::rollBack();
+
+                    $mensaje = implode('<br>', $resultado);
+
+                    return back()
+                        ->withErrors(['logica' => $mensaje])
+                        ->withInput();
+
+                } else {
+                    $usuario = auth()->id();
+
+                    EjecutarLogicaFormulario::dispatch(
+                        $respuesta,
+                        $filasSeleccionadas,
+                        $evento,
+                        $usuario,
+                        env('APP_URL')
+                    );
+                }
+
+
+                DB::commit();
+
+                DB::disconnect();
+
+
+                //Definir retorno de ruta 
+                if ($tipo == 0) {
+                    if ($moduloModelo) {
+
+                        return redirect()->route('modulo.index', $moduloModelo->id)
+                            ->with([
+                                'status' => 'Registro creado correctamente.',
+                                'formulario_id' => $formularioModelo->id
+                            ]);
+                    } else {
+
+                        return redirect()->route('formularios.respuestas.formulario', $form)
+                            ->with('status', 'Registro creado correctamente.');
+                    }
+                } else {
+                    return redirect()->route('home')
+                        ->with('status', 'Registro creado correctamente.');
+                }
+
+
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                DB::disconnect();
+                return redirect()->back()->withErrors('Error al guardar el formulario: ' . $e->getMessage());
+            }
+
+        }
+    */
+
+
 
     public function store(Request $request, $form, $modulo, $tipo)
     {
 
-        // Buscar los modelos
+        //dd($request);
         $formularioModelo = Formulario::find($form);
         $moduloModelo = $modulo > 0 ? Modulo::find($modulo) : null;
 
-        $this->RespuestasFormInterface->validacion_modulo_form($formularioModelo, $moduloModelo, $modulo);
-
+        $this->RespuestasFormInterface
+            ->validacion_modulo_form($formularioModelo, $moduloModelo, $modulo);
 
         $campos = CamposForm::where('form_id', $form)->get();
+        $rules = $this->RespuestasFormInterface->validacion($formularioModelo, $campos);
 
-        $rules = $this->RespuestasFormInterface->validacion($campos);
+        // ============================================
+        // SI NO ES REGISTRO MULTIPLE 
+        // ============================================
+        if (!($formularioModelo->config['registro_multiple'] ?? false)) {
 
-        $request->validate($rules);
+            $request->validate($rules);
 
-        $errores = $this->FormularioRepository->validarOpcionesCatalogo($campos, $request);
+            $errores = $this->FormularioRepository
+                ->validarOpcionesCatalogo($campos, $request);
 
-        if (!empty($errores)) {
-            return redirect()->back()->withErrors($errores)->withInput();
-        }
-
-
-        DB::beginTransaction();
-        try {
-            $respuesta = $this->FormularioRepository->crearRespuesta($form);
-
-
-
-            foreach ($campos as $campo) {
-                $this->FormularioRepository->guardarCampo($campo, $respuesta->id, $request, $form);
+            if (!empty($errores)) {
+                return redirect()->back()->withErrors($errores)->withInput();
             }
 
+            DB::beginTransaction();
 
-            $filasSeleccionadas = $this->RespuestasFormInterface->fila($request);
+            try {
 
-            $evento = 'on_create';
+                $respuesta = $this->FormularioRepository
+                    ->crearRespuesta($form);
 
-            $resultado = $this->FormLogicInterface->ValidarLogica($respuesta, $filasSeleccionadas, $evento);
+                foreach ($campos as $campo) {
+                    $this->FormularioRepository
+                        ->guardarCampo($campo, $respuesta->id, $request, $form);
+                }
 
-            //Eliminar valores vacíos o nulos
-            $resultado = array_filter($resultado, fn($msg) => !empty(trim($msg)));
+                $filasSeleccionadas = $this->RespuestasFormInterface
+                    ->fila($request);
 
-            //Si hay mensajes de error, cancelar la transacción y retornar
-            if (!empty($resultado)) {
+                $this->procesarLogica($respuesta, $filasSeleccionadas);
+
+
+                DB::commit();
+                DB::disconnect();
+
+            } catch (\Exception $e) {
 
                 DB::rollBack();
-
-                $mensaje = implode('<br>', $resultado);
+                DB::disconnect();
 
                 return back()
-                    ->withErrors(['logica' => $mensaje])
-                    ->withInput();
-
-            } else {
-                $usuario = auth()->id();
-
-                EjecutarLogicaFormulario::dispatch(
-                    $respuesta,
-                    $filasSeleccionadas,
-                    $evento,
-                    $usuario,
-                    env('APP_URL')
-                );
+                    ->withErrors('Error al guardar el formulario: ' . $e->getMessage());
             }
 
-
-            DB::commit();
-
-            DB::disconnect();
-
-
-            //Definir retorno de ruta 
-            if ($tipo == 0) {
-                if ($moduloModelo) {
-
-                    return redirect()->route('modulo.index', $moduloModelo->id)
-                        ->with([
-                            'status' => 'Registro creado correctamente.',
-                            'formulario_id' => $formularioModelo->id
-                        ]);
-                } else {
-
-                    return redirect()->route('formularios.respuestas.formulario', $form)
-                        ->with('status', 'Registro creado correctamente.');
-                }
-            } else {
-                return redirect()->route('home')
-                    ->with('status', 'Registro creado correctamente.');
-            }
-
-
-
-        } catch (\Exception $e) {
-            DB::rollBack();
-            DB::disconnect();
-            return redirect()->back()->withErrors('Error al guardar el formulario: ' . $e->getMessage());
         }
 
+        // ============================================
+        // REGISTRO MÚLTIPLE
+        // ============================================
+        else {
+
+            $registros = json_decode($request->registros_json, true);
+
+            if (empty($registros)) {
+                return back()->withErrors([
+                    'registros_json' => 'Debe agregar al menos un registro.'
+                ])->withInput();
+            }
+
+            DB::beginTransaction();
+
+            try {
+
+                foreach ($registros as $index => $registroData) {
+
+                    // Validar cada registro
+
+                    $validator = Validator::make($registroData, $rules);
+                    if ($validator->fails()) {
+                        DB::rollBack();
+                        return back()
+                            ->withErrors($validator)
+                            ->withInput();
+                    }
+
+                    $respuesta = $this->FormularioRepository
+                        ->crearRespuesta($form);
+
+                    foreach ($campos as $campo) {
+
+                        $tipo_ = strtolower($campo->campo_nombre);
+                        $nombreCampo = $campo->nombre;
+
+                        if (in_array($tipo_, ['imagen', 'video', 'archivo'])) {
+
+                            if ($formularioModelo->config['registro_multiple']) {
+
+                                $archivos = $request->file("registros.$index.$nombreCampo");
+
+                                if ($archivos) {
+
+                                    $requestIndividual = new \Illuminate\Http\Request();
+                                    $requestIndividual->files->set($nombreCampo, $archivos);
+
+                                    $this->FormularioRepository->guardarCampo($campo, $respuesta->id, $requestIndividual, $formularioModelo->id);
+                                }
+
+                            } else {
+
+                                $this->FormularioRepository->guardarCampo($campo, $respuesta->id, $request, $formularioModelo->id);
+                            }
+
+                        } else {
+
+                            $valor = $registroData[$nombreCampo] ?? null;
+
+                            if ($valor !== null) {
+
+                                $this->FormularioRepository->guardarValorSimple($campo, $respuesta->id, $valor);
+
+                            }
+                        }
+                    }
+
+                    $filasSeleccionadas = $this->RespuestasFormInterface
+                        ->filaDesdeArray($registroData);
+
+
+                    $this->procesarLogica($respuesta, $filasSeleccionadas);
+
+                }
+
+                DB::commit();
+                DB::disconnect();
+
+            } catch (\Exception $e) {
+
+                DB::rollBack();
+                DB::disconnect();
+
+                return back()
+                    ->withErrors('Error en registros múltiples: ' . $e->getMessage());
+            }
+        }
+
+
+
+        if ($tipo == 0) {
+
+            if ($moduloModelo) {
+
+                return redirect()->route('modulo.index', $moduloModelo->id)
+                    ->with([
+                        'status' => 'Registro(s) creado(s) correctamente.',
+                        'formulario_id' => $formularioModelo->id
+                    ]);
+
+            } else {
+
+                return redirect()
+                    ->route('formularios.respuestas.formulario', $form)
+                    ->with('status', 'Registro(s) creado(s) correctamente.');
+            }
+
+        } else {
+
+            return redirect()
+                ->route('home')
+                ->with('status', 'Registro(s) creado(s) correctamente.');
+        }
+    }
+
+
+
+    private function procesarLogica($respuesta, $filasSeleccionadas)
+    {
+        $evento = 'on_create';
+
+        $resultado = $this->FormLogicInterface
+            ->ValidarLogica($respuesta, $filasSeleccionadas, $evento);
+
+        $resultado = array_filter(
+            $resultado,
+            fn($msg) => !empty(trim($msg))
+        );
+
+        if (!empty($resultado)) {
+
+            DB::rollBack();
+
+            throw new \Exception(implode('<br>', $resultado));
+        }
+
+        EjecutarLogicaFormulario::dispatch(
+            $respuesta,
+            $filasSeleccionadas,
+            $evento,
+            auth()->id(),
+            env('APP_URL')
+        );
+    }
+
+    public function validarRegistro(Request $request, $form)
+    {
+        $campos = CamposForm::where('form_id', $form)->get();
+        $formulario = Formulario::find($form);
+        $rules = $this->RespuestasFormInterface->validacion($formulario, $campos);
+
+        $validated = validator($request->all(), $rules);
+
+        if ($validated->fails()) {
+            return response()->json([
+                'success' => false,
+                'errors' => $validated->errors()
+            ]);
+        }
+
+        $erroresCatalogo = $this->FormularioRepository
+            ->validarOpcionesCatalogo($campos, $request);
+
+        if (!empty($erroresCatalogo)) {
+            return response()->json([
+                'success' => false,
+                'errors' => $erroresCatalogo
+            ]);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Registro agregado correctamente.'
+        ]);
     }
 
 

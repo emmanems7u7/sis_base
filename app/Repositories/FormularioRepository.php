@@ -33,10 +33,22 @@ class FormularioRepository implements FormularioInterface
             'slug' => Str::slug($request->nombre),
             'estado' => $request->estado,
         ]);
+
+        $this->ActualizarConfig($formulario, $request);
+
+
         return $formulario;
     }
 
+    function ActualizarConfig($formulario, Request $request)
+    {
+        $config = $formulario->config ?? [];
 
+        $config['crear_permisos'] = $request->has('crear_permisos') && $request->crear_permisos === 'on';
+        $config['registro_multiple'] = $request->has('registro_multiple') && $request->registro_multiple === 'on';
+
+        $formulario->update(['config' => $config]);
+    }
     public function EditarFormulario($request, $formulario)
     {
         $formulario->update([
@@ -45,6 +57,7 @@ class FormularioRepository implements FormularioInterface
             'slug' => Str::slug($request->nombre),
             'estado' => $request->estado,
         ]);
+        $this->ActualizarConfig($formulario, $request);
 
     }
 

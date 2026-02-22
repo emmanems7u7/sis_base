@@ -11,7 +11,7 @@
         </div>
     </div>
 
-    <div class="card mt-3">
+    <div class="card mt-3 shadow-lg mb-3">
         <div class="card-body">
             <form action="{{ route('formularios.update', $formulario) }}" method="POST">
                 @csrf

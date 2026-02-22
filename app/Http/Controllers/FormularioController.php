@@ -68,6 +68,8 @@ class FormularioController extends Controller
             'descripcion' => 'nullable|string',
             'estado' => 'required|string|exists:catalogos,catalogo_codigo',
             'crear_permisos' => 'nullable|in:on',
+            'registro_multiple' => 'nullable|in:on',
+
         ]);
 
         $formulario = $this->FormularioRepository->CrearFormulario($request);
@@ -98,8 +100,15 @@ class FormularioController extends Controller
             'descripcion' => 'nullable|string',
             'estado' => 'required|string|exists:catalogos,catalogo_codigo',
         ]);
-        $formulario = $this->FormularioRepository->EditarFormulario($request, $formulario);
 
+        $config = $formulario->config ?? [];
+
+        if (!($config['crear_permisos'] ?? false) && $request->has('crear_permisos') && $request->crear_permisos === 'on') {
+            $this->PermisoRepository->CrearPermisosFormulario($formulario);
+
+        }
+
+        $formulario = $this->FormularioRepository->EditarFormulario($request, $formulario);
 
         return redirect()->route('formularios.index')->with('status', 'Formulario actualizado correctamente.');
     }
