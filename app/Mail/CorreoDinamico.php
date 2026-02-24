@@ -2,6 +2,7 @@
 
 namespace App\Mail;
 
+use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Mail\Mailable;
 use Illuminate\Queue\SerializesModels;
@@ -14,17 +15,22 @@ class CorreoDinamico extends Mailable
 
     public string $subjectText;
     public string $bodyHtml;
+    public User $Modelouser;
 
-    public function __construct(string $subjectText, string $bodyHtml)
+    public function __construct(string $subjectText, string $bodyHtml, $user)
     {
+        $this->Modelouser = $user;
+
         $this->subjectText = $this->reemplazarVariables($subjectText);
         $this->bodyHtml = $this->reemplazarVariables($bodyHtml);
+
     }
 
     public function build()
     {
 
-        return $this->subject($this->subjectText)
+        return $this->to($this->Modelouser->email)
+            ->subject($this->subjectText)
             ->html($this->bodyHtml);
     }
 
@@ -44,7 +50,7 @@ class CorreoDinamico extends Mailable
             '[anio_actual]' => $now->format('Y'),
             '[mes_actual]' => $now->translatedFormat('F'), // diciembre
             '[nombre_sistema]' => config('app.name'),
-            '[usuario_actual]' => Auth::user()->NombreCompleto ?? 'Usuario',
+            '[usuario_nombres]' => $this->Modelouser->nombre_completo ?? 'Usuario',
         ];
 
         return str_replace(

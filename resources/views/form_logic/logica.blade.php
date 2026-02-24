@@ -551,6 +551,7 @@
                         valorPlantilla: `[${btn.dataset.nombreCampo || btn.textContent}]`
                     });
                 });
+
                 document.querySelectorAll('#email-campos-usuarios button.selected').forEach(btn => {
                     camposSeleccionados.push({
                         tipo: 'usuario',
@@ -946,7 +947,6 @@
 
             document.getElementById('guardar-accion-modal').textContent = 'Guardar cambios';
 
-            limpiarModal();
             editingIndex = index;
 
             const tipoAccionSelect = document.getElementById('modal-tipo-accion');
@@ -995,7 +995,7 @@
 
 
             if (accion.tipo_accion_id === 'TAC-003') {
-                console.log(accion)
+
                 /* ================================
             ASUNTO
             ================================= */
@@ -1086,6 +1086,10 @@
                         if (checkbox) checkbox.checked = true;
                     });
                 }
+
+
+                CargaTipoAccion()
+                await inicializarModalOptimizado();
             }
 
             // Condiciones
@@ -1566,6 +1570,7 @@
 
                 btn.addEventListener('click', () => {
                     insertarTextoEnEditor(editor, `[${campo.nombre}]`);
+
                 });
 
                 contenedor_usuarios.appendChild(btn);
@@ -1587,18 +1592,64 @@
                 return;
             }
 
+            // Contenedor para campos normales
+            const contenedorNormales = document.createElement('div');
+            contenedorNormales.className = 'mb-3';
+
+            // Contenedor para múltiples
+            const contenedorMultiples = document.createElement('div');
+            contenedorMultiples.className = 'mt-3';
+
+            // ===== CAMPOS NORMALES =====
             campos.forEach(campo => {
                 const btn = document.createElement('button');
                 btn.type = 'button';
-                btn.className = 'btn btn-outline-secondary btn-xs campo-btn';
+                btn.className = 'btn btn-outline-secondary btn-xs campo-btn me-1 mb-1';
                 btn.textContent = campo.nombre;
 
                 btn.addEventListener('click', () => {
                     insertarTextoEnEditor(editor, `[${campo.nombre}]`);
                 });
 
-                contenedor.appendChild(btn);
+                contenedorNormales.appendChild(btn);
             });
+
+            // Agregar normales arriba
+            contenedor.appendChild(contenedorNormales);
+
+
+            // ===== TÍTULO REGISTROS MÚLTIPLES =====
+            const tituloMultiple = document.createElement('div');
+            tituloMultiple.className = 'fw-bold text-primary mt-3 mb-2';
+            tituloMultiple.textContent = 'opciones para mostrar registros múltiples';
+            contenedorMultiples.appendChild(tituloMultiple);
+
+
+            // Función para crear botón dentro del bloque múltiple
+            function crearBotonIteracion(texto, marcador) {
+                const btn = document.createElement('button');
+                btn.type = 'button';
+                btn.className = 'btn btn-outline-primary btn-sm campo-btn me-1 mb-1';
+                btn.textContent = texto;
+
+                btn.addEventListener('click', () => {
+                    insertarTextoEnEditor(editor, `[${marcador}]`);
+                });
+
+                contenedorMultiples.appendChild(btn);
+            }
+
+
+            // 🔹 Botones de iteración
+            crearBotonIteracion('Mostrar en tabla', 'iterar_tabla');
+            crearBotonIteracion('Mostrar como lista', 'iterar_lista');
+            crearBotonIteracion('Mostrar en párrafos', 'iterar_parrafos');
+
+
+            // Agregar bloque múltiple debajo de los normales
+            contenedor.appendChild(contenedorMultiples);
+
+
         }
 
 

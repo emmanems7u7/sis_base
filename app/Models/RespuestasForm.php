@@ -23,5 +23,18 @@ class RespuestasForm extends Model
     {
         return $this->belongsTo(User::class, 'actor_id');
     }
+    public function grupos()
+    {
+        return $this->belongsToMany(
+            RespuestasGrupo::class,
+            'respuestas_grupos_detalle',
+            'respuesta_id',
+            'grupo_id'
+        );
+    }
 
+    public function esDeGrupo($grupoId)
+    {
+        return $this->grupos()->where('grupo_id', $grupoId)->exists();
+    }
 }

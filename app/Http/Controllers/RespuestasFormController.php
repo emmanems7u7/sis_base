@@ -23,6 +23,7 @@ use Jenssegers\Agent\Agent;
 use App\Jobs\EjecutarLogicaFormulario;
 use App\Models\FormLogicRule;
 use App\Models\Modulo;
+use App\Models\RespuestasGrupo;
 
 class RespuestasFormController extends Controller
 {
@@ -266,10 +267,14 @@ class RespuestasFormController extends Controller
         $campos = CamposForm::where('form_id', $form)->get();
         $rules = $this->RespuestasFormInterface->validacion($formularioModelo, $campos);
 
+        $multiple = isset($formularioModelo->config['registro_multiple']) && $formularioModelo->config['registro_multiple'];
+
         // ============================================
         // SI NO ES REGISTRO MULTIPLE 
         // ============================================
-        if (!($formularioModelo->config['registro_multiple'] ?? false)) {
+
+
+        if (!($multiple ?? false)) {
 
             $request->validate($rules);
 
@@ -295,7 +300,19 @@ class RespuestasFormController extends Controller
                 $filasSeleccionadas = $this->RespuestasFormInterface
                     ->fila($request);
 
-                $this->procesarLogica($respuesta, $filasSeleccionadas);
+                $respuestasCreadas = [];
+
+                $errores = $this->validarLogica($respuesta, $filasSeleccionadas);
+
+                if (!empty($errores)) {
+                    DB::rollBack();
+                    throw new \Exception(implode('<br>', $errores));
+                }
+
+                $respuestasCreadas[] = [
+                    'respuesta_id' => $respuesta->id,
+                    'filas' => $filasSeleccionadas
+                ];
 
 
                 DB::commit();
@@ -329,6 +346,9 @@ class RespuestasFormController extends Controller
 
             try {
 
+
+                $grupo = $this->FormularioRepository->CrearRespuestaGrupo();
+                $respuestasCreadas = [];
                 foreach ($registros as $index => $registroData) {
 
                     // Validar cada registro
@@ -344,6 +364,8 @@ class RespuestasFormController extends Controller
                     $respuesta = $this->FormularioRepository
                         ->crearRespuesta($form);
 
+                    $grupo->respuestas()->attach($respuesta->id);
+
                     foreach ($campos as $campo) {
 
                         $tipo_ = strtolower($campo->campo_nombre);
@@ -351,7 +373,7 @@ class RespuestasFormController extends Controller
 
                         if (in_array($tipo_, ['imagen', 'video', 'archivo'])) {
 
-                            if ($formularioModelo->config['registro_multiple']) {
+                            if ($multiple) {
 
                                 $archivos = $request->file("registros.$index.$nombreCampo");
 
@@ -384,9 +406,19 @@ class RespuestasFormController extends Controller
                         ->filaDesdeArray($registroData);
 
 
-                    $this->procesarLogica($respuesta, $filasSeleccionadas);
+                    $errores = $this->validarLogica($respuesta, $filasSeleccionadas);
 
+                    if (!empty($errores)) {
+                        DB::rollBack();
+                        throw new \Exception(implode('<br>', $errores));
+                    }
+
+                    $respuestasCreadas[] = [
+                        'respuesta_id' => $respuesta->id,
+                        'filas' => $filasSeleccionadas
+                    ];
                 }
+
 
                 DB::commit();
                 DB::disconnect();
@@ -402,6 +434,13 @@ class RespuestasFormController extends Controller
         }
 
 
+
+        EjecutarLogicaFormulario::dispatch(
+            $respuestasCreadas,
+            'on_create',
+            auth()->id(),
+            env('APP_URL')
+        );
 
         if ($tipo == 0) {
 
@@ -430,33 +469,19 @@ class RespuestasFormController extends Controller
 
 
 
-    private function procesarLogica($respuesta, $filasSeleccionadas)
+    private function validarLogica($respuesta, $filasSeleccionadas)
     {
         $evento = 'on_create';
 
         $resultado = $this->FormLogicInterface
             ->ValidarLogica($respuesta, $filasSeleccionadas, $evento);
 
-        $resultado = array_filter(
+        return array_filter(
             $resultado,
             fn($msg) => !empty(trim($msg))
         );
-
-        if (!empty($resultado)) {
-
-            DB::rollBack();
-
-            throw new \Exception(implode('<br>', $resultado));
-        }
-
-        EjecutarLogicaFormulario::dispatch(
-            $respuesta,
-            $filasSeleccionadas,
-            $evento,
-            auth()->id(),
-            env('APP_URL')
-        );
     }
+
 
     public function validarRegistro(Request $request, $form)
     {
@@ -721,7 +746,7 @@ class RespuestasFormController extends Controller
 
         // 2️ Construir reglas dinámicas
 
-        $rules = $this->RespuestasFormInterface->validacion($campos, $respuesta->id);
+        $rules = $this->RespuestasFormInterface->validacion($formularioModelo, $campos, $respuesta->id);
         // 3️ Validar los datos
 
         $validatedData = $request->validate($rules);
@@ -859,6 +884,25 @@ class RespuestasFormController extends Controller
         $respuesta->delete();
 
         return redirect()->back()->with('status', 'Respuesta eliminada correctamente.');
+    }
+
+
+    public function eliminarMasivo(Request $request)
+    {
+        $ids = explode(',', $request->respuestas_ids);
+
+        $respuestas = RespuestasForm::whereIn('id', $ids)->get();
+
+        foreach ($respuestas as $respuesta) {
+            // Eliminar archivos asociados
+            $this->RespuestasFormInterface->EliminarArchivos($respuesta);
+
+            // Eliminar campos y respuesta
+            $respuesta->camposRespuestas()->delete();
+            $respuesta->delete();
+        }
+
+        return redirect()->back()->with('status', count($respuestas) . ' respuesta(s) eliminadas correctamente.');
     }
 
     public function CargaMasiva($form)

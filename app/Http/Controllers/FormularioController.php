@@ -238,7 +238,8 @@ class FormularioController extends Controller
         $respuesta = RespuestasForm::with([
             'camposRespuestas',
             'camposRespuestas.campo.opciones_catalogo',
-            'formulario.campos'
+            'formulario.campos',
+            'grupos.respuestas.camposRespuestas.campo.opciones_catalogo'
         ])
             ->where('form_id', $form_id)
             ->where('id', $respuesta_id)
@@ -249,58 +250,40 @@ class FormularioController extends Controller
         }
 
         $formulario = $respuesta->formulario;
-        $resultado = [];
 
-        foreach ($formulario->campos->sortBy('posicion') as $campo) {
-            $valores = $respuesta->camposRespuestas
-                ->where('cf_id', $campo->id)
-                ->pluck('valor')
-                ->toArray();
+        // Procesar la respuesta principal
+        $camposRespuestaPrincipal = $this->FormularioRepository->procesarCamposRespuesta($respuesta, $formulario);
 
-            $displayValores = [];
-            foreach ($valores as $v) {
-                $valorResuelto = $this->FormularioRepository->resolverValor($campo, $v);
+        // Revisar si pertenece a algún grupo
+        $grupo = $respuesta->grupos->first(); // tomamos el primer grupo si hay
+        $respuestasGrupo = [];
 
-                // Manejo de tipos especiales (archivos, fecha, etc.)
-                $tipoCampo = strtolower($campo->campo_nombre);
-                switch ($tipoCampo) {
-                    case 'imagen':
-                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/imagenes/{$valorResuelto}");
-                        break;
-
-                    case 'video':
-                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/videos/{$valorResuelto}");
-                        break;
-
-                    case 'archivo':
-                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/archivos/{$valorResuelto}");
-                        break;
-
-                    case 'enlace':
-                    case 'hora':
-                        $displayValores[] = $valorResuelto;
-                        break;
-
-                    case 'fecha':
-                        $displayValores[] = Carbon::parse($valorResuelto)->format('d/m/Y');
-                        break;
-
-                    default:
-                        $displayValores[] = $valorResuelto;
+        if ($grupo) {
+            foreach ($grupo->respuestas as $resp) {
+                // <-- Aquí filtramos la respuesta actual
+                if ($resp->id == $respuesta->id) {
+                    continue;
                 }
-            }
 
-            $resultado[] = [
-                'etiqueta' => $campo->etiqueta,
-                'tipo' => $tipoCampo,
-                'valores' => $displayValores
-            ];
+                $respuestasGrupo[] = [
+                    'respuesta_id' => $resp->id,
+                    'campos' => $this->FormularioRepository->procesarCamposRespuesta($resp, $formulario)
+                ];
+            }
         }
+
         return response()->json([
             'nombre_formulario' => $formulario->nombre,
-            'campos' => $resultado
+            'campos' => $camposRespuestaPrincipal,
+            'grupo_id' => $grupo->id ?? null,
+            'codigo_grupo' => $grupo->codigo ?? null,
+            'respuestas_grupo' => $respuestasGrupo
         ]);
     }
+    /**
+     * Procesa los campos de una respuesta en el formato listo para la vista
+     */
+
 
     public function getInfo($formDestinoId)
     {

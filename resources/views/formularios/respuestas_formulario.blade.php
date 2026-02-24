@@ -54,6 +54,11 @@
                         <i class="fas fa-search"></i> Buscar
                     </button>
 
+                    <button type="button" id="activar-seleccion-masiva" class="btn btn-outline-secondary btn-sm">
+                        Selección masiva
+                    </button>
+
+
                 </div>
             </div>
         </div>
@@ -87,5 +92,73 @@
         {{ $respuestas->links('pagination::bootstrap-4') }}
     </div>
 
+
+    @can($formulario->id . '.eliminar')
+        <script>
+            document.addEventListener('DOMContentLoaded', function () {
+                const activarSeleccion = document.getElementById('activar-seleccion-masiva');
+                const checkTodos = document.getElementById('check-todos');
+                const filaCheckboxes = document.querySelectorAll('.fila-checkbox');
+                const checkCols = document.querySelectorAll('.check-col');
+                const btnEliminar = document.getElementById('btn-eliminar-masivo');
+                const inputIds = document.getElementById('respuestas_ids'); // input oculto
+
+
+                btnEliminar.classList.add('d-none')
+                // Función para actualizar input oculto con IDs seleccionados
+                const actualizarInputIds = () => {
+                    const seleccionados = Array.from(filaCheckboxes)
+                        .filter(cb => cb.checked)
+                        .map(cb => cb.value);
+                    inputIds.value = seleccionados.join(',');
+                };
+
+
+                // Toggle visual para el botón
+                let activo = false;
+                activarSeleccion.addEventListener('click', function () {
+                    activo = !activo;
+                    if (activo) {
+                        activarSeleccion.classList.remove('btn-outline-primary');
+                        activarSeleccion.classList.add('btn-primary');
+                        btnEliminar.classList.remove('d-none');
+                        checkCols.forEach(td => td.classList.remove('d-none'));
+                        activarSeleccion.setAttribute('aria-pressed', 'true');
+                    } else {
+                        activarSeleccion.classList.remove('btn-primary');
+                        activarSeleccion.classList.add('btn-outline-primary');
+                        btnEliminar.classList.add('d-none');
+                        checkCols.forEach(td => td.classList.add('d-none'));
+                        checkTodos.checked = false;
+                        filaCheckboxes.forEach(cb => cb.checked = false);
+                        btnEliminar.disabled = true;
+                        actualizarInputIds();
+                        activarSeleccion.setAttribute('aria-pressed', 'false');
+                    }
+                });
+
+
+
+                // 2️⃣ Checkbox maestro para marcar todas las filas
+                checkTodos.addEventListener('change', function () {
+                    filaCheckboxes.forEach(cb => cb.checked = this.checked);
+                    btnEliminar.disabled = !this.checked;
+                    actualizarInputIds();
+                });
+
+                // 3️⃣ Habilitar botón si hay al menos un checkbox seleccionado
+                filaCheckboxes.forEach(cb => {
+                    cb.addEventListener('change', function () {
+                        const algunoSeleccionado = Array.from(filaCheckboxes).some(chk => chk.checked);
+                        btnEliminar.disabled = !algunoSeleccionado;
+
+                        if (!this.checked) checkTodos.checked = false;
+
+                        actualizarInputIds();
+                    });
+                });
+            });
+        </script>
+    @endcan
 
 @endsection

@@ -32,9 +32,11 @@
 
                     @include('formularios._campos', ['campos' => $formulario->campos->sortBy('posicion'), 'valores' => []])
 
-                    @if($formulario->config['registro_multiple'])
+                    @if(isset($formulario->config['registro_multiple']) && $formulario->config['registro_multiple'])
 
-
+                        <button type="button" class="btn btn-success mt-3" id="btn-agregar-registro">
+                            Agregar registro
+                        </button>
 
                         <div class="mt-4">
                             <h5>Registros agregados</h5>
@@ -56,9 +58,7 @@
                         <input type="hidden" name="registros_json" id="registros_json">
                         <div id="hidden_files_container"></div>
 
-                        <button type="button" class="btn btn-success mt-3" id="btn-agregar-registro">
-                            Agregar registro
-                        </button>
+
 
                     @endif
 
@@ -79,7 +79,7 @@
         </div>
 
     </div>
-    @if($formulario->config['registro_multiple'])
+    @if(isset($formulario->config['registro_multiple']) && $formulario->config['registro_multiple'])
 
         <script>
             let registros = [];
@@ -418,9 +418,9 @@
 
                 if (registros.length === 0) {
                     thead.innerHTML = `
-                                                                                                                                        <th>#</th>
-                                                                                                                                        <th>Acciones</th>
-                                                                                                                                    `;
+                                                                                                                                                        <th>#</th>
+                                                                                                                                                        <th>Acciones</th>
+                                                                                                                                                    `;
                     return;
                 }
 
@@ -485,26 +485,26 @@
                             if (value.file?.type?.startsWith('image')) {
 
                                 td.innerHTML = `
-                                                                                                                                                    <img src="${value.preview}" 
-                                                                                                                                                         style="max-height:60px; border-radius:6px;">
-                                                                                                                                                `;
+                                                                                                                                                                    <img src="${value.preview}" 
+                                                                                                                                                                         style="max-height:60px; border-radius:6px;">
+                                                                                                                                                                `;
 
                             } else if (value.file?.type?.startsWith('video')) {
 
                                 td.innerHTML = `
-                                                                                                                                                    <video src="${value.preview}" 
-                                                                                                                                                           style="max-height:60px;" 
-                                                                                                                                                           controls>
-                                                                                                                                                    </video>
-                                                                                                                                                `;
+                                                                                                                                                                    <video src="${value.preview}" 
+                                                                                                                                                                           style="max-height:60px;" 
+                                                                                                                                                                           controls>
+                                                                                                                                                                    </video>
+                                                                                                                                                                `;
 
                             } else {
 
                                 td.innerHTML = `
-                                                                                                                                                    <span class="badge bg-info">
-                                                                                                                                                        Archivo nuevo
-                                                                                                                                                    </span>
-                                                                                                                                                `;
+                                                                                                                                                                    <span class="badge bg-info">
+                                                                                                                                                                        Archivo nuevo
+                                                                                                                                                                    </span>
+                                                                                                                                                                `;
                             }
                         }
 
@@ -529,17 +529,17 @@
 
                     let tdAcciones = document.createElement('td');
                     tdAcciones.innerHTML = `
-                                                                                                                                        <button type="button" 
-                                                                                                                                                class="btn btn-sm btn-warning me-2"
-                                                                                                                                                onclick="editarRegistro(${index})">
-                                                                                                                                            Editar
-                                                                                                                                        </button>
-                                                                                                                                        <button type="button" 
-                                                                                                                                                class="btn btn-sm btn-danger"
-                                                                                                                                                onclick="eliminarRegistro(${index})">
-                                                                                                                                            Eliminar
-                                                                                                                                        </button>
-                                                                                                                                    `;
+                                                                                                                                                        <button type="button" 
+                                                                                                                                                                class="btn btn-sm btn-warning me-2"
+                                                                                                                                                                onclick="editarRegistro(${index})">
+                                                                                                                                                            Editar
+                                                                                                                                                        </button>
+                                                                                                                                                        <button type="button" 
+                                                                                                                                                                class="btn btn-sm btn-danger"
+                                                                                                                                                                onclick="eliminarRegistro(${index})">
+                                                                                                                                                            Eliminar
+                                                                                                                                                        </button>
+                                                                                                                                                    `;
 
                     tr.appendChild(tdAcciones);
                     tbody.appendChild(tr);
@@ -632,28 +632,28 @@
                                 if (value.file?.type?.startsWith('image')) {
 
                                     previewContainer.innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        <img src="${value.preview}" 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                             style="max-height:150px;border-radius:8px;">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <img src="${value.preview}" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                             style="max-height:150px;border-radius:8px;">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    `;
 
                                 }
                                 else if (value.file?.type?.startsWith('video')) {
 
                                     previewContainer.innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        <video src="${value.preview}" 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                               style="max-height:150px;" 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                               controls>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        </video>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <video src="${value.preview}" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                               style="max-height:150px;" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                               controls>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </video>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    `;
 
                                 }
                                 else {
 
                                     previewContainer.innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="alert alert-info p-2">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            Archivo seleccionado previamente
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="alert alert-info p-2">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                            Archivo seleccionado previamente
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    `;
                                 }
                             }
                         }
@@ -665,10 +665,10 @@
 
                             if (previewContainer) {
                                 previewContainer.innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="alert alert-secondary p-2">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                        Archivo guardado actualmente
-                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="alert alert-secondary p-2">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                        Archivo guardado actualmente
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                `;
                             }
                         }
 
@@ -700,9 +700,9 @@
                 // Reset encabezado si ya no hay registros
                 if (registros.length === 0) {
                     document.getElementById('thead-dinamico').innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <th>#</th>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <th>Acciones</th>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <th>#</th>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <th>Acciones</th>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        `;
                 }
 
                 renderTabla();

@@ -21,8 +21,9 @@
     // si se envía por include → manda
     // si no → usa el valor del campo
 
-    if(!$formulario->config['registro_multiple'])
+    if(isset($formulario->config['registro_multiple']) && !$formulario->config['registro_multiple'])
     {
+
         $esRequerido = isset($requerido)
         ? (bool) $requerido
         : (bool) $campo->requerido;
@@ -44,7 +45,7 @@
 
     <div class="{{ $colClass }}">
         <label class="form-label fw-bold">
-            {{ $campo->etiqueta }}
+            {{ $campo->etiqueta }} {{  $esRequerido }}
             @if($esRequerido_)
                 <span class="text-danger">*</span>
             @endif

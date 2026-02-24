@@ -8,6 +8,7 @@ use App\Models\CamposForm;
 use App\Models\Formulario;
 use App\Models\RespuestasCampo;
 use App\Models\RespuestasForm;
+use App\Models\RespuestasGrupo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -61,7 +62,16 @@ class FormularioRepository implements FormularioInterface
 
     }
 
+    public function CrearRespuestaGrupo()
+    {
+        $codigo = random_int(100000, 999999);
 
+        $grupo = RespuestasGrupo::create([
+            'actor_id' => auth()->id() ?? null,
+            'codigo' => $codigo,
+        ]);
+        return $grupo;
+    }
     public function crearRespuesta($form)
     {
         return RespuestasForm::create([
@@ -303,8 +313,8 @@ class FormularioRepository implements FormularioInterface
 
         // 1️⃣ Si el campo tiene categoría (catalogo)
         if (!empty($campo->categoria_id)) {
-            $catalogo = $this->CatalogoRepository->buscarPorDescripcion($campo->categoria_id, $valorUsuario);
-            return $catalogo ? $catalogo->catalogo_codigo : null;
+            $catalogo = $this->CatalogoRepository->buscarPorCodigo($campo->categoria_id, $valorUsuario);
+            return $catalogo ? $catalogo->catalogo_descripcion : null;
         }
         if (!empty($campo->form_ref_id)) {
 
@@ -392,7 +402,7 @@ class FormularioRepository implements FormularioInterface
 
         // PAGINACIÓN
         $respuestas = $query->orderBy('created_at', 'desc')
-            ->paginate(15, ['*'], $pageName ?? 'page')
+            ->paginate(50, ['*'], $pageName ?? 'page')
             ->withQueryString();
 
         // Cargar solo campos visibles en listado
@@ -551,5 +561,50 @@ class FormularioRepository implements FormularioInterface
         return $datos;
 
     }
+    public function procesarCamposRespuesta($respuesta, $formulario)
+    {
+        $resultado = [];
 
+        foreach ($formulario->campos->sortBy('posicion') as $campo) {
+            $valores = $respuesta->camposRespuestas
+                ->where('cf_id', $campo->id)
+                ->pluck('valor')
+                ->toArray();
+
+            $displayValores = [];
+            foreach ($valores as $v) {
+                $valorResuelto = $this->resolverValor($campo, $v);
+
+                $tipoCampo = strtolower($campo->campo_nombre);
+                switch ($tipoCampo) {
+                    case 'imagen':
+                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/imagenes/{$valorResuelto}");
+                        break;
+                    case 'video':
+                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/videos/{$valorResuelto}");
+                        break;
+                    case 'archivo':
+                        $displayValores[] = asset("archivos/formulario_{$formulario->id}/archivos/{$valorResuelto}");
+                        break;
+                    case 'enlace':
+                    case 'hora':
+                        $displayValores[] = $valorResuelto;
+                        break;
+                    case 'fecha':
+                        $displayValores[] = Carbon::parse($valorResuelto)->format('d/m/Y');
+                        break;
+                    default:
+                        $displayValores[] = $valorResuelto;
+                }
+            }
+
+            $resultado[] = [
+                'etiqueta' => $campo->etiqueta,
+                'tipo' => $tipoCampo,
+                'valores' => $displayValores
+            ];
+        }
+
+        return $resultado;
+    }
 }

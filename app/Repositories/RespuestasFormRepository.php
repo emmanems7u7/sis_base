@@ -182,6 +182,8 @@ class RespuestasFormRepository implements RespuestasFormInterface
 
     public function validacion($formulario, $campos, $respuestaId = null, $modo = 'store')
     {
+
+
         $rules = [];
 
         foreach ($campos as $campo) {

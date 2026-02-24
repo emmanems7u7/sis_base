@@ -23,36 +23,50 @@ class EjecutarLogicaFormulario implements ShouldQueue
 
     public $timeout = 900;
 
-    protected $respuesta;
-    protected $filasSeleccionadas;
+    protected $respuestas;
     protected $evento;
     protected $usuario;
     protected $url;
-    public function __construct(RespuestasForm $respuesta, array $filasSeleccionadas, string $evento, $usuario, $url)
+    public function __construct(array $respuestas, string $evento, $usuario, $url)
     {
-        $this->respuesta = $respuesta;
-        $this->filasSeleccionadas = $filasSeleccionadas;
+        $this->respuestas = $respuestas;
         $this->evento = $evento;
         $this->usuario = $usuario;
         $this->url = $url;
     }
     public function handle(FormLogicInterface $formLogic, CatalogoInterface $catalogoInterface)
     {
+        $user = User::find($this->usuario);
+
+        // 🔹 Cargar todas las respuestas primero
+        $respuestasModelos = collect();
+
+        foreach ($this->respuestas as $item) {
+
+            $respuesta = RespuestasForm::find($item['respuesta_id']);
+
+            if ($respuesta) {
+                $respuesta->filasSeleccionadas = $item['filas'];
+                $respuestasModelos->push($respuesta);
+            }
+        }
+
+        // 🔥 Llamar UNA SOLA VEZ
         $resultado = $formLogic->ejecutarLogica(
-            $this->respuesta,
-            $this->filasSeleccionadas,
+            $respuestasModelos,
             $this->evento,
             $this->usuario
         );
 
-        // 🔔 Notificación global al usuario
-        $user = User::find($this->usuario);
+
 
         if ($user && !empty($resultado['acciones_ejecutadas'])) {
-            foreach ($resultado['acciones_ejecutadas'] as $accion) {
-                // Crear un array con la estructura que espera tu notificación
 
-                $tipo_accion = $catalogoInterface->getNombreCatalogo($accion['tipo_accion']);
+            foreach ($resultado['acciones_ejecutadas'] as $accion) {
+
+                $tipo_accion = $catalogoInterface
+                    ->getNombreCatalogo($accion['tipo_accion']);
+
                 $detalle = [
                     'accion_id' => $accion['accion_id'] ?? null,
                     'tipo_accion' => $tipo_accion ?? null,
@@ -61,7 +75,7 @@ class EjecutarLogicaFormulario implements ShouldQueue
                     'errores' => $accion['errores'] ?? [],
                     'ok' => $accion['ok'] ?? false,
                 ];
-                // 🧾 Auditoría general del evento
+
                 $auditoria = AuditoriaAccion::create([
                     'action_id' => $accion['accion_id'],
                     'tipo_accion' => $tipo_accion,
@@ -71,11 +85,13 @@ class EjecutarLogicaFormulario implements ShouldQueue
                     'detalle' => $accion,
                     'errores' => $accion['errores'],
                 ]);
+
                 $ruta = $this->url . '/formulario/logica/detalle/' . $auditoria->id;
 
-                $user->notify(instance: new LogicaFormularioFinalizada($detalle, $ruta));
+                $user->notify(
+                    new LogicaFormularioFinalizada($detalle, $ruta)
+                );
             }
-
         }
 
     }

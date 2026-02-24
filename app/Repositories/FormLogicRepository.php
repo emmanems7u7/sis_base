@@ -14,7 +14,10 @@ use App\Models\ConfCorreo;
 use App\Models\PlantillaCorreo;
 use App\Models\User;
 use App\Models\FormLogicAction;
+use App\Models\Formulario;
 use App\Services\DynamicMailer;
+use PhpOffice\PhpSpreadsheet\Calculation\LookupRef\Formula;
+
 class FormLogicRepository implements FormLogicInterface
 {
     protected $CatalogoRepository;
@@ -175,11 +178,22 @@ class FormLogicRepository implements FormLogicInterface
         return $resultados;
     }
     public function ejecutarLogica(
-        RespuestasForm $respuesta,
-        $filasSeleccionadas,
+        $respuestas,
         $evento,
         $usuario
     ): array {
+
+
+
+        $esMultiple = $respuestas instanceof \Illuminate\Support\Collection;
+
+        $respuestas = $esMultiple
+            ? $respuestas
+            : collect([$respuestas]);
+
+        $respuesta = $respuestas->first();
+
+        $form = Formulario::find($respuesta->form_id);
 
         $resultados = [
             'ok' => true,
@@ -205,10 +219,10 @@ class FormLogicRepository implements FormLogicInterface
             foreach ($regla->actions as $action) {
 
                 $resultadoAccion = $this->ejecutarAccion(
-                    $respuesta,
-                    $filasSeleccionadas,
+                    $respuestas,
                     $action,
-                    $usuario
+                    $usuario,
+                    $form->config['registro_multiple'] ?? false
                 );
 
                 $resultados['acciones_ejecutadas'][] = $resultadoAccion;
@@ -224,7 +238,7 @@ class FormLogicRepository implements FormLogicInterface
             }
         }
 
-        // 🧠 Mensaje final resumido
+
         if ($resultados['ok']) {
             $resultados['mensaje'] =
                 'La lógica del formulario se ejecutó correctamente. '
@@ -443,10 +457,10 @@ class FormLogicRepository implements FormLogicInterface
 
 
     public function ejecutarAccion(
-        RespuestasForm $respuestaOrigen,
-        $filasSeleccionadas,
+        $respuestas, // ahora es collection
         $action,
-        $usuario
+        $usuario,
+        $esMultiple
     ) {
         try {
 
@@ -471,24 +485,46 @@ class FormLogicRepository implements FormLogicInterface
                 case 'TAC-001':
 
                     $CampoDestino = CamposForm::find($parametros['campo_ref_id']);
-                    $respuestaCampoIds = $this->obtenerValorDespuesGuion(
-                        $filasSeleccionadas,
-                        $CampoDestino->nombre
-                    );
 
-                    // Determinar valor final
-                    if (($parametros['tipo_valor'] ?? 'static') === 'campo') {
+                    // Normalizamos respuestas (si no es múltiple lo convertimos en colección)
+                    $respuestasCollection = $esMultiple
+                        ? $respuestas
+                        : collect([$respuestas->first() ?? $respuestas]);
 
-                        $campoOrigenId = $parametros['valor'];
-                        $valor = $respuestaOrigen->camposRespuestas()
-                            ->where('cf_id', $campoOrigenId)
-                            ->value('valor');
+                    $respuestaCampoIds = [];
+                    $valor = null;
 
-                    } else {
-                        $valor = $action->valor;
+                    foreach ($respuestasCollection as $respuestaOrigen) {
+
+                        $filasSeleccionadas = $respuestaOrigen->filasSeleccionadas ?? [];
+
+                        // Obtener IDs destino desde filas
+                        $ids = $this->obtenerValorDespuesGuion(
+                            $filasSeleccionadas,
+                            $CampoDestino->nombre
+                        );
+
+                        $respuestaCampoIds = array_merge($respuestaCampoIds, $ids);
+
+                        // Determinar valor final (solo una vez si es static)
+                        if (($parametros['tipo_valor'] ?? 'static') === 'campo') {
+
+                            $campoOrigenId = $parametros['valor'];
+
+                            $valor = $respuestaOrigen->camposRespuestas()
+                                ->where('cf_id', $campoOrigenId)
+                                ->value('valor');
+
+                        } else {
+
+                            $valor = $action->valor;
+                        }
                     }
 
-                    DB::transaction(function () use ($respuestaCampoIds, $action, $valor, $CampoDestino) {
+                    $respuestaCampoIds = array_unique($respuestaCampoIds);
+
+
+                    DB::transaction(function () use ($respuestaCampoIds, $action, $valor, $CampoDestino, $esMultiple, &$audit) {
 
                         $operacion = $action->OperacionCatalogo ?? 'actualizar';
 
@@ -497,6 +533,7 @@ class FormLogicRepository implements FormLogicInterface
                         foreach ($respuestasDestino as $campoResp) {
 
                             switch ($operacion) {
+
                                 case 'sumar':
                                     $campoResp->valor += (float) $valor;
                                     break;
@@ -560,6 +597,7 @@ class FormLogicRepository implements FormLogicInterface
                             'operacion' => $action->OperacionCatalogo,
                             'valor_aplicado' => $valor,
                             'respuestas_modificadas' => $respuestaCampoIds,
+                            'modo' => $esMultiple ? 'multiple' : 'individual',
                         ];
                     });
 
@@ -567,7 +605,8 @@ class FormLogicRepository implements FormLogicInterface
 
                     $audit['mensaje'] =
                         "Se modificaron " . count($respuestaCampoIds) .
-                        " registros del campo {$CampoDestino->nombre}";
+                        " registros del campo {$CampoDestino->nombre}" .
+                        ($esMultiple ? " (modo múltiple)" : "");
                     break;
 
 
@@ -582,7 +621,14 @@ class FormLogicRepository implements FormLogicInterface
                     $usuariosIds = $parametros['email_usuarios'] ?? [];
                     $rolesIds = $parametros['email_roles'] ?? [];
 
-                    // Obtener destinatarios
+                    $respuestasCollection = $esMultiple
+                        ? $respuestas
+                        : collect([$respuestas->first() ?? $respuestas]);
+
+                    // =====================================================
+                    // DESTINATARIOS
+                    // =====================================================
+
                     $usuariosDestino = collect();
 
                     if (!empty($usuariosIds)) {
@@ -601,7 +647,10 @@ class FormLogicRepository implements FormLogicInterface
 
                     $usuariosDestino = $usuariosDestino->unique('id')->values();
 
-                    // Cargar plantilla si existe
+                    // =====================================================
+                    // PLANTILLA
+                    // =====================================================
+
                     $htmlPlantilla = null;
 
                     if ($templateId) {
@@ -613,11 +662,152 @@ class FormLogicRepository implements FormLogicInterface
                     $conf = ConfCorreo::first();
                     $mailer = new DynamicMailer($conf);
 
+                    // =====================================================
+                    // ENVÍO
+                    // =====================================================
+
                     foreach ($usuariosDestino as $userDestino) {
 
                         $body = $bodyBase;
 
-                        // Inyectar cuerpo en plantilla
+                        // =====================================================
+                        // VARIABLES NORMALES [campo]
+                        // =====================================================
+                        if (!$esMultiple) {
+
+                            preg_match_all('/\[(.*?)\]/', $body, $matches);
+                            $variables = $matches[1] ?? [];
+
+                            foreach ($variables as $variable) {
+
+                                $valor = null;
+
+                                $campos = CamposForm::where('nombre', $variable)->get();
+
+                                foreach ($campos as $campo) {
+
+                                    $valorUsuario = $respuestasCollection->first()
+                                        ->camposRespuestas()
+                                        ->where('cf_id', $campo->id)
+                                        ->value('valor');
+
+                                    if (!empty($campo->categoria_id) || !empty($campo->form_ref_id)) {
+                                        $valor = $this->FormularioRepository
+                                            ->obtenerValorReal($campo, $valorUsuario);
+
+
+                                    } else {
+                                        $valor = $valorUsuario;
+                                    }
+
+                                    if ($valor !== null && $valor !== '') {
+                                        $body = str_replace("[$variable]", $valor, $body);
+                                    }
+                                }
+                            }
+                        }
+
+                        // =====================================================
+                        // ITERADORES (SOLO MULTIPLE)
+                        // =====================================================
+
+                        if ($esMultiple) {
+
+
+                            $registros = $respuestasCollection->map(function ($respuesta) {
+
+                                $fila = [];
+
+                                foreach ($respuesta->camposRespuestas as $cr) {
+
+                                    $campo = $cr->campo;
+                                    $valorUsuario = $cr->valor;
+                                    $valorFinal = $valorUsuario;
+
+                                    Log::info($cr);
+                                    Log::info($valorUsuario);
+                                    Log::info($campo);
+
+                                    //  Aplicar transformación igual que variables normales
+                                    if (!empty($campo->categoria_id) || !empty($campo->form_ref_id)) {
+
+                                        $valorFinal = $this->FormularioRepository
+                                            ->obtenerValorReal($campo, $valorUsuario);
+
+                                        Log::info($valorFinal);
+                                    }
+
+                                    $fila[$campo->nombre] = $valorFinal;
+                                }
+
+                                return $fila;
+                            });
+
+                            // =========================
+                            // 1️⃣ TABLA
+                            // =========================
+
+                            if (str_contains($body, '[iterar_tabla]') && $registros->isNotEmpty()) {
+
+                                $tabla = '<table border="1" cellpadding="5" cellspacing="0" style="border-collapse:collapse;width:100%;">';
+                                $tabla .= '<thead><tr>';
+
+                                foreach (array_keys($registros->first()) as $columna) {
+                                    $tabla .= '<th>' . ucfirst($columna) . '</th>';
+                                }
+
+                                $tabla .= '</tr></thead><tbody>';
+
+                                foreach ($registros as $registro) {
+                                    $tabla .= '<tr>';
+                                    foreach ($registro as $valor) {
+                                        $tabla .= '<td>' . $valor . '</td>';
+                                    }
+                                    $tabla .= '</tr>';
+                                }
+
+                                $tabla .= '</tbody></table>';
+
+                                $body = str_replace('[iterar_tabla]', $tabla, $body);
+                            }
+
+                            // =========================
+                            // 2️⃣ LISTA
+                            // =========================
+
+                            if (str_contains($body, '[iterar_lista]') && $registros->isNotEmpty()) {
+
+                                $lista = '<ul>';
+
+                                foreach ($registros as $registro) {
+                                    $lista .= '<li>' . implode(' - ', $registro) . '</li>';
+                                }
+
+                                $lista .= '</ul>';
+
+                                $body = str_replace('[iterar_lista]', $lista, $body);
+                            }
+
+                            // =========================
+                            // 3️⃣ PÁRRAFOS
+                            // =========================
+
+                            if (str_contains($body, '[iterar_parrafos]') && $registros->isNotEmpty()) {
+
+                                $parrafos = '';
+
+                                foreach ($registros as $registro) {
+                                    $parrafos .= '<p>' . implode(' | ', $registro) . '</p>';
+                                }
+
+                                $body = str_replace('[iterar_parrafos]', $parrafos, $body);
+                            }
+                        }
+
+                        // =====================================================
+                        // INYECTAR EN PLANTILLA
+                        // =====================================================
+
                         if ($htmlPlantilla) {
 
                             libxml_use_internal_errors(true);
@@ -638,7 +828,7 @@ class FormLogicRepository implements FormLogicInterface
 
                                 $tmpDoc = new \DOMDocument();
                                 $tmpDoc->loadHTML(
-                                    mb_convert_encoding('<div>' . $bodyBase . '</div>', 'HTML-ENTITIES', 'UTF-8')
+                                    mb_convert_encoding('<div>' . $body . '</div>', 'HTML-ENTITIES', 'UTF-8')
                                 );
 
                                 $tmpBody = $tmpDoc->getElementsByTagName('div')->item(0);
@@ -653,67 +843,20 @@ class FormLogicRepository implements FormLogicInterface
                             }
                         }
 
-                        // Reemplazo de variables [campo]
-                        preg_match_all('/\[(.*?)\]/', $body, $matches);
-                        $variables = $matches[1] ?? [];
+                        // =====================================================
+                        // ENVÍO
+                        // =====================================================
 
-                        foreach ($variables as $variable) {
-
-                            $valor = null;
-
-                            // 1️⃣ Campos del formulario
-                            $campo = CamposForm::where('nombre', $variable)->first();
-
-                            if ($campo) {
-
-                                $valorUsuario = $respuestaOrigen->camposRespuestas()
-                                    ->where('cf_id', $campo->id)
-                                    ->value('valor');
-
-                                if (!empty($campo->categoria_id) || !empty($campo->form_ref_id)) {
-                                    $valor = $this->FormularioRepository
-                                        ->obtenerValorReal($campo, $valorUsuario);
-                                } else {
-                                    $valor = $valorUsuario;
-                                }
-                            }
-
-                            // 2️⃣ Atributos del usuario
-                            if ($valor === null && in_array($variable, $userDestino->getFillable())) {
-                                $valor = $userDestino->{$variable};
-                            }
-
-                            // 3️⃣ Reemplazar solo si hay valor
-                            if ($valor !== null && $valor !== '') {
-                                $body = str_replace("[$variable]", $valor, $body);
-                            }
-                        }
-
-                        // Enviar correo
                         $mailer->send(
-                            $conf->from_address,
+                            $userDestino->email,
                             new \App\Mail\CorreoDinamico(
                                 $subject,
                                 $body,
-                                $userDestino->email
+                                $userDestino
                             )
                         );
-
-                        Log::info(
-                            "TAC-003 ejecutado | Action {$action->id} | Enviado a {$userDestino->email}"
-                        );
-
-                        $audit['detalle'][] = [
-                            'tac' => 'TAC-003',
-                            'email' => $userDestino->email,
-                            'usuario_id' => $userDestino->id,
-                            'subject' => $subject,
-                            'plantilla_id' => $templateId,
-                            'variables_reemplazadas' => $variables,
-                        ];
                     }
-                    $audit['mensaje'] =
-                        'Se enviaron ' . $usuariosDestino->count() . ' correos correctamente';
+
                     break;
 
                 /* =====================================================
@@ -721,83 +864,91 @@ class FormLogicRepository implements FormLogicInterface
                  * ===================================================== */
                 case 'TAC-005':
 
-                    $campos = $parametros['campos'];
-                    $filtrosRelacion = $parametros['filtros_relacion'] ?? [];
-                    $usarRelacion = $parametros['usar_relacion'] ?? false;
+                    $respuestasCollection = $esMultiple
+                        ? $respuestas
+                        : collect([$respuestas->first() ?? $respuestas]);
 
-                    $campoRelacion = CamposForm::where(
-                        'form_ref_id',
-                        $parametros['formulario_relacion_seleccionado']
-                    )->first();
+                    foreach ($respuestasCollection as $respuestaOrigen) {
 
-                    $registrosOrigen = collect([$respuestaOrigen]);
+                        $campos = $parametros['campos'];
+                        $filtrosRelacion = $parametros['filtros_relacion'] ?? [];
+                        $usarRelacion = $parametros['usar_relacion'] ?? false;
 
-                    if ($usarRelacion) {
+                        $campoRelacion = CamposForm::where(
+                            'form_ref_id',
+                            $parametros['formulario_relacion_seleccionado']
+                        )->first();
 
-                        $query = RespuestasForm::query()
-                            ->where('form_id', $parametros['formulario_relacion_seleccionado']);
+                        $registrosOrigen = collect([$respuestaOrigen]);
 
-                        foreach ($filtrosRelacion as $filtro) {
-                            $query->whereHas('camposRespuestas', function ($q) use ($filtro, $respuestaOrigen) {
-                                $valorOrigen = $respuestaOrigen->camposRespuestas()
-                                    ->where('cf_id', $filtro['campoOrigen'])
-                                    ->value('valor');
+                        if ($usarRelacion) {
 
-                                $q->where('cf_id', $filtro['campoRelacion'])
-                                    ->where('valor', $filtro['condicion'], $valorOrigen);
-                            });
+                            $query = RespuestasForm::query()
+                                ->where('form_id', $parametros['formulario_relacion_seleccionado']);
+
+                            foreach ($filtrosRelacion as $filtro) {
+
+                                $query->whereHas('camposRespuestas', function ($q) use ($filtro, $respuestaOrigen) {
+
+                                    $valorOrigen = $respuestaOrigen->camposRespuestas()
+                                        ->where('cf_id', $filtro['campoOrigen'])
+                                        ->value('valor');
+
+                                    $q->where('cf_id', $filtro['campoRelacion'])
+                                        ->where('valor', $filtro['condicion'], $valorOrigen);
+                                });
+                            }
+
+                            $registrosOrigen = $query->get();
                         }
 
-                        $registrosOrigen = $query->get();
-                    }
+                        DB::transaction(function () use ($registrosOrigen, $campos, $campoRelacion, $respuestaOrigen, $action, $usuario, &$audit) {
 
+                            foreach ($registrosOrigen as $registroOrigen) {
 
-                    DB::transaction(function () use ($registrosOrigen, $campos, $campoRelacion, $respuestaOrigen, $action, $usuario) {
+                                $respuestaDestino = RespuestasForm::create([
+                                    'form_id' => $action->form_ref_id,
+                                    'actor_id' => $usuario
+                                ]);
 
+                                foreach ($campos as $campo) {
 
-                        foreach ($registrosOrigen as $registroOrigen) {
+                                    $valorFinal = ($campo['usar_origen'] ?? false)
+                                        ? $respuestaOrigen->camposRespuestas()
+                                            ->where('cf_id', $campo['campo_origen_id'])
+                                            ->value('valor')
+                                        : ($campo['valor_destino'] ?? null);
 
-                            $respuestaDestino = RespuestasForm::create([
-                                'form_id' => $action->form_ref_id,
-                                'actor_id' => $usuario
-                            ]);
-
-                            foreach ($campos as $campo) {
-
-                                $valorFinal = ($campo['usar_origen'] ?? false)
-                                    ? $respuestaOrigen->camposRespuestas()
-                                        ->where('cf_id', $campo['campo_origen_id'])
-                                        ->value('valor')
-                                    : ($campo['valor_destino'] ?? null);
+                                    RespuestasCampo::create([
+                                        'respuesta_id' => $respuestaDestino->id,
+                                        'cf_id' => $campo['campo_id'],
+                                        'valor' => $valorFinal,
+                                    ]);
+                                }
 
                                 RespuestasCampo::create([
                                     'respuesta_id' => $respuestaDestino->id,
-                                    'cf_id' => $campo['campo_id'],
-                                    'valor' => $valorFinal,
+                                    'cf_id' => $campoRelacion->id,
+                                    'valor' => $registroOrigen->id,
                                 ]);
+
+                                Log::info(
+                                    "TAC-005 ejecutado | Action {$action->id} | Respuesta {$respuestaDestino->id}"
+                                );
+
+                                $audit['detalle'][] = [
+                                    'tac' => 'TAC-005',
+                                    'respuesta_origen_id' => $registroOrigen->id,
+                                    'respuesta_destino_id' => $respuestaDestino->id,
+                                    'campos_creados' => collect($campos)->pluck('campo_id'),
+                                    'mensaje' => "TAC-005 ejecutado | Action {$action->id} | Respuesta {$respuestaDestino->id}",
+                                ];
                             }
 
-                            RespuestasCampo::create([
-                                'respuesta_id' => $respuestaDestino->id,
-                                'cf_id' => $campoRelacion->id,
-                                'valor' => $registroOrigen->id,
-                            ]);
-
-                            Log::info(
-                                "TAC-005 ejecutado | Action {$action->id} | Respuesta {$respuestaDestino->id}"
-                            );
-                            $audit['detalle'][] = [
-                                'tac' => 'TAC-005',
-                                'respuesta_origen_id' => $registroOrigen->id,
-                                'respuesta_destino_id' => $respuestaDestino->id,
-                                'campos_creados' => collect($campos)->pluck('campo_id'),
-                            ];
-                        }
-                        $audit['mensaje'] =
-                            'Se crearon ' . count($audit['detalle']) . ' registros relacionados';
-
-                    });
-
+                            $audit['mensaje'] =
+                                'Se crearon ' . count($audit['detalle']) . ' registros relacionados';
+                        });
+                    }
 
                     break;
 

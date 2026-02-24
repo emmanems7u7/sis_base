@@ -36,10 +36,7 @@
                     </tbody>
                 </table>
             </div>
-            <!-- Paginación -->
-            <div class="d-flex justify-content-center">
-                {{ $acciones->links('pagination::bootstrap-4') }}
-            </div>
+
         </div>
     </div>
 

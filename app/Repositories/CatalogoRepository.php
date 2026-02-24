@@ -170,6 +170,13 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
             ->first();
     }
 
+    public function buscarPorCodigo($categoriaId, $codigo)
+    {
+        return Catalogo::where('categoria_id', $categoriaId)
+            ->where('catalogo_codigo', $codigo)
+            ->first();
+    }
+
     public function eliminarDeSeederCategoria(Categoria $categoria)
     {
         $this->SeederRepository->eliminarDeSeederCategoria($categoria);

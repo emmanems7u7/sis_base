@@ -385,6 +385,9 @@ Route::middleware(['auth'])->group(function () {
         ->name('formularios.validarRegistro');
 
 
+    Route::delete('/formularios/respuestas/eliminar/masivo', [RespuestasFormController::class, 'eliminarMasivo'])
+        ->name('respuestas.eliminarMasivo');
+
     Route::get('/modulos', [ModuloController::class, 'index'])->name('modulos.index');
     Route::get('/modulos/crear', [ModuloController::class, 'create'])->name('modulos.create');
     Route::post('/modulos', [ModuloController::class, 'store'])->name('modulos.store');
