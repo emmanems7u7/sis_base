@@ -130,11 +130,11 @@ document.addEventListener('DOMContentLoaded', () => {
             draggable: '.col-md-6',
             onEnd: function () {
                 let orden = [...lista.querySelectorAll('.col-md-6')].map(item => item.dataset.id);
-                fetch(lista.dataset.reordenarUrl, {
+                fetch(window.routes.reordenarCampos, {
                     method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
-                        'X-CSRF-TOKEN': lista.dataset.csrf,
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]')?.getAttribute('content') || '',
                     },
                     body: JSON.stringify({ orden })
                 })

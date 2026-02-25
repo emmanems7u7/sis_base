@@ -271,7 +271,11 @@
         @endforeach
     </div>
     @include('formularios.campos.modal_busqueda')
-
+    <script>
+    window.routes = {
+        reordenarCampos: @json(route('formularios.campos.reordenar', $formulario))
+    };
+</script>
     <script>
         let editId = null;
 
