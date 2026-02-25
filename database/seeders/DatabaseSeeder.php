@@ -20,7 +20,7 @@ class DatabaseSeeder extends Seeder
                 $this->call(\Database\Seeders\QA\QaSeeder::class);
                 break;
 
-            case 'PRODUCCION':
+            case 'PROD':
                 $this->call(\Database\Seeders\PROD\ProdSeeder::class);
                 break;
 
