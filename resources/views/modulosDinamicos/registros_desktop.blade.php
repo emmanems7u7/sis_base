@@ -45,48 +45,69 @@
                             <td>{{ $respuesta->actor->name ?? 'Anonimo' }}</td>
 
                             @foreach($formulario->campos->sortBy('posicion') as $campo)
-                                @php
-                                    $valores = $respuesta->camposRespuestas
-                                        ->where('cf_id', $campo->id)
-                                        ->pluck('valor')
-                                        ->toArray();
+    @php
+        $valores = $respuesta->camposRespuestas
+            ->where('cf_id', $campo->id)
+            ->pluck('valor')
+            ->toArray();
 
-                                    $tipoCampo = strtolower($campo->campo_nombre);
-                                    $displayValores = [];
+        $tipoCampo = strtolower($campo->campo_nombre);
+        $displayValores = [];
 
-                                    foreach ($valores as $v) {
-                                        switch ($tipoCampo) {
-                                            case 'checkbox':
-                                            case 'radio':
-                                            case 'selector':
-                                                $desc = $campo->opciones_catalogo->where('catalogo_codigo', $v)->first()?->catalogo_descripcion;
-                                                $displayValores[] = $desc ?? $v;
-                                                break;
-                                            case 'imagen':
-                                                $displayValores[] = "<img src='" . asset("archivos/formulario_{$formulario->id}/imagenes/{$v}") . "' style='max-width:50px; max-height:50px;' class='rounded me-1 mb-1'>";
-                                                break;
-                                            case 'video':
-                                                $displayValores[] = "<video src='" . asset("archivos/formulario_{$formulario->id}/videos/{$v}") . "' style='max-width:100px; max-height:50px;' controls></video>";
-                                                break;
-                                            case 'archivo':
-                                                $displayValores[] = "<a href='" . asset("archivos/formulario_{$formulario->id}/archivos/{$v}") . "' target='_blank' class='btn btn-sm btn-outline-primary mb-1'>Descargar</a>";
-                                                break;
-                                            case 'enlace':
-                                                $displayValores[] = "<a href='$v' target='_blank'>Ver enlace</a>";
-                                                break;
-                                            case 'fecha':
-                                                $displayValores[] = \Carbon\Carbon::parse($v)->format('d/m/Y');
-                                                break;
-                                            case 'hora':
-                                                $displayValores[] = $v;
-                                                break;
-                                            default:
-                                                $displayValores[] = $v;
-                                        }
-                                    }
-                                @endphp
-                                <td>{!! implode(' ', $displayValores) !!}</td>
-                            @endforeach
+        foreach ($valores as $v) {
+
+            switch ($tipoCampo) {
+
+                case 'checkbox':
+                case 'radio':
+                case 'selector':
+                    $desc = $campo->opciones_catalogo
+                        ->where('catalogo_codigo', $v)
+                        ->first()?->catalogo_descripcion;
+
+                    $displayValores[] = e($desc ?? $v);
+                    break;
+
+                case 'imagen':
+                    $displayValores[] = "<img src='" . asset("archivos/formulario_{$formulario->id}/imagenes/{$v}") . "' 
+                        style='max-width:50px; max-height:50px;' 
+                        class='rounded me-1 mb-1'>";
+                    break;
+
+                case 'video':
+                    $displayValores[] = "<video src='" . asset("archivos/formulario_{$formulario->id}/videos/{$v}") . "' 
+                        style='max-width:100px; max-height:50px;' 
+                        controls></video>";
+                    break;
+
+                case 'archivo':
+                    $displayValores[] = "<a href='" . asset("archivos/formulario_{$formulario->id}/archivos/{$v}") . "' 
+                        target='_blank' 
+                        class='btn btn-sm btn-outline-primary mb-1'>
+                        Descargar
+                    </a>";
+                    break;
+
+                case 'enlace':
+                    $displayValores[] = "<a href='" . e($v) . "' target='_blank'>Ver enlace</a>";
+                    break;
+
+                case 'fecha':
+                    $displayValores[] = \Carbon\Carbon::parse($v)->format('d/m/Y');
+                    break;
+
+                case 'hora':
+                    $displayValores[] = e($v);
+                    break;
+
+                default:
+                    $displayValores[] = e($v);
+            }
+        }
+    @endphp
+
+    <td>{!! implode('<br>', $displayValores) !!}</td>
+@endforeach
 
                             <td>{{ $respuesta->created_at->format('d/m/Y H:i') }}</td>
                             <td>
