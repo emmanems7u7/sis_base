@@ -45,7 +45,7 @@
                             <label class="form-check-label mb-0" for="seleccion_{{ $respuesta->id }}">Seleccion</label>
                         </div>
                     </div>
-                    <h5 class="card-title">{{ $respuesta->actor->name ?? 'Anonimo' }}</h5>
+                    <h6 class="card-title">{{ $respuesta->actor->name ?? 'Anonimo' }}</h6>
 
 
                     <p class="text-muted mb-2">Fecha de registro: {{ $respuesta->created_at->format('d/m/Y H:i') }}</p>
@@ -56,43 +56,55 @@
                                 ->where('cf_id', $campo->id)
                                 ->pluck('valor')
                                 ->toArray();
+
                             $tipoCampo = strtolower($campo->campo_nombre);
+                            $displayValores = [];
+
+                            foreach ($valores as $v) {
+                                switch ($tipoCampo) {
+
+                                    case 'imagen':
+                                        $displayValores[] = "<img src='" . asset("archivos/formulario_{$formulario->id}/imagenes/{$v}") . "' 
+                                                                                    style='max-width:100px; max-height:100px;' 
+                                                                                    class='rounded me-1 mb-1'>";
+                                        break;
+
+                                    case 'video':
+                                        $displayValores[] = "<video src='" . asset("archivos/formulario_{$formulario->id}/videos/{$v}") . "' 
+                                                                                    style='max-width:100%; height:auto;' 
+                                                                                    controls 
+                                                                                    class='mb-1'></video>";
+                                        break;
+
+                                    case 'archivo':
+                                        $displayValores[] = "<a href='" . asset("archivos/formulario_{$formulario->id}/archivos/{$v}") . "' 
+                                                                                    target='_blank' 
+                                                                                    class='btn btn-sm btn-outline-primary mb-1'>
+                                                                                    Descargar
+                                                                                </a>";
+                                        break;
+
+                                    case 'enlace':
+                                        $displayValores[] = "<a href='{$v}' target='_blank'>Ver enlace</a>";
+                                        break;
+
+                                    case 'fecha':
+                                        $displayValores[] = \Carbon\Carbon::parse($v)->format('d/m/Y');
+                                        break;
+
+                                    case 'hora':
+                                        $displayValores[] = $v;
+                                        break;
+
+                                    default:
+                                        $displayValores[] = e($v); // escapamos texto normal
+                                }
+                            }
                         @endphp
+
                         <div class="mb-2">
                             <strong>{{ $campo->etiqueta }}:</strong>
-                            @foreach($valores as $v)
-                                @switch($tipoCampo)
-                                    
-                                    
-
-                                    @case('imagen')
-                                        <img src="{{ asset("archivos/formulario_{$formulario->id}/imagenes/{$v}") }}" style="max-width:100px; max-height:100px;" class="rounded me-1 mb-1">
-                                    @break
-
-                                    @case('video')
-                                        <video src="{{ asset("archivos/formulario_{$formulario->id}/videos/{$v}") }}" style="max-width:100%; height:auto;" controls class="mb-1"></video>
-                                    @break
-
-                                    @case('archivo')
-                                        <a href="{{ asset("archivos/formulario_{$formulario->id}/archivos/{$v}") }}" target="_blank" class="btn btn-sm btn-outline-primary mb-1">Descargar</a>
-                                    @break
-
-                                    @case('enlace')
-                                        <a href="{{ $v }}" target="_blank">Ver enlace</a>
-                                    @break
-
-                                    @case('fecha')
-                                        {{ \Carbon\Carbon::parse($v)->format('d/m/Y') }}
-                                    @break
-
-                                    @case('hora')
-                                        {{ $v }}
-                                    @break
-
-                                    @default
-                                        {{ $v }}
-                                @endswitch
-                            @endforeach
+                            {!! implode(' ', $displayValores) !!}
                         </div>
                     @endforeach
                 </div>
