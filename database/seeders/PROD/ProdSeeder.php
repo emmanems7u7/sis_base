@@ -11,7 +11,7 @@ use Database\Seeders\PROD\Menus\MenusSeeder;
 use Database\Seeders\PROD\Permisos\PermisosSeeder;
 
 
-class PRODSeeder extends Seeder
+class ProdSeeder extends Seeder
 {
     public function run(): void
     {
