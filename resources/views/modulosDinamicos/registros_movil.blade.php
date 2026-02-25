@@ -34,37 +34,27 @@
 
                                             switch ($tipoCampo) {
 
-                                                case 'checkbox':
-                                                case 'radio':
-                                                case 'selector':
-                                                    $descripcion = $campo->opciones_catalogo
-                                                        ->where('catalogo_codigo', $v)
-                                                        ->first()?->catalogo_descripcion;
 
-                                                    if ($descripcion) {
-                                                        $displayValores[] = e($descripcion);
-                                                    }
-                                                    break;
 
                                                 case 'imagen':
                                                     $displayValores[] = "<img src='" . asset("archivos/formulario_{$formulario->id}/imagenes/{$v}") . "' 
-                                                    style='max-width:80px; max-height:80px;' 
-                                                    class='rounded me-1 mb-1'>";
+                                                                                style='max-width:80px; max-height:80px;' 
+                                                                                class='rounded me-1 mb-1'>";
                                                     break;
 
                                                 case 'video':
                                                     $displayValores[] = "<video src='" . asset("archivos/formulario_{$formulario->id}/videos/{$v}") . "' 
-                                                    style='max-width:100%; height:auto;' 
-                                                    controls 
-                                                    class='mb-1'></video>";
+                                                                                style='max-width:100%; height:auto;' 
+                                                                                controls 
+                                                                                class='mb-1'></video>";
                                                     break;
 
                                                 case 'archivo':
                                                     $displayValores[] = "<a href='" . asset("archivos/formulario_{$formulario->id}/archivos/{$v}") . "' 
-                                                    target='_blank' 
-                                                    class='btn btn-sm btn-outline-primary mb-1'>
-                                                    Descargar
-                                                </a>";
+                                                                                target='_blank' 
+                                                                                class='btn btn-sm btn-outline-primary mb-1'>
+                                                                                Descargar
+                                                                            </a>";
                                                     break;
 
                                                 case 'enlace':
