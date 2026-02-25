@@ -296,7 +296,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('formularios.guardar-concatenado');
 
 
-
+    Route::post(
+        '/formularios/{formulario}/guardar/agrupacion',
+        [FormularioController::class, 'guardarAgrupacion']
+    )->name('formularios.guardarAgrupacion');
 
 
     // Listado y constructor de campos
@@ -353,6 +356,12 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/toggle-visible/campos', [CamposFormController::class, 'toggleVisible'])
         ->name('campos.toggleVisible');
 
+
+    Route::post('/guardar/campo/autocompletado', [CamposFormController::class, 'GuardarAutocompletado']);
+
+    Route::post('/campos/guardar/relacion', [CamposFormController::class, 'guardarRelacion'])->name('campos.guardarRelacion');
+
+    Route::post('/campos/obtener/data', [CamposFormController::class, 'obtenerData'])->name('campos.obtenerData');
 
     Route::get('/respuestas/{respuesta}/edit/{modulo}', [RespuestasFormController::class, 'edit'])
         ->name('respuestas.edit');

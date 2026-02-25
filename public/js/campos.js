@@ -345,25 +345,95 @@ document.addEventListener('DOMContentLoaded', () => {
         });
 
         const btnBuscar = document.getElementById('btnBuscar');
-        if(btnBuscar){
-            btnBuscar.addEventListener('click', async ()=>{
+        if (btnBuscar) {
+
+            btnBuscar.addEventListener('click', async () => {
+        
                 const termino = document.getElementById('inputBusqueda')?.value || '';
                 const campoId = btnBuscar.dataset.campoId;
-                const response = await fetch(`/campos/${campoId}/buscar-opcion?termino=${encodeURIComponent(termino)}`);
+        
+                const response = await fetch(
+                    `/campos/${campoId}/buscar-opcion?termino=${encodeURIComponent(termino)}`
+                );
+        
                 const data = await response.json();
-                if(data.length){
-                    if(typeof alertify !== 'undefined') alertify.success('Opción encontrada y agregada al selector.');
-                    const select = document.querySelector(`select[data-campo-id="${campoId}"]`);
-                    if(select && select.tomselect){
-                        select.tomselect.addOption({value:data[0].catalogo_codigo,text:data[0].catalogo_descripcion});
-                        select.tomselect.setValue(data[0].catalogo_codigo);
+        
+                if (data.length) {
+
+                    const select = document.querySelector(
+                        `select[data-campo-id="${campoId}"]`
+                    );
+                
+                    if (select && select.tomselect) {
+                
+                        const tom = select.tomselect;
+                
+                        // 🔥 Obtener el orden mínimo actual
+                        const ordenMinimo = Math.min(
+                            ...Object.values(tom.options).map(o => o.$order ?? 0),
+                            0
+                        );
+                
+                        let nuevoOrden = ordenMinimo - 1;
+                
+                        const agregados = [];
+                
+                        data.forEach(item => {
+                
+                            if (!tom.options[item.catalogo_codigo]) {
+                
+                                tom.addOption({
+                                    value: item.catalogo_codigo,
+                                    text: item.catalogo_descripcion,
+                                    $order: nuevoOrden--,
+                                    nueva: true
+                                });
+                
+                                agregados.push(item.catalogo_codigo);
+                            }
+                
+                        });
+                
+                        tom.refreshOptions(false);
+                
+                        // 🔥 Aplicar clase visual
+                        setTimeout(() => {
+                            agregados.forEach(codigo => {
+                                const opcion = tom.getOption(codigo);
+                                if (opcion) {
+                                    opcion.classList.add('option-nueva');
+                                }
+                            });
+                        }, 50);
+                
+                        // 🔥 Quitar clase después de 1 segundo
+                        setTimeout(() => {
+                            agregados.forEach(codigo => {
+                                const opcion = tom.getOption(codigo);
+                                if (opcion) {
+                                    opcion.classList.remove('option-nueva');
+                                }
+                            });
+                        }, 3000);
                     }
+                
+                    if (typeof alertify !== 'undefined') {
+                        alertify.success('Opciones encontradas agregadas arriba. Revise y seleccione.');
+                    }
+                
                     const modal = document.getElementById('modalBusqueda');
-                    if(modal) bootstrap.Modal.getInstance(modal)?.hide();
+                    if (modal) bootstrap.Modal.getInstance(modal)?.hide();
+                
                 } else {
-                    if(typeof alertify !== 'undefined') alertify.warning('No se encontró ninguna opción.');
+                
+                    if (typeof alertify !== 'undefined') {
+                        alertify.warning('No se encontró ninguna opción.');
+                    }
+                
                 }
+        
             });
+        
         }
     };
 

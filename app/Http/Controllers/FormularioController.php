@@ -370,5 +370,27 @@ class FormularioController extends Controller
             'data' => $config['configuracion_concatenado']
         ]);
     }
+    public function guardarAgrupacion(Request $request, Formulario $formulario)
+    {
+        $request->validate([
+            'activa' => 'required|boolean',
+            'campo_incremento' => 'nullable|exists:campos_forms,id'
+        ]);
 
+        $config = $formulario->config ?? [];
+
+        $config['agrupacion'] = [
+            'activa' => $request->activa,
+            'campo_incremento' => $request->activa ? $request->campo_incremento : null,
+        ];
+
+        $formulario->update([
+            'config' => $config
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Configuración de agrupación guardada correctamente.'
+        ]);
+    }
 }

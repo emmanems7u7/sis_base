@@ -10,6 +10,7 @@ use App\Interfaces\FormularioInterface;
 use App\Interfaces\CamposFormInterface;
 
 use App\Models\Categoria;
+use App\Models\RespuestasCampo;
 use Illuminate\Validation\Rule;
 use Illuminate\Support\Str;
 class CamposFormController extends Controller
@@ -56,8 +57,13 @@ class CamposFormController extends Controller
 
         $campos = $this->FormularioRepository->CamposFormCat($campos, $limitOpciones);
 
+        $formsRefIds = CamposForm::where('form_id', $formulario->id)
+            ->whereNotNull('form_ref_id')
+            ->pluck('form_ref_id')
+            ->unique()
+            ->values();
 
-
+        $formularios_ref = Formulario::with('campos')->whereIn('id', $formsRefIds)->get();
         return view('formularios.campos.index', compact(
             'breadcrumb',
             'formulario',
@@ -65,7 +71,8 @@ class CamposFormController extends Controller
             'categorias',
             'campos_formulario',
             'formularios',
-            'limitOpciones'
+            'limitOpciones',
+            'formularios_ref'
         ));
     }
 
@@ -90,8 +97,37 @@ class CamposFormController extends Controller
             ->filter(fn($item) => stripos($item->catalogo_descripcion, $termino) !== false)
             ->values();
 
+
+
         return response()->json($opciones);
     }
+
+    /*
+
+    public function buscarOpcion(CamposForm $campo, Request $request)
+    {
+        $termino = $request->input('termino');
+
+        $campoProcesado = $this->CamposFormRepository->obtenerOpcionesCompletas(collect([$campo]))
+            ->first();
+
+        $opciones = $campoProcesado->opciones_catalogo
+            ->filter(fn($item) => stripos($item->catalogo_descripcion, $termino) !== false)
+            ->first();
+
+
+        $respuesta = $this->BuscaRespuesta($campo, valor: $opciones->catalogo_codigo);
+
+
+
+        return response()->json([
+            'catalogo_codigo' => $opciones->catalogo_codigo,
+            'catalogo_descripcion' => $opciones->catalogo_descripcion,
+            'campo_referencia' => $respuesta['campo_referencia'],
+            'valor' => $respuesta['valor'],
+
+        ]);
+    }*/
 
     public function store(Request $request, Formulario $formulario)
     {
@@ -201,6 +237,109 @@ class CamposFormController extends Controller
             'success' => true,
             'message' => 'Configuración actualizada correctamente'
         ]);
+    }
+
+    public function GuardarAutocompletado(Request $request)
+    {
+        $campo = CamposForm::find($request->campo_id);
+
+        $campo->config = array_merge(
+            $campo->config ?? [],
+            ['autocompletar' => $request->valor]
+        );
+
+        $campo->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Configuración actualizada correctamente',
+            'valor' => $campo->config['autocompletar']
+        ]);
+
+    }
+
+    public function guardarRelacion(Request $request)
+    {
+        $request->validate([
+            'campo_principal_id' => 'required|exists:campos_forms,id',
+            'form_ref_id' => 'required|exists:formularios,id',
+            'campo_ref_id' => 'required|exists:campos_forms,id',
+        ]);
+
+        $campo = CamposForm::findOrFail($request->campo_principal_id);
+
+        // Si tienes cast a array en el modelo
+        $config = $campo->config ?? [];
+
+        if (is_string($config)) {
+            $config = json_decode($config, true) ?? [];
+        }
+
+        // Guardar relación dentro de config
+        $config['relacion'] = [
+
+            'form_ref_id' => $request->form_ref_id,
+            'campo_ref_id' => $request->campo_ref_id,
+        ];
+
+        $campo->config = $config;
+
+        // También puedes guardar directamente en la columna
+        $campo->form_ref_id = $request->form_ref_id;
+
+        $campo->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Relación guardada correctamente'
+        ]);
+    }
+
+    public function obtenerData(Request $request)
+    {
+        $request->validate([
+            'campo_id' => 'required|exists:campos_forms,id',
+            'valor' => 'required'
+        ]);
+
+
+        $campo = CamposForm::findOrFail($request->campo_id);
+
+
+        $respuesta = $this->BuscaRespuesta($campo, $request->valor);
+
+        return response()->json(
+            $respuesta
+        );
+
+    }
+
+    function BuscaRespuesta($campo, $valor)
+    {
+        $campo_referencia = CamposForm::where('form_id', $campo->form_id)
+            ->where('config->relacion->form_ref_id', $campo->form_ref_id)
+            ->first();
+
+
+        if (!$campo_referencia) {
+            return response()->json(['success' => false]);
+        }
+
+
+        $campoRefId = $campo_referencia->config['relacion']['campo_ref_id'] ?? null;
+
+
+        $respuesta = RespuestasCampo::where('respuesta_id', $valor)
+            ->where('cf_id', $campoRefId)
+            ->first();
+
+        return [
+            'success' => true,
+            'relacion' => $campo_referencia->config['relacion'],
+            'campo_referencia' => $campo_referencia->id,
+            'valor' => $respuesta->valor,
+
+        ];
     }
 
 }

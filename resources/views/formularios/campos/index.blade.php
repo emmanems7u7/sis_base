@@ -204,10 +204,8 @@
                 <p class="text-muted small mb-0">Agrega reglas de validación o campos obligatorios aquí.</p>
             </div>
 
-            <!-- Pestaña Opciones Avanzadas -->
-            <div class="tab-pane fade" id="content-avanzadas" role="tabpanel" aria-labelledby="tab-avanzadas">
-                <p class="text-muted small mb-0">Opciones avanzadas: formatos, límites o máscaras de entrada.</p>
-            </div>
+            @include('formularios.campos.opciones_avanzadas')
+
 
         </div>
     </div>

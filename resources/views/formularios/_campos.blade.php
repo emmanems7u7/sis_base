@@ -44,13 +44,15 @@
 
 
     <div class="{{ $colClass }}">
+    @if($campo->campo_nombre != 'campo autocompletado')
+ 
         <label class="form-label fw-bold">
             {{ $campo->etiqueta }} {{  $esRequerido }}
             @if($esRequerido_)
                 <span class="text-danger">*</span>
             @endif
         </label>
-
+    @endif
         @switch(strtolower($campo->campo_nombre))
 
             {{-- TEXTO --}}
@@ -281,6 +283,80 @@
                    {{ $esRequerido ? 'required' : '' }}>
             @break
 
+
+
+            @case('campo autocompletado')
+                <input type="hidden" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
+                    class="form-control campo-autocompletado"
+                    value="{{ $campo->config['autocompletar'] }}"
+                    placeholder="{{ $campo->config['placeholder'] ?? '' }}"
+                   {{ $esRequerido ? 'required' : '' }}
+                   data-campo-id="{{ $campo->id }}">
+            @break
+
+
+            @case('campo_relacion')
+              <input type="text" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
+                    class="form-control"
+                    data-campo-id="{{ $campo->id }}"
+                    value=""
+                    placeholder="{{ $campo->config['placeholder'] ?? '' }}"
+                   {{ $esRequerido ? 'required' : '' }} readonly>
+
+
+
+                   <script>
+document.addEventListener('DOMContentLoaded', function () {
+
+    document.querySelectorAll('.campo-dinamico').forEach(select => {
+
+        select.addEventListener('change', function () {
+
+            const valorSeleccionado = this.value;
+            const campoId = this.dataset.campoId;
+            const nombreCampo = this.name;
+
+            if (!valorSeleccionado) return;
+
+            fetch("{{ route('campos.obtenerData') }}", {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                    "X-CSRF-TOKEN": document
+                        .querySelector('meta[name="csrf-token"]')
+                        .getAttribute("content")
+                },
+                body: JSON.stringify({
+                    campo_id: campoId,
+                    nombre: nombreCampo,
+                    valor: valorSeleccionado
+                })
+            })
+            .then(res => res.json())
+            .then(data => {
+                if (!data.success) return;
+
+                // 🔥 Buscar el input que tenga el campo_referencia
+                const inputRelacionado = document.querySelector(
+                    `[data-campo-id="${data.campo_referencia}"]`
+                );
+
+                if (inputRelacionado) {
+                    inputRelacionado.value = data.valor ?? '';
+                }
+
+               
+            })
+            .catch(err => console.error('Error:', err));
+
+        });
+
+    });
+
+});
+</script>
+
+            @break
         @endswitch
     </div>
 @endforeach
