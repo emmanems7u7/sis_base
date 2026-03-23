@@ -16,6 +16,8 @@
                             title="Este campo es de tipo referencial, se registrara el contenido del campo seleccionado correspondiente al formulario con el que se tiene la relación"></i>
    
    @endif
+
+ 
 @switch(strtolower($campo->campo_nombre))
 
     @case('text')
@@ -159,6 +161,8 @@
             placeholder="{{ $campo->config['placeholder'] ?? '' }}">
         @break
 
+   
+
     @case('campo autocompletado')
       
             <input type="text" name="{{ $campo->nombre }}" 
@@ -221,127 +225,23 @@
 
                             @case('campo_relacion')
 
-                            <script>
-                                const formulariosRef = @json($formularios_ref);
-                                const relacionActual = @json($campo->config['relacion'] ?? null);
-                            </script>
+                <div class="config-campo">
 
-                            <div class="mb-3">
-                                <label class="form-label">Formulario relacionado</label>
-                                <select id="selectFormulario" class="form-select">
-                                    <option value="">Seleccione un formulario</option>
-                                    @foreach($formularios_ref as $form)
-                                        <option value="{{ $form->id }}">{{ $form->nombre }}</option>
-                                    @endforeach
-                                </select>
-                            </div>
+                    @include('formularios.campos.carga_campos')
 
-                            <div class="mb-3">
-                                <label class="form-label">Campos del formulario</label>
-                                <select id="selectCampos" class="form-select">
-                                    <option value="">Seleccione un campo</option>
-                                </select>
-                            </div>
+                    <button class="btn btn-xs btn-dark boton_relacion"
+                            data-campo="{{ $campo->id }}">
+                        Guardar
+                    </button>
 
-                            <button class="btn btn-xs btn-dark boton_relacion">Guardar</button>´
-                        
+                </div>
 
-                            <script>
-document.addEventListener('DOMContentLoaded', function () {
+         
+                @break
 
-    const selectFormulario = document.getElementById('selectFormulario');
-    const selectCampos = document.getElementById('selectCampos');
-    const boton = document.querySelector('.boton_relacion');
 
-    // ===============================
-    // 🔹 Función reutilizable
-    // ===============================
-    function cargarCampos(formId, campoSeleccionado = null) {
+            
 
-        selectCampos.innerHTML = '<option value="">Seleccione un campo</option>';
-
-        if (!formId) return;
-
-        const formulario = formulariosRef.find(f => f.id == formId);
-        if (!formulario) return;
-
-        formulario.campos.forEach(campo => {
-
-            const option = document.createElement('option');
-            option.value = campo.id;
-            option.textContent = campo.etiqueta;
-
-            if (campoSeleccionado && campo.id == campoSeleccionado) {
-                option.selected = true;
-            }
-
-            selectCampos.appendChild(option);
-        });
-    }
-
-    // ===============================
-    // 🔹 Evento cambio formulario
-    // ===============================
-    selectFormulario.addEventListener('change', function () {
-        cargarCampos(this.value);
-    });
-
-    // ===============================
-    // 🔹 Autocargar relación existente
-    // ===============================
-    if (typeof relacionActual !== 'undefined' && relacionActual) {
-
-        selectFormulario.value = relacionActual.form_ref_id;
-
-        cargarCampos(
-            relacionActual.form_ref_id,
-            relacionActual.campo_ref_id
-        );
-    }
-
-    // ===============================
-    // 🔹 Guardar relación
-    // ===============================
-    boton.addEventListener('click', function (e) {
-        e.preventDefault();
-
-        const formularioId = selectFormulario.value;
-        const campoId = selectCampos.value;
-
-        if (!formularioId || !campoId) {
-            alertify.warning('Debe seleccionar formulario y campo');
-            return;
-        }
-
-        fetch("{{ route('campos.guardarRelacion') }}", {
-            method: "POST",
-            headers: {
-                "Content-Type": "application/json",
-                "X-CSRF-TOKEN": document
-                    .querySelector('meta[name="csrf-token"]')
-                    .getAttribute("content")
-            },
-            body: JSON.stringify({
-                campo_principal_id: {{ $campo->id ?? 'null' }},
-                form_ref_id: formularioId,
-                campo_ref_id: campoId
-            })
-        })
-        .then(res => res.json())
-        .then(data => {
-            if (data.success) {
-                alertify.success(data.message);
-            } else {
-                alertify.error('Error al guardar');
-            }
-        })
-        .catch(() => alertify.error('Error de servidor'));
-    });
-
-});
-</script>
-
-                            @break
 
     @default
         <input type="text" name="{{ $campo->nombre }}" 

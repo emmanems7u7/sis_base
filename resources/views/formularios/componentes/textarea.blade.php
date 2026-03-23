@@ -1,0 +1,2 @@
+<textarea name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" class="form-control"
+    placeholder="{{ $campo->config['placeholder'] ?? '' }}" {{ $esRequerido ? 'required' : '' }}>{{ $valor }}</textarea>

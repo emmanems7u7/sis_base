@@ -54,10 +54,11 @@
                         <i class="fas fa-search"></i> Buscar
                     </button>
 
-                    <button type="button" id="activar-seleccion-masiva" class="btn btn-outline-secondary btn-sm">
-                        Selección masiva
-                    </button>
-
+                    @can($formulario->id . '.eliminar')
+                        <button type="button" id="activar-seleccion-masiva" class="btn btn-outline-secondary btn-sm">
+                            Selección masiva
+                        </button>
+                    @endcan
 
                 </div>
             </div>
@@ -117,6 +118,7 @@
                 // Toggle visual para el botón
                 let activo = false;
                 activarSeleccion.addEventListener('click', function () {
+                    console.log(2)
                     activo = !activo;
                     if (activo) {
                         activarSeleccion.classList.remove('btn-outline-primary');

@@ -59,8 +59,8 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/css/css.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.15/mode/htmlmixed/htmlmixed.min.js"></script>
 
-
-
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" />
+<script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.js"></script>
 @php
     use App\Models\Seccion;
     use Carbon\Carbon;
@@ -539,15 +539,25 @@
   
     <script>
 
+
+Fancybox.bind("[data-fancybox='gallery']", {
+    Toolbar: {
+        display: [
+            "zoom",
+            "close"
+        ]
+    }
+});
+
         // Sobrescribir fetch global
         (function() {
                 const overlay = document.getElementById('overlay-spinner');
                 const originalFetch = window.fetch;
-                let activeFetches = 0; // Contador de fetch activos
+                let activeFetches = 0;
 
                 window.fetch = async function(...args) {
                     activeFetches++;
-                    overlay.style.display = 'flex'; // mostrar overlay
+                    overlay.style.display = 'flex';
 
                     try {
                         const response = await originalFetch.apply(this, args);
@@ -558,8 +568,8 @@
                     } finally {
                         activeFetches--;
                         if (activeFetches <= 0) {
-                            overlay.style.display = 'none'; // solo ocultar si no hay fetch activos
-                            activeFetches = 0; // prevenir negativos
+                            overlay.style.display = 'none';
+                            activeFetches = 0;
                         }
                     }
                 };

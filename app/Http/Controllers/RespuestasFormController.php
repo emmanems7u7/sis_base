@@ -141,12 +141,16 @@ class RespuestasFormController extends Controller
         $humanRules = $this->RespuestasFormInterface->GetHumanRules($rules);
         // fin
 
+        $agent = new Agent();
+        $isMobile = $agent->isMobile();
+
         return view('formularios.registrar_datos_form', compact(
             'humanRules',
             'formulario',
             'breadcrumb',
             'moduloModelo',
-            'modulo'
+            'modulo',
+            'isMobile'
         ));
     }
     /*

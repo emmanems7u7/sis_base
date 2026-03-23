@@ -3,366 +3,195 @@
 <div class="row g-4">
 @foreach($campos as $campo)
 @php
-    /* ===============================
-       COLUMNAS
-    =============================== */
+    $tipo = strtolower($campo->campo_nombre);
+
+    $tiposSinLayout = ['campo autocompletado'];
+    $esHidden = in_array($tipo, $tiposSinLayout);
+
     $cols = $cols ?? 2;
     $colSize = intval(12 / max(1, min(12, $cols)));
+    $colClass = $tipo === 'textarea' ? 'col-12' : "col-md-{$colSize}";
 
-    if (strtolower($campo->campo_nombre) === 'textarea') {
-        $colClass = 'col-12';
-    } else {
-        $colClass = "col-md-{$colSize}";
-    }
-
-    /* ===============================
-       REQUERIDO (sobrescribible)
-    =============================== */
-    // si se envía por include → manda
-    // si no → usa el valor del campo
-
-    if(isset($formulario->config['registro_multiple']) && !$formulario->config['registro_multiple'])
-    {
-
+    $esRequerido = false;
+    if(isset($formulario->config['registro_multiple']) && !$formulario->config['registro_multiple']) {
         $esRequerido = isset($requerido)
+            ? (bool) $requerido
+            : (bool) $campo->requerido;
+    }
+
+    $mostrarAsterisco = isset($requerido)
         ? (bool) $requerido
         : (bool) $campo->requerido;
-    }
-    else{
-        $esRequerido = false;
-    }
-   
-    $esRequerido_ = isset($requerido)
-        ? (bool) $requerido
-        : (bool) $campo->requerido;
-    /* ===============================
-       VALOR
-    =============================== */
+
     $valoresCampo = $valores[$campo->nombre] ?? [];
     $valor = old($campo->nombre, $valoresCampo[0] ?? '');
 @endphp
 
+@if(!$esHidden)
+<div class="{{ $colClass }}">
+@endif
 
-    <div class="{{ $colClass }}">
-    @if($campo->campo_nombre != 'campo autocompletado')
- 
+    @if(!$esHidden)
         <label class="form-label fw-bold">
-            {{ $campo->etiqueta }} {{  $esRequerido }}
-            @if($esRequerido_)
+            {{ $campo->etiqueta }}
+            @if($mostrarAsterisco)
                 <span class="text-danger">*</span>
             @endif
         </label>
     @endif
-        @switch(strtolower($campo->campo_nombre))
 
-            {{-- TEXTO --}}
-            @case('text')
-                <input type="text" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
-                    class="form-control"
-                    value="{{ $valor }}"
-                    placeholder="{{ $campo->config['placeholder'] ?? '' }}"
-                   {{ $esRequerido ? 'required' : '' }}>
-            @break
+    @switch($tipo)
 
-            {{-- NUMBER --}}
-            @case('number')
-                <input type="number" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
-                    class="form-control"
-                    value="{{ $valor }}"
-                    placeholder="{{ $campo->config['placeholder'] ?? '' }}"
-                   {{ $esRequerido ? 'required' : '' }}>
-            @break
+        {{-- INPUTS BÁSICOS --}}
+        @case('text')
+        @case('email')
+        @case('number')
+        @case('password')
+        @case('enlace')
+          @include('formularios.componentes.input_basico')
+        @break
 
-            {{-- TEXTAREA --}}
-            @case('textarea')
-                <textarea name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
-                    class="form-control"
-                    placeholder="{{ $campo->config['placeholder'] ?? '' }}"
-                   {{ $esRequerido ? 'required' : '' }}>{{ $valor }}</textarea>
-            @break
+        {{-- TEXTAREA --}}
+        @case('textarea')
+          @include('formularios.componentes.textarea')
+            
+        @break
 
-            {{-- CHECKBOX --}}
-            @case('checkbox')
-                @php
-                    $checkedValues = (array) old($campo->nombre, $valoresCampo);
-                @endphp
+        {{-- FECHA / HORA --}}
+        @case('fecha')
+          @include('formularios.componentes.fecha')
+           
+        @break
 
-                <div class="opciones-container" data-campo-id="{{ $campo->id }}">
-                    @foreach($campo->opciones_catalogo as $opcion)
-                        <div class="form-check">
-                            <input type="checkbox"
-                                name="{{ $campo->nombre }}[]"
-                                value="{{ $opcion->catalogo_codigo }}"
-                                class="form-check-input campo-formulario"
-                                id="{{ $campo->nombre }}_{{ $opcion->catalogo_codigo }}"
-                                {{ in_array($opcion->catalogo_codigo, $checkedValues) ? 'checked' : '' }}>
-                            <label class="form-check-label"
-                                for="{{ $campo->nombre }}_{{ $opcion->catalogo_codigo }}">
-                                {{ $opcion->catalogo_descripcion }}
-                            </label>
-                        </div>
-                    @endforeach
-                </div>
+        @case('hora')
+          @include('formularios.componentes.hora')
+           
+        @break
 
-                <button type="button"
-                    class="btn btn-sm btn-primary mt-2 btn-ver-mas-checkbox"
-                    data-campo-id="{{ $campo->id }}">
-                    Ver más...
-                </button>
-            @break
+        {{-- SELECTOR --}}
+        @case('selector')
+          @include('formularios.componentes.selector')
+           
+        @break
 
-            {{-- RADIO --}}
-            @case('radio')
-                <div class="radio-container" data-campo-id="{{ $campo->id }}">
-                    @foreach($campo->opciones_catalogo as $opcion)
-                        <div class="form-check">
-                            <input type="radio"
-                                name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
-                                value="{{ $opcion->catalogo_codigo }}"
-                                class="form-check-input campo-formulario"
-                                id="{{ $campo->nombre }}_{{ $opcion->catalogo_codigo }}"
-                                {{ $valor == $opcion->catalogo_codigo ? 'checked' : '' }}>
-                            <label class="form-check-label"
-                                for="{{ $campo->nombre }}_{{ $opcion->catalogo_codigo }}">
-                                {{ $opcion->catalogo_descripcion }}
-                            </label>
-                        </div>
-                    @endforeach
+        {{-- CHECKBOX --}}
+        @case('checkbox')
+          @include('formularios.componentes.checkbox')
+            
+        @break
 
-                    <button type="button" class="btn btn-sm btn-primary btn-ver-mas mt-2">
-                        Ver más...
-                    </button>
-                </div>
-            @break
+        {{-- RADIO --}}
+        @case('radio')
+          @include('formularios.componentes.radio')
+            
+        @break
 
-            {{-- SELECTOR --}}
-            @case('selector')
-                <div class="d-flex align-items-center gap-2">
-                    <select name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
-                        class="form-select tom-select campo-dinamico"
-                        data-campo-id="{{ $campo->id }}"
-                       {{ $esRequerido ? 'required' : '' }}>
-                        <option value="">Seleccione...</option>
-                        @foreach($campo->opciones_catalogo as $opcion)
-                            <option value="{{ $opcion->catalogo_codigo }}"
-                                {{ $valor == $opcion->catalogo_codigo ? 'selected' : '' }}>
-                                {{ $opcion->catalogo_descripcion }}
-                            </option>
-                        @endforeach
-                    </select>
+        {{-- ARCHIVOS --}}
+        @case('archivo')
+        @include('formularios.componentes.archivo')
+        
+        @break
 
-                    <button type="button"
-                        class="btn btn-outline-secondary btn-sm btn-buscar-opcion"
-                        data-bs-toggle="modal"
-                        data-bs-target="#modalBuscarOpcion"
-                        data-campo-id="{{ $campo->id }}">
-                        <i class="fas fa-search"></i>
-                    </button>
-                </div>
-            @break
+        @case('imagen')
+        @include('formularios.componentes.imagen')
+           
+        @break
 
-            {{-- EMAIL --}}
-            @case('email')
-                <input type="email" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
-                    class="form-control"
-                    value="{{ $valor }}"
-                    placeholder="{{ $campo->config['placeholder'] ?? '' }}"
-                   {{ $esRequerido ? 'required' : '' }}>
-            @break
+        @case('video')
+        @include('formularios.componentes.video')
+           
+        @break
 
-            {{-- PASSWORD --}}
-            @case('password')
-                <input type="password" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
-                    class="form-control"
-                    placeholder="{{ $campo->config['placeholder'] ?? '' }}"
-                   {{ $esRequerido ? 'required' : '' }}>
-            @break
+        {{-- COLOR --}}
+        @case('color')
+        @include('formularios.componentes.color')
 
-            {{-- FECHA --}}
-            @case('fecha')
-                <input type="date" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
-                    class="form-control"
-                    value="{{ $valor ? \Carbon\Carbon::parse($valor)->format('Y-m-d') : '' }}"
-                   {{ $esRequerido ? 'required' : '' }}>
-            @break
+        @break
 
-            {{-- HORA --}}
-            @case('hora')
-                <input type="time" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
-                    class="form-control"
-                    value="{{ $valor ? \Carbon\Carbon::parse($valor)->format('H:i') : '' }}"
-                   {{ $esRequerido ? 'required' : '' }}>
-            @break
+        {{-- AUTOCOMPLETADO (HIDDEN) --}}
+        @case('campo autocompletado')
+        @include('formularios.componentes.autocompletado')
+        @break
 
-            {{-- ARCHIVO --}}
-            @case('archivo')
+        {{-- CAMPO RELACION --}}
+        @case('campo_relacion')
+        @include('formularios.componentes.relacion')
 
-            @if($valor)
-                <div class="mb-2">
-                    <a href="{{ asset('archivos/formulario_'.$form.'/archivos/'.$valor) }}"
-                    target="_blank"
-                    class="btn btn-outline-primary btn-sm">
-                        Ver archivo actual
-                    </a>
-                </div>
-            @endif
+        @break
 
-            <div id="preview_{{ $campo->nombre }}" class="mb-2"></div>
+    @endswitch
 
-            <input type="file"
-                name="{{ $campo->nombre }}"
-                id="{{ $campo->nombre }}"
-                data-preview="preview_{{ $campo->nombre }}"
-                class="form-control"
-                {{ $esRequerido && !$valor ? 'required' : '' }}>
+@if(!$esHidden)
+</div>
+@endif
 
-            @break
-
-            {{-- IMAGEN --}}
-            @case('imagen')
-
-            @if($valor)
-                <div class="mb-2">
-                    <img src="{{ asset('archivos/formulario_'.$form.'/imagenes/'.$valor) }}"
-                        class="img-thumbnail"
-                        style="max-height: 150px">
-                </div>
-            @endif
-
-            <div id="preview_{{ $campo->nombre }}" class="mb-2"></div>
-
-            <input type="file"
-                name="{{ $campo->nombre }}"
-                id="{{ $campo->nombre }}"
-                accept="image/*"
-                data-preview="preview_{{ $campo->nombre }}"
-                class="form-control"
-                {{ $esRequerido && !$valor ? 'required' : '' }}>
-
-            @break
-
-            {{-- VIDEO --}}
-            @case('video')
-
-            @if($valor)
-                <div class="mb-2">
-                    <video controls style="max-width: 100%; max-height: 200px">
-                        <source src="{{ asset('archivos/formulario_'.$form.'/videos/'.$valor) }}">
-                        Tu navegador no soporta video.
-                    </video>
-                </div>
-            @endif
-
-            <div id="preview_{{ $campo->nombre }}" class="mb-2"></div>
-
-            <input type="file"
-                name="{{ $campo->nombre }}"
-                id="{{ $campo->nombre }}"
-                accept="video/*"
-                data-preview="preview_{{ $campo->nombre }}"
-                class="form-control"
-                {{ $esRequerido && !$valor ? 'required' : '' }}>
-
-            @break
+@endforeach
 
 
-            {{-- ENLACE --}}
-            @case('enlace')
-                <input type="url" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
-                    class="form-control"
-                    value="{{ $valor }}"
-                    placeholder="https://..."
-                   {{ $esRequerido ? 'required' : '' }}>
-            @break
-
-            {{-- COLOR --}}
-            @case('color')
-                <input type="color" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
-                    class="form-control form-control-color"
-                    value="{{ $valor }}"
-                   {{ $esRequerido ? 'required' : '' }}>
-            @break
+</div>
+</div>
 
 
 
-            @case('campo autocompletado')
-                <input type="hidden" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
-                    class="form-control campo-autocompletado"
-                    value="{{ $campo->config['autocompletar'] }}"
-                    placeholder="{{ $campo->config['placeholder'] ?? '' }}"
-                   {{ $esRequerido ? 'required' : '' }}
-                   data-campo-id="{{ $campo->id }}">
-            @break
-
-
-            @case('campo_relacion')
-              <input type="text" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
-                    class="form-control"
-                    data-campo-id="{{ $campo->id }}"
-                    value=""
-                    placeholder="{{ $campo->config['placeholder'] ?? '' }}"
-                   {{ $esRequerido ? 'required' : '' }} readonly>
-
-
-
-                   <script>
+<script>
 document.addEventListener('DOMContentLoaded', function () {
 
-    document.querySelectorAll('.campo-dinamico').forEach(select => {
+document.addEventListener('change', function (e) {
 
-        select.addEventListener('change', function () {
+    const select = e.target;
 
-            const valorSeleccionado = this.value;
-            const campoId = this.dataset.campoId;
-            const nombreCampo = this.name;
+    // Solo para selects dinámicos
+    if (!select.classList.contains('campo-dinamico')) return;
 
-            if (!valorSeleccionado) return;
+    // 🔥 Buscar el formulario contenedor
+    const form = select.closest('form');
 
-            fetch("{{ route('campos.obtenerData') }}", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRF-TOKEN": document
-                        .querySelector('meta[name="csrf-token"]')
-                        .getAttribute("content")
-                },
-                body: JSON.stringify({
-                    campo_id: campoId,
-                    nombre: nombreCampo,
-                    valor: valorSeleccionado
-                })
-            })
-            .then(res => res.json())
-            .then(data => {
-                if (!data.success) return;
+    // 🔥 Verificar si el formulario tiene al menos un campo-relacion
+    if (!form || !form.querySelector('.campo-relacion')) return;
 
-                // 🔥 Buscar el input que tenga el campo_referencia
-                const inputRelacionado = document.querySelector(
-                    `[data-campo-id="${data.campo_referencia}"]`
-                );
+    const valorSeleccionado = select.value;
+    const campoId = select.dataset.campoId;
+    const nombreCampo = select.name;
 
-                if (inputRelacionado) {
-                    inputRelacionado.value = data.valor ?? '';
+    if (!valorSeleccionado) return;
+
+    fetch("{{ route('campos.obtenerData') }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": document
+                .querySelector('meta[name="csrf-token"]')
+                .getAttribute("content")
+        },
+        body: JSON.stringify({
+            campo_id: campoId,
+            nombre: nombreCampo,
+            valor: valorSeleccionado
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        if (!data.success) return;
+
+        form.querySelectorAll(`[data-campo-id="${data.campo_referencia}"]`)
+            .forEach(input => {
+
+                if (input.type === 'radio') {
+                    input.checked = input.value == data.valor;
+                } else {
+                    input.value = data.valor ?? '';
                 }
 
-               
-            })
-            .catch(err => console.error('Error:', err));
+            });
 
-        });
+    })
+    .catch(err => console.error('Error:', err));
 
-    });
+});
 
 });
 </script>
-
-            @break
-        @endswitch
-    </div>
-@endforeach
-
-</div>
-</div>
 
 
 <script>
@@ -417,6 +246,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 });
 </script>
+
 @include('formularios.campos.modal_busqueda')
 
 

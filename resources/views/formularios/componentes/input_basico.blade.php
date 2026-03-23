@@ -1,0 +1,2 @@
+<input type="{{ $tipo === 'enlace' ? 'url' : $tipo }}" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}"
+    class="form-control" value="{{ $valor }}" placeholder="{{ $campo->config['placeholder'] ?? '' }}" {{ $esRequerido ? 'required' : '' }}>

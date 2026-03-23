@@ -41,18 +41,25 @@
                         <div class="mt-4">
                             <h5>Registros agregados</h5>
 
-                            <div class="table-responsive">
-                                <table class="table table-bordered table-striped" id="tabla-registros">
-                                    <thead>
-                                        <tr id="thead-dinamico">
-                                            <th>#</th>
-                                            <!-- Se llenará dinámicamente -->
-                                            <th>Acciones</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody></tbody>
-                                </table>
-                            </div>
+                            @if($isMobile)
+
+                                <div id="contenedor-cards"></div>
+
+                            @else
+
+                                <div id="contenedor-tabla" class="table-responsive">
+                                    <table class="table table-bordered table-striped" id="tabla-registros">
+                                        <thead>
+                                            <tr id="thead-dinamico">
+                                                <th>#</th>
+                                                <th>Acciones</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody></tbody>
+                                    </table>
+                                </div>
+
+                            @endif
                         </div>
 
                         <input type="hidden" name="registros_json" id="registros_json">
@@ -83,6 +90,8 @@
 
         <script>
             const AGRUPACION_ACTIVA = @json($formulario->config['agrupacion']['activa'] ?? false);
+            const ES_MOBILE = @json($isMobile);
+
             const CAMPO_INCREMENTO_ID = @json($formulario->config['agrupacion']['campo_incremento'] ?? null);
         </script>
 
@@ -312,13 +321,16 @@
                                 text: suma
                             };
 
-                            renderTabla();
+
+
+
+                            render_informacion();
                             actualizarRegistrosJson();
                             limpiarFormulario();
 
                             alertify.success('Registro agrupado y cantidad incrementada.');
 
-                            return; // NO agregar nuevo registro
+                            return;
                         }
                     }
                 }
@@ -413,7 +425,7 @@
                             crearHiddenArchivos(registro, currentIndex, isEdit);
 
                             alertify.success(data.message);
-                            renderTabla();
+                            render_informacion();
                             limpiarFormulario();
                         }
                         else {
@@ -432,8 +444,10 @@
                         }
 
                     })
-                    .catch(() => {
-                        alertify.error('Error en el servidor.');
+                    .catch((error) => {
+                        console.error(error);
+
+
                     });
 
             }
@@ -534,41 +548,49 @@
                 document.getElementById('registros_json').value =
                     JSON.stringify(registrosLimpios);
             }
+
+
+            function render_informacion() {
+
+                if (ES_MOBILE) {
+                    render_cards();
+                } else {
+                    render_tabla();
+                }
+
+            }
+
             // =============================
             // Render tabla
             // =============================
+            function render_tabla() {
 
-            function renderTabla() {
-
-                let tbody = document.querySelector('#tabla-registros tbody');
-                let thead = document.getElementById('thead-dinamico');
+                const tbody = document.querySelector('#tabla-registros tbody');
+                const thead = document.getElementById('thead-dinamico');
+                const contenedor = document.getElementById('formulario-dinamico');
 
                 tbody.innerHTML = '';
 
-                if (registros.length === 0) {
+                if (!registros || registros.length === 0) {
                     thead.innerHTML = `
-                                                                                                                                                                                                                                                        <th>#</th>
-                                                                                                                                                                                                                                                        <th>Acciones</th>
-                                                                                                                                                                                                                                                    `;
+                                                                        <th>#</th>
+                                                                        <th>Acciones</th>
+                                                                    `;
                     return;
                 }
 
                 // =============================
-                // Generar encabezados dinámicos (USANDO LABELS VISIBLES)
+                // 🔥 CAPTURAR CAMPOS UNA SOLA VEZ
                 // =============================
+                let campos = [];
 
-                thead.innerHTML = `<th>#</th>`;
-
-                let contenedor = document.getElementById('formulario-dinamico');
-                let inputs = contenedor.querySelectorAll('input, select, textarea');
-
-                inputs.forEach(input => {
+                contenedor.querySelectorAll('input, select, textarea').forEach(input => {
 
                     if (!input.name) return;
 
                     let key = input.name.replace('[]', '');
 
-                    if (thead.querySelector(`[data-key="${key}"]`)) return;
+                    if (campos.some(c => c.key === key)) return;
 
                     let grupo = input.closest('.mb-3, .form-group, .col-md-6, .col-md-12');
                     let label = grupo ? grupo.querySelector('label') : null;
@@ -577,10 +599,21 @@
                         ? label.innerText.replace('*', '').trim()
                         : key;
 
-                    let th = document.createElement('th');
-                    th.textContent = textoLabel;
-                    th.setAttribute('data-key', key);
+                    campos.push({
+                        key,
+                        label: textoLabel
+                    });
+                });
 
+                // =============================
+                // 🔥 ENCABEZADOS
+                // =============================
+                thead.innerHTML = `<th>#</th>`;
+
+                campos.forEach(campo => {
+                    let th = document.createElement('th');
+                    th.textContent = campo.label;
+                    th.setAttribute('data-key', campo.key);
                     thead.appendChild(th);
                 });
 
@@ -589,9 +622,8 @@
                 thead.appendChild(thAcciones);
 
                 // =============================
-                // Render filas
+                // 🔥 FILAS
                 // =============================
-
                 registros.forEach((registro, index) => {
 
                     let tr = document.createElement('tr');
@@ -601,95 +633,297 @@
                     tdIndex.textContent = index + 1;
                     tr.appendChild(tdIndex);
 
-                    thead.querySelectorAll('th[data-key]').forEach(th => {
+                    campos.forEach(campo => {
 
-                        let key = th.getAttribute('data-key');
-                        let value = registro[key];
-
+                        let value = registro[campo.key];
                         let td = document.createElement('td');
 
-                        // 1️⃣ Archivo nuevo
-                        if (value && typeof value === 'object' && value.preview) {
-
-                            if (value.file?.type?.startsWith('image')) {
-
-                                td.innerHTML = `
-                                                                                                    <img src="${value.preview}" 
-                                                                                                         style="max-height:60px; border-radius:6px;">
-                                                                                                `;
-
-                            } else if (value.file?.type?.startsWith('video')) {
-
-                                td.innerHTML = `
-                                                                                                    <video src="${value.preview}" 
-                                                                                                           style="max-height:60px;" 
-                                                                                                           controls>
-                                                                                                    </video>
-                                                                                                `;
-
-                            } else {
-
-                                td.innerHTML = `
-                                                                                                    <span class="badge bg-info">
-                                                                                                        ${value.text ?? 'Archivo nuevo'}
-                                                                                                    </span>
-                                                                                                `;
-                            }
-                        }
-
-                        // 2️⃣ Checkbox (array de objetos)
-                        else if (Array.isArray(value)) {
-
-                            td.textContent = value
-                                .map(item => item.text ?? item.value)
-                                .join(', ');
-                        }
-
-                        // 3️⃣ Objeto normal {value, text}
-                        else if (value && typeof value === 'object') {
-
-                            td.textContent = value.text ?? value.value ?? '';
-
-                        }
-
-                        // 4️⃣ Fallback por seguridad
-                        else {
-
-                            td.textContent = value ?? '';
-
-                        }
+                        // 🔥 buscar input SOLO si existe
+                        let inputRef = contenedor.querySelector(`[name="${campo.key}"]`);
+                        // 🔥 protección contra null
+                        td.innerHTML = renderCampoContenido(
+                            value,
+                            inputRef || null,
+                            index,
+                            campo.key
+                        );
 
                         tr.appendChild(td);
                     });
 
                     // =============================
-                    // Acciones
+                    // 🔥 ACCIONES
                     // =============================
-
                     let tdAcciones = document.createElement('td');
                     tdAcciones.innerHTML = `
-                                                                                                                                                                                                                                                        <button type="button" 
-                                                                                                                                                                                                                                                                class="btn btn-sm btn-warning me-2"
-                                                                                                                                                                                                                                                                onclick="editarRegistro(${index})">
-                                                                                                                                                                                                                                                            Editar
-                                                                                                                                                                                                                                                        </button>
-                                                                                                                                                                                                                                                        <button type="button" 
-                                                                                                                                                                                                                                                                class="btn btn-sm btn-danger"
-                                                                                                                                                                                                                                                                onclick="eliminarRegistro(${index})">
-                                                                                                                                                                                                                                                            Eliminar
-                                                                                                                                                                                                                                                        </button>
-                                                                                                                                                                                                                                                    `;
+                                                                        <button type="button" 
+                                                                                class="btn btn-sm btn-warning me-2"
+                                                                                onclick="editarRegistro(${index})">
+                                                                            <i class="fas fa-edit"></i>
+                                                                        </button>
+
+                                                                        <button type="button" 
+                                                                                class="btn btn-sm btn-danger"
+                                                                                onclick="eliminarRegistro(${index})">
+                                                                            <i class="fas fa-trash"></i>
+                                                                        </button>
+                                                                    `;
 
                     tr.appendChild(tdAcciones);
                     tbody.appendChild(tr);
                 });
+
                 actualizarRegistrosJson();
+            }
+
+            function renderCampoContenido(value, input, index, key) {
+
+
+                if (!input) {
+
+                    if (Array.isArray(value)) {
+                        return value.map(v => v.text ?? v.value ?? v).join(', ');
+                    }
+
+                    if (typeof value === 'object') {
+                        return value.text ?? value.value ?? '';
+                    }
+
+                    return value ?? '';
+                }
+
+                // 🔥 AUTOCOMPLETADO
+                if (input.classList.contains('campo-autocompletado')) {
+
+                    let val = 0;
+
+                    if (typeof value === 'object') {
+                        val = parseFloat(value.value ?? 0);
+                    } else {
+                        val = parseFloat(value ?? 0);
+                    }
+
+                    return `
+                                                                                                                                                                                                                                                                                <div class="d-flex align-items-center gap-1">
+
+                                                                                                                                                                                                                                                                                    <span class="fw-bold d-flex align-items-center justify-content-center"
+                                                                                                                                                                                                                                                                                          style="min-width: 25px; height: 22px;">
+                                                                                                                                                                                                                                                                                        ${val}
+                                                                                                                                                                                                                                                                                    </span>
+
+                                                                                                                                                                                                                                                                                    <button class="btn btn-sm btn-outline-success p-0 d-flex align-items-center justify-content-center"
+                                                                                                                                                                                                                                                                                        style="width:22px; height:22px;"
+                                                                                                                                                                                                                                                                                        onclick="cambiarValor(${index}, '${key}', 1)">
+                                                                                                                                                                                                                                                                                        +
+                                                                                                                                                                                                                                                                                    </button>
+
+                                                                                                                                                                                                                                                                                    ${val > 1 ? `
+                                                                                                                                                                                                                                                                                        <button class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center"
+                                                                                                                                                                                                                                                                                            style="width:22px; height:22px;"
+                                                                                                                                                                                                                                                                                            onclick="cambiarValor(${index}, '${key}', -1)">
+                                                                                                                                                                                                                                                                                            -
+                                                                                                                                                                                                                                                                                        </button>
+                                                                                                                                                                                                                                                                                    ` : ''}
+
+                                                                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                                                                            `;
+                }
+
+                // ARCHIVOS (IMAGEN / VIDEO / OTROS)
+                if (value && typeof value === 'object' && value.preview) {
+
+                    // IMAGEN
+                    if (value.file?.type?.startsWith('image')) {
+
+                        return `
+                                                                                                                                        <a href="${value.preview}" 
+                                                                                                                           data-fancybox="gallery"
+                                                                                                                           class="ver-link">
+                                                                                                                           <i class="fas fa-image"></i> Ver imagen
+                                                                                                                        </a>
+                                                                                                                                                                    `;
+
+                        // VIDEO
+                    } else if (value.file?.type?.startsWith('video')) {
+
+                        return `
+                                                                                                                                                <a href="${value.preview}" target="_blank">
+                                                                                                                                <i class="fas fa-video"></i> Ver video
+                                                                                                                            </a>
+                                                                                                                                                                    `;
+
+                        // OTROS ARCHIVOS
+                    } else {
+
+                        return `
+                                                                                                                                                                        <a href="${value.preview}" 
+                                                                                                                                                                           target="_blank">
+                                                                                                                                                                           <i class="fas fa-file"></i> Ver archivo
+                                                                                                                                                                        </a>
+                                                                                                                                                                    `;
+                    }
+                }
+
+                // ARRAY
+                if (Array.isArray(value)) {
+                    return value.map(i => i.text ?? i.value).join(', ');
+                }
+
+                // OBJETO
+                if (value && typeof value === 'object') {
+                    return value.text ?? value.value ?? '';
+                }
+
+                // 🔥 SIMPLE
+                return value ?? '';
+            }
+
+            function render_cards() {
+
+                let contenedor = document.getElementById('contenedor-cards');
+                contenedor.className = 'row';
+                contenedor.innerHTML = '';
+
+                if (!registros || registros.length === 0) {
+                    contenedor.innerHTML = `
+                                                                                                                                                                                                                                <div class="text-center text-muted py-2">
+                                                                                                                                                                                                                                    No hay registros
+                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                            `;
+                    return;
+                }
+
+                let inputs = document.querySelectorAll('#formulario-dinamico input, #formulario-dinamico select, #formulario-dinamico textarea');
+
+                let campos = [];
+
+                inputs.forEach(input => {
+
+                    if (!input.name) return;
+
+                    let key = input.name.replace('[]', '');
+
+                    if (campos.some(c => c.key === key)) return;
+
+                    let grupo = input.closest('.mb-3, .form-group, .col-md-6, .col-md-12');
+                    let label = grupo ? grupo.querySelector('label') : null;
+
+                    let textoLabel = label
+                        ? label.innerText.replace('*', '').trim()
+                        : key;
+
+                    campos.push({
+                        key,
+                        label: textoLabel,
+                        input
+                    });
+                });
+
+                // =============================
+                // 🔥 CARDS COMPACTAS
+                // =============================
+
+                registros.forEach((registro, index) => {
+
+                    let contenido = '';
+
+                    campos.forEach(campo => {
+
+                        let value = registro[campo.key];
+
+                        let htmlCampo = renderCampoContenido(
+                            value,
+                            campo.input,
+                            index,
+                            campo.key
+                        );
+
+                        contenido += `
+                                                                                                                                                                                                                                    <div class="col-6 mb-1">
+                                                                                                                                                                                                                                        <small class="text-muted d-block" style="font-size:11px;">
+                                                                                                                                                                                                                                          <strong>  ${campo.label}</strong> 
+                                                                                                                                                                                                                                        </small>
+                                                                                                                                                                                                                                        <div style="font-size:13px; line-height:1.2;">
+                                                                                                                                                                                                                                            ${htmlCampo}
+                                                                                                                                                                                                                                        </div>
+                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                `;
+                    });
+
+                    let card = document.createElement('div');
+                    card.className = 'card mb-2 shadow-sm border-0';
+
+                    card.innerHTML = `
+                                                                                                                                                                                                                                <div class="card-body p-2">
+
+                                                                                                                                                                                                                                    <!-- HEADER -->
+                                                                                                                                                                                                                                    <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                                                                                                                                                                                        <span class="badge bg-secondary" style="font-size:11px;">
+                                                                                                                                                                                                                                            #${index + 1}
+                                                                                                                                                                                                                                        </span>
+
+                                                                                                                                                                                                                                        <div class="d-flex gap-1">
+                                                                                                                                                                                                                                        <button type='button' class="btn btn-xs btn-warning p-1 px-2"
+                                                                                                                                                                                                                                            title="Editar"
+                                                                                                                                                                                                                                            onclick="editarRegistro(${index})">
+                                                                                                                                                                                                                                            <i class="fas fa-edit"></i>
+                                                                                                                                                                                                                                        </button>
+
+                                                                                                                                                                                                                                        <button type='button'  class="btn btn-xs btn-danger p-1 px-2"
+                                                                                                                                                                                                                                            title="Eliminar"
+                                                                                                                                                                                                                                            onclick="eliminarRegistro(${index})">
+                                                                                                                                                                                                                                            <i class="fas fa-trash"></i>
+                                                                                                                                                                                                                                        </button>
+                                                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                                    </div>
+
+                                                                                                                                                                                                                                    <!-- CONTENIDO -->
+                                                                                                                                                                                                                                    <div class="row gx-2">
+                                                                                                                                                                                                                                        ${contenido}
+                                                                                                                                                                                                                                    </div>
+
+                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                            `;
+                    let col = document.createElement('div');
+                    col.className = 'col-12 col-sm-6 col-md-4 col-lg-3 mb-2';
+
+                    col.appendChild(card);
+                    contenedor.appendChild(col);
+                });
+
+                actualizarRegistrosJson();
+            }
+
+            function cambiarValor(index, key, cambio) {
+
+                let registro = registros[index];
+
+                if (!registro[key]) return;
+
+                let actual = 0;
+
+                if (typeof registro[key] === 'object') {
+                    actual = parseFloat(registro[key].value ?? 0);
+                } else {
+                    actual = parseFloat(registro[key] ?? 0);
+                }
+
+                let nuevo = actual + cambio;
+
+                // mínimo 0
+                if (nuevo < 0) nuevo = 0;
+
+                registro[key] = {
+                    value: nuevo,
+                    text: nuevo
+                };
+
+                render_informacion();
             }
 
             // =============================
             // Editar
             // =============================
-
             function editarRegistro(index) {
 
                 let registro = registros[index];
@@ -701,132 +935,214 @@
                 document.getElementById('btn-agregar-registro').textContent = 'Actualizar registro';
 
                 // =============================
-                // Limpiar formulario antes
+                // 1️⃣ LIMPIAR FORMULARIO
                 // =============================
-
                 inputs.forEach(input => {
 
                     if (input.type === 'checkbox' || input.type === 'radio') {
                         input.checked = false;
-                    } else if (input.type !== 'file') {
+                    }
+                    else if (input.type !== 'file') {
                         input.value = '';
                     }
 
-                    // Limpiar previews
+                    // Limpiar preview
                     if (input.dataset.preview) {
-                        let previewContainer = document.getElementById(input.dataset.preview);
-                        if (previewContainer) previewContainer.innerHTML = '';
+                        let preview = document.getElementById(input.dataset.preview);
+                        if (preview) preview.innerHTML = '';
+                    }
+
+                    // Reset TomSelect
+                    if (input.classList.contains('tom-select') && input.tomselect) {
+                        input.tomselect.clear();
                     }
 
                 });
 
                 // =============================
-                // Cargar valores del registro
+                // 2️⃣ CARGAR DATOS
                 // =============================
-
                 for (let key in registro) {
 
                     let value = registro[key];
 
-                    let campo = document.querySelector(`[name="${key}"]`);
-                    let campoArray = document.querySelectorAll(`[name="${key}[]"]`);
+                    let campo = contenedor.querySelector(`[name="${key}"]`);
+                    let campoArray = contenedor.querySelectorAll(`[name="${key}[]"]`);
 
                     // =============================
-                    // 1️⃣ Checkboxes múltiples
+                    // CHECKBOX
                     // =============================
-
                     if (campoArray.length > 0 && Array.isArray(value)) {
 
                         campoArray.forEach(el => {
-                            el.checked = value.includes(el.value);
+                            el.checked = value.some(v => {
+                                if (typeof v === 'object') {
+                                    return v.value == el.value;
+                                }
+                                return v == el.value;
+                            });
                         });
 
                     }
 
                     // =============================
-                    // 2️⃣ Radio buttons
+                    // RADIO
                     // =============================
-
                     else if (campo && campo.type === 'radio') {
 
-                        let radios = document.querySelectorAll(`[name="${key}"]`);
+                        let radios = contenedor.querySelectorAll(`[name="${key}"]`);
                         radios.forEach(radio => {
-                            radio.checked = (radio.value === value);
+                            radio.checked = (radio.value == value);
                         });
 
                     }
 
                     // =============================
-                    // 3️⃣ Archivo NUEVO (con preview)
+                    // FILE / PREVIEW
                     // =============================
-
                     else if (campo && campo.type === 'file') {
 
+                        let preview = document.getElementById(campo.dataset.preview);
+
+                        if (!preview) return;
+
+                        // archivo nuevo (temporal)
                         if (value && typeof value === 'object' && value.preview) {
 
-                            let previewContainer = document.getElementById(campo.dataset.preview);
+                            if (value.file?.type?.startsWith('image')) {
 
-                            if (previewContainer) {
+                                preview.innerHTML = `
+                                                                                                                                                                                                                                                                                                                                                                                                                            <img src="${value.preview}" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                 style="max-height:150px;border-radius:8px;">
+                                                                                                                                                                                                                                                                                                                                                                                                                        `;
 
-                                if (value.file?.type?.startsWith('image')) {
+                            } else if (value.file?.type?.startsWith('video')) {
 
-                                    previewContainer.innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <img src="${value.preview}" 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             style="max-height:150px;border-radius:8px;">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    `;
+                                preview.innerHTML = `
+                                                                                                                                                                                                                                                                                                                                                                                                                            <video src="${value.preview}" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                   style="max-height:150px;" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                   controls></video>
+                                                                                                                                                                                                                                                                                                                                                                                                                        `;
 
-                                }
-                                else if (value.file?.type?.startsWith('video')) {
+                            } else {
 
-                                    previewContainer.innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <video src="${value.preview}" 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               style="max-height:150px;" 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                               controls>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </video>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    `;
-
-                                }
-                                else {
-
-                                    previewContainer.innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="alert alert-info p-2">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            Archivo seleccionado previamente
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    `;
-                                }
+                                preview.innerHTML = `
+                                                                                                                                                                                                                                                                                                                                                                                                                            <div class="alert alert-info p-2">
+                                                                                                                                                                                                                                                                                                                                                                                                                                Archivo seleccionado previamente
+                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                        `;
                             }
+
                         }
 
-                        // Si es archivo existente (string desde BD)
+                        // archivo ya guardado
                         else if (typeof value === 'string' && value !== '') {
 
-                            let previewContainer = document.getElementById(campo.dataset.preview);
-
-                            if (previewContainer) {
-                                previewContainer.innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="alert alert-secondary p-2">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        Archivo guardado actualmente
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                `;
-                            }
+                            preview.innerHTML = `
+                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="alert alert-secondary p-2">
+                                                                                                                                                                                                                                                                                                                                                                                                                            Archivo guardado actualmente
+                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                    `;
                         }
 
                     }
 
                     // =============================
-                    // 4️⃣ Campo normal
+                    // SELECT + TOMSELECT 🔥
                     // =============================
+                    else if (campo && campo.tagName === 'SELECT') {
+
+                        if (campo.classList.contains('tom-select') && campo.tomselect) {
+
+                            let val = value;
+
+                            // Si viene como objeto 🔥
+                            if (typeof value === 'object' && value !== null) {
+                                val = value.value ?? value.id ?? value.codigo ?? '';
+                            }
+
+                            // Si no existe la opción → crearla
+                            if (val && !campo.querySelector(`option[value="${val}"]`)) {
+
+                                let texto = value.text ?? value.label ?? val;
+
+                                campo.tomselect.addOption({
+                                    value: val,
+                                    text: texto
+                                });
+
+                            }
+
+                            campo.tomselect.setValue(val);
+
+                        } else {
+
+                            campo.value = value ?? '';
+                        }
+
+                        // Disparar relación
+                        campo.dispatchEvent(new Event('change', { bubbles: true }));
+                    }
+
+
+                    else if (campo && campo.type === 'hidden' && campo.classList.contains('campo-autocompletado')) {
+
+
+                        let base = campo.dataset.default ?? campo.value ?? 0;
+
+                        campo.value = base;
+
+                    }
 
                     else if (campo) {
 
-                        campo.value = value ?? '';
+                        let val = getValorPlano(value);
+
+                        switch (campo.type) {
+
+                            case 'date':
+                                // ⚠️ Asegurar formato YYYY-MM-DD
+                                if (val && val.includes('/')) {
+                                    let partes = val.split('/');
+                                    val = `${partes[2]}-${partes[1]}-${partes[0]}`;
+                                }
+                                campo.value = val;
+                                break;
+
+                            case 'number':
+                                campo.value = parseFloat(val) || '';
+                                break;
+
+                            case 'color':
+                                campo.value = val || '#000000';
+                                break;
+
+                            case 'password':
+                                campo.value = ''; // 🔐 nunca rellenar passwords
+                                break;
+
+                            default:
+                                campo.value = val;
+                        }
 
                     }
 
                 }
+
             }
 
+            function getValorPlano(val) {
 
+                if (Array.isArray(val)) {
+                    return val.map(v => getValorPlano(v)).join(', ');
+                }
+
+                if (val && typeof val === 'object') {
+                    return val.value ?? val.text ?? val.label ?? val.id ?? '';
+                }
+
+                return val ?? '';
+            }
 
             // =============================
             // Eliminar
@@ -839,12 +1155,12 @@
                 // Reset encabezado si ya no hay registros
                 if (registros.length === 0) {
                     document.getElementById('thead-dinamico').innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <th>#</th>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <th>Acciones</th>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <th>#</th>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <th>Acciones</th>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                `;
                 }
 
-                renderTabla();
+                render_informacion();
             }
 
 

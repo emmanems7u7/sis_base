@@ -2,7 +2,6 @@
 
 @section('content')
 
-
     <div class="row">
         <div class="col-md-6">
             <div class="card">
@@ -214,7 +213,59 @@
         </div>
     </div>
 
+    <script>
+document.addEventListener('DOMContentLoaded', function () {
 
+    document.querySelectorAll('.config-relacion').forEach(function (bloque) {
+
+        const selectFormulario = bloque.querySelector('.selectFormulario');
+        const selectCampos = bloque.querySelector('.selectCampos');
+
+        const relacionActual = bloque.dataset.relacion
+            ? JSON.parse(bloque.dataset.relacion)
+            : null;
+
+        function cargarCampos(formId, campoSeleccionado = null) {
+
+            selectCampos.innerHTML = '<option value="">Seleccione un campo</option>';
+            if (!formId) return;
+           
+   
+            const formulario = window.formulariosRef.find(f => f.id == formId);
+            if (!formulario) return;
+            formulario.campos.forEach(campo => {
+
+                const option = document.createElement('option');
+                option.value = campo.id;
+                option.textContent = campo.etiqueta;
+
+                if (campoSeleccionado && campo.id == campoSeleccionado) {
+                    option.selected = true;
+                }
+
+                selectCampos.appendChild(option);
+            });
+        }
+
+        selectFormulario.addEventListener('change', function () {
+        
+            cargarCampos(this.value);
+
+        });
+
+        if (relacionActual) {
+            selectFormulario.value = relacionActual.form_ref_id;
+
+            cargarCampos(
+                relacionActual.form_ref_id,
+                relacionActual.campo_ref_id
+            );
+        }
+
+    });
+
+});
+</script>
 
     <!-- Lista de campos -->
     <div id="listaCampos" class="row g-2 mb-2 mt-2">
@@ -270,6 +321,54 @@
             </div>
         @endforeach
     </div>
+
+
+    <script>
+document.addEventListener('click', function (e) {
+
+    /* =====================================================
+       GUARDAR RELACION
+    ===================================================== */
+    if (e.target.classList.contains('boton_relacion')) {
+
+        e.preventDefault();
+
+        const bloque = e.target.closest('.config-campo');
+
+        const formularioId = bloque.querySelector('.selectFormulario')?.value;
+        const campoId = bloque.querySelector('.selectCampos')?.value;
+
+        if (!formularioId || !campoId) {
+            alertify.warning('Debe seleccionar formulario y campo');
+            return;
+        }
+
+        fetch("{{ route('campos.guardarRelacion') }}", {
+            method: "POST",
+            headers: {
+                "Content-Type": "application/json",
+                "X-CSRF-TOKEN": document
+                    .querySelector('meta[name="csrf-token"]')
+                    .getAttribute("content")
+            },
+            body: JSON.stringify({
+                campo_principal_id: e.target.dataset.campo,
+                form_ref_id: formularioId,
+                campo_ref_id: campoId
+            })
+        })
+        .then(res => res.json())
+        .then(data => {
+            data.success
+                ? alertify.success(data.message)
+                : alertify.error('Error al guardar');
+        });
+    }
+
+
+});
+</script>
+
     @include('formularios.campos.modal_busqueda')
     <script>
     window.routes = {
@@ -304,6 +403,9 @@
     <script>
         document.addEventListener('DOMContentLoaded', function () {
 
+
+
+            
             document.querySelectorAll('.toggle-visible-listado').forEach(function (checkbox) {
 
                 checkbox.addEventListener('change', function () {

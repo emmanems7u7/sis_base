@@ -1,5 +1,9 @@
 <div class="tab-pane fade" id="content-avanzadas" role="tabpanel" aria-labelledby="tab-avanzadas">
 
+
+<div class="row">
+@if( $formulario->config['registro_multiple'])
+    <div class="col-md-6">
     <div class="card shadow-sm border-0">
         <div class="card-body">
 
@@ -60,8 +64,21 @@
 
         </div>
     </div>
+@endif
+
+
+    </div>
+    <div class="col-md-6"></div>
 
 </div>
+ 
+
+
+
+</div>
+
+
+
 
 <script>
 document.addEventListener('DOMContentLoaded', function(){
@@ -115,7 +132,7 @@ document.addEventListener('DOMContentLoaded', function(){
                 }
 
             }catch(error){
-                alertify.error('Error en el servidor.');
+                alertify.error('Error en el servidor.sss');
             }
 
         });

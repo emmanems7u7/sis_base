@@ -361,6 +361,8 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/campos/guardar/relacion', [CamposFormController::class, 'guardarRelacion'])->name('campos.guardarRelacion');
 
+    Route::post('/campos/guardar/calculado', [CamposFormController::class, 'guardarCalculado'])->name('campos.guardarCalculado');
+
     Route::post('/campos/obtener/data', [CamposFormController::class, 'obtenerData'])->name('campos.obtenerData');
 
     Route::get('/respuestas/{respuesta}/edit/{modulo}', [RespuestasFormController::class, 'edit'])

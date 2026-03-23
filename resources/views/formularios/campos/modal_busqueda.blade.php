@@ -1,4 +1,3 @@
-<!-- Modal de búsqueda -->
 <div class="modal fade" id="modalBusqueda" tabindex="-1" aria-hidden="true" data-bs-backdrop="static"
     data-bs-keyboard="false">
     <div class="modal-dialog modal-sm modal-dialog-centered">
