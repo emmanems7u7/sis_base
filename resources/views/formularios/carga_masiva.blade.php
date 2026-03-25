@@ -93,7 +93,7 @@
     <script>
         document.getElementById('btnImport').addEventListener('click', async () => {
             const archivo = document.getElementById('archivoImport').files[0];
-            if (!archivo) return alertify.error('Selecciona un archivo primero.');
+            if (!archivo) return mostrarAlerta('error', 'Selecciona un archivo primero.');
 
             const formData = new FormData();
             formData.append('archivo', archivo);
@@ -134,7 +134,7 @@
             if (erroresTotales.length > 0) {
                 document.getElementById('erroresImport').innerHTML = erroresTotales.join('<br>');
             } else {
-                alertify.success('Importación completada sin errores.');
+                mostrarAlerta('error', 'Importación completada sin errores.');
             }
         });
     </script>

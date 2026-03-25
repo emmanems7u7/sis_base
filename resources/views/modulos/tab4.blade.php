@@ -89,11 +89,11 @@
                 .then(r => r.json())
                 .then(r => {
                     r.success
-                        ? alertify.success(r.mensaje)
-                        : alertify.error('No se pudo actualizar');
+                        ? mostrarAlerta('success', r.mensaje)
+                        : mostrarAlerta('error', 'No se pudo actualizar');
                 })
                 .catch(() => {
-                    alertify.error('Error de conexión');
+                    mostrarAlerta('error', 'Error de conexión');
                     this.checked = !this.checked;
                 });
         });
@@ -116,13 +116,16 @@
 
                 const data = await res.json();
                 if (data.success) {
-                    if (typeof alertify !== 'undefined') alertify.success('Configuración actualizada');
+                    if (typeof alertify !== 'undefined')
+                        mostrarAlerta('success', 'Configuración actualizada');
                 } else {
-                    if (typeof alertify !== 'undefined') alertify.error('Error al actualizar configuración');
+                    if (typeof alertify !== 'undefined')
+                        mostrarAlerta('error', 'Error al actualizar configuración');
+
                 }
             } catch (err) {
                 console.error(err);
-                if (typeof alertify !== 'undefined') alertify.error('Error en la conexión');
+                if (typeof alertify !== 'undefined') mostrarAlerta('error', 'Error en la conexión');
             }
         });
     });

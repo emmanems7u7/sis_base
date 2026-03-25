@@ -85,7 +85,7 @@
                     modal.show();
                 }
                 else {
-                    alertify.error(data.error);
+                    mostrarAlerta('error', data.error);
                 }
 
             });

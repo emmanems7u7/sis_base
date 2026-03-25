@@ -1,6 +1,9 @@
-@if($valor)
-    <video controls style="max-height:200px" class="mb-2">
-        <source src="{{ asset('archivos/formulario_' . $form . '/videos/' . $valor) }}">
-    </video>
-@endif
-<input type="file" name="{{ $campo->nombre }}" accept="video/*" class="form-control" {{ $esRequerido ? 'required' : '' }}>
+<div class="preview-archivo mb-2">
+    @if($valor)
+        <a href="{{ asset('archivos/formulario_' . $form . '/videos/' . $valor) }}" target="_blank">
+            <i class="fas fa-video"></i> Ver video
+        </a>
+    @endif
+</div>
+<input type="file" data-tipo="{{ $campo->campo_nombre }}" name="{{ $campo->nombre }}" accept="video/*"
+    class="form-control" {{ $esRequerido ? 'required' : '' }}>

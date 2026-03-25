@@ -103,7 +103,7 @@ document.addEventListener('DOMContentLoaded', function(){
             const campoIncremento = document.getElementById('campoIncremento').value;
 
             if(activa && !campoIncremento){
-                alertify.error('Debe seleccionar el campo que se incrementará.');
+                mostrarAlerta('error', 'Debe seleccionar el campo que se incrementará.');
                 return;
             }
 
@@ -126,13 +126,15 @@ document.addEventListener('DOMContentLoaded', function(){
                 const data = await response.json();
 
                 if(data.success){
-                    alertify.success(data.message);
+                    mostrarAlerta('success', data.message);
                 }else{
-                    alertify.error('No se pudo guardar la configuración.');
+                    mostrarAlerta('error', 'No se pudo guardar la configuración.');
+
                 }
 
             }catch(error){
-                alertify.error('Error en el servidor.sss');
+                mostrarAlerta('error', 'Error en el servidor.');
+
             }
 
         });

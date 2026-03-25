@@ -192,7 +192,7 @@
                 restaurarInicio()
                 document.getElementById('modal-tipo-accion').value = '';
                 limpiarModal()
-                alertify.success('Acción creada correctamente.')
+                mostrarAlerta('success', 'Acción creada correctamente.');
             });
         function restaurarInicio() {
 
@@ -386,17 +386,19 @@
 
             container.querySelector('.remove-condicion-modal')
                 .addEventListener('click', () => {
-                    alertify.confirm(
-                        'Eliminar condición',
-                        '¿Estás seguro de que deseas eliminar esta condición?',
-                        function () {
+
+                    mostrarAlerta('confirm', '¿Estás seguro de que deseas eliminar esta condición?', {
+                        titulo: 'Eliminar condición',
+                        onOk: () => {
                             container.remove();
-                            alertify.success('Condición eliminada');
+                            mostrarAlerta('success', 'Condición eliminada');
                         },
-                        function () {
-                            alertify.message('Acción cancelada');
+                        onCancel: () => {
+
                         }
-                    ).set('labels', { ok: 'Sí, eliminar', cancel: 'Cancelar' });
+                    });
+
+
                 });
             document.getElementById('condiciones-modal-container').appendChild(container);
         }
@@ -598,7 +600,7 @@
         document.getElementById('guardar-accion-modal').addEventListener('click', async () => {
             const tipoAccion = document.getElementById('modal-tipo-accion').value;
             if (!tipoAccion) {
-                alertify.warning('Seleccione un tipo de acción');
+                mostrarAlerta('warning', 'Seleccione un tipo de acción');
                 return;
             }
 
@@ -610,12 +612,14 @@
 
                 const operacion = document.getElementById('modal-operacion').value;
                 if (operacion == -1) {
-                    alertify.warning('Seleccione un tipo de operación');
+                    mostrarAlerta('warning', 'Seleccione un tipo de operación');
                     return;
                 }
 
                 if (!accionObj.form_ref_id || !accionObj.campo_ref_id || !accionObj.operacion || !accionObj.valor) {
-                    alertify.warning('Complete todos los campos obligatorios para la acción "Modificar Campo".');
+
+                    mostrarAlerta('warning', 'Complete todos los campos obligatorios para la acción "Modificar Campo".');
+
                     return;
                 }
             }
@@ -625,7 +629,9 @@
                 const radioSeleccionado = document.querySelector('#formularios-relacionados input[name="listGroupRadio"]:checked');
 
                 if (usarRelacion && !radioSeleccionado) {
-                    alertify.warning('Seleccione un formulario relacionado.');
+
+                    mostrarAlerta('warning', 'Seleccione un formulario relacionado.');
+
                     return;
                 }
 
@@ -642,12 +648,14 @@
                     const estaBloqueadoPorRadio = usarRelacion && radioSeleccionado && formRefId === radioSeleccionado.value;
 
                     if (check?.checked && !selectOrigen.value) {
-                        alertify.warning('Seleccione un campo de origen para todas las filas marcadas.');
+                        mostrarAlerta('warning', 'Seleccione un campo de origen para todas las filas marcadas.');
+
                         return;
                     }
 
                     if (!check?.checked && !estaBloqueadoPorRadio && inputDestino?.hasAttribute('required') && !inputDestino.value) {
-                        alertify.warning('Complete todos los campos obligatorios de destino.');
+                        mostrarAlerta('warning', 'Complete todos los campos obligatorios de destino.');
+
                         return;
                     }
                 }
@@ -676,20 +684,26 @@
 
                 // Usuarios o roles (al menos uno)
                 if (usuarios.length === 0 && roles.length === 0) {
-                    alertify.warning('Seleccione al menos un usuario o un rol.');
+
+                    mostrarAlerta('warning', 'Seleccione al menos un usuario o un rol.');
+
                     return;
                 }
 
                 // Asunto obligatorio
                 if (!subject) {
-                    alertify.warning('El asunto del correo es obligatorio.');
+
+                    mostrarAlerta('warning', 'El asunto del correo es obligatorio.');
+
                     document.getElementById('modal-email-subject').focus();
                     return;
                 }
 
                 // Mensaje obligatorio
                 if (!body) {
-                    alertify.warning('El mensaje del correo es obligatorio.');
+
+                    mostrarAlerta('warning', 'El mensaje del correo es obligatorio.');
+
                     document.getElementById('modal-email-body').focus();
                     return;
                 }
@@ -697,7 +711,9 @@
 
                 // Plantilla obligatoria
                 if (!plantilla) {
-                    alertify.warning('Debe seleccionar una plantilla.');
+
+                    mostrarAlerta('warning', 'Debe seleccionar una plantilla.');
+
                     document.getElementById('email-template').focus();
                     return false;
                 }
@@ -706,7 +722,9 @@
 
             let condicionesInvalidas = accionObj.condiciones.some(c => !c.campo_condicion_origen || !c.operador || !c.campo_condicion_destino);
             if (condicionesInvalidas) {
-                alertify.warning('Complete todos los campos de las condiciones.');
+
+                mostrarAlerta('warning', 'Complete todos los campos de las condiciones.');
+
                 return;
             }
 
@@ -820,11 +838,10 @@
 
             if (index < 0 || index >= accionesArray.length) return;
 
-            alertify.confirm(
-                'Confirmar eliminación',
-                '¿Está seguro de eliminar esta acción?',
-                function () {
 
+            mostrarAlerta('confirm', '¿Está seguro de eliminar esta acción?', {
+                titulo: 'Confirmar eliminación',
+                onOk: () => {
                     accionesArray.splice(index, 1);
 
                     accionesJSONInput.value = JSON.stringify(accionesArray);
@@ -843,14 +860,12 @@
                         document.getElementById('contenedor_botones')?.classList.add('d-none');
                         document.getElementById('contenedor_condiciones')?.classList.add('d-none');
                     }
-
-                    alertify.success('Acción eliminada correctamente');
-
+                    mostrarAlerta('success', 'Acción eliminada correctamente');
                 },
-                function () {
-                    alertify.message('Eliminación cancelada');
+                onCancel: () => {
                 }
-            ).set('labels', { ok: 'Sí, eliminar', cancel: 'Cancelar' });
+            });
+
         }
         function generarContenidoAccion(accionObj, index) {
 
@@ -1052,19 +1067,20 @@
                         li.appendChild(button);
 
                         li.querySelector('button').onclick = () => {
-                            alertify.confirm(
-                                'Confirmación',
-                                '¿Está seguro de quitar este usuario de la lista?',
-                                function () {
+
+
+                            mostrarAlerta('confirm', '¿Está seguro de quitar este usuario de la lista?', {
+                                titulo: 'Confirmación',
+                                onOk: () => {
                                     usuariosSeleccionados = usuariosSeleccionados.filter(id => id !== String(userId));
                                     userList.removeChild(li);
                                     actualizarHiddenUsuarios();
-                                    alertify.success('Usuario eliminado');
+                                    mostrarAlerta('success', 'Usuario eliminado');
                                 },
-                                function () {
-                                    alertify.message('Acción cancelada');
+                                onCancel: () => {
                                 }
-                            );
+                            });
+
                         };
 
                         userList.appendChild(li);
@@ -1125,15 +1141,27 @@
             const nombreRegla = document.querySelector('input[name="nombre"]').value.trim();
             const formularioOrigen = formularioPrincipal.value;
             const evento = document.querySelector('select[name="evento"]').value;
-            if (!nombreRegla) { alertify.error('Ingrese el nombre de la regla'); return; }
-            if (!formularioOrigen) { alertify.error('Seleccione el formulario de origen'); return; }
-            if (!evento) { alertify.error('Seleccione el evento'); return; }
+            if (!nombreRegla) {
+
+                mostrarAlerta('error', 'Ingrese el nombre de la regla');
+                return;
+            }
+            if (!formularioOrigen) {
+                mostrarAlerta('error', 'Seleccione el formulario de origen');
+                return;
+            }
+            if (!evento) {
+                mostrarAlerta('error', 'Seleccione el evento');
+
+                return;
+            }
 
 
             const tipoAccionSelect = document.getElementById('modal-tipo-accion');
 
             if (tipoAccionSelect.value == "") {
-                alertify.warning('Seleccione un tipo de Acción');
+                mostrarAlerta('warning', 'Seleccione un tipo de Acción');
+
                 return
             }
 
@@ -1259,7 +1287,8 @@
                                         const campoOrigenText = selectCampoOrigen.options[selectCampoOrigen.selectedIndex]?.text || '';
 
                                         if (!campoRelacion || !condicion || !campoOrigen) {
-                                            alertify.warning('Complete todos los campos del filtro.');
+
+                                            mostrarAlerta('error', 'Complete todos los campos del filtro.');
                                             return;
                                         }
 
@@ -1275,18 +1304,20 @@
 
                                         const btnCerrar = badge.querySelector('button');
                                         btnCerrar.addEventListener('click', () => {
-                                            alertify.confirm(
-                                                'Eliminar filtro',
-                                                '¿Está seguro de que desea eliminar este filtro?',
-                                                function () {
+
+
+                                            mostrarAlerta('confirm', '¿Está seguro de que desea eliminar este filtro?', {
+                                                titulo: 'Eliminar filtro',
+                                                onOk: () => {
                                                     delete filtrosGuardados[filtroId]; // eliminar del objeto
                                                     badge.remove();
-                                                    alertify.success('Filtro eliminado');
+                                                    mostrarAlerta('success', 'Filtro eliminado');
                                                 },
-                                                function () {
-                                                    alertify.message('Acción cancelada');
+                                                onCancel: () => {
                                                 }
-                                            ).set('labels', { ok: 'Sí', cancel: 'Cancelar' });
+                                            });
+
+
                                         });
 
                                         filtrosContainer.appendChild(badge);

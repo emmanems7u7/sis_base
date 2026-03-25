@@ -1,5 +1,11 @@
-@if($valor)
-    <img src="{{ asset('archivos/formulario_' . $form . '/imagenes/' . $valor) }}" class="img-thumbnail mb-2"
-        style="max-height:150px">
-@endif
-<input type="file" name="{{ $campo->nombre }}" accept="image/*" class="form-control" {{ $esRequerido ? 'required' : '' }}>
+<div class="preview-archivo mb-2">
+    @if($valor)
+        <a href="{{ asset('archivos/formulario_' . $form . '/imagenes/' . $valor) }}"
+            data-fancybox="imagenes_{{ $campo->id }}" data-caption="Imagen" class="text-primary">
+            <i class="fas fa-image"></i> Ver imagen
+        </a>
+    @endif
+</div>
+
+<input type="file" data-tipo="{{ $campo->campo_nombre }}" name="{{ $campo->nombre }}" accept="image/*"
+    class="form-control" {{ $esRequerido ? 'required' : '' }}>

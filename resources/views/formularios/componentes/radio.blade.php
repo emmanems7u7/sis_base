@@ -2,6 +2,7 @@
      @foreach($campo->opciones_catalogo as $opcion)
             <div class="form-check">
                 <input type="radio"
+                data-tipo="{{ $campo->campo_nombre }}"
                         name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" 
                                 value="{{ $opcion->catalogo_codigo }}"
                                 class="form-check-input campo-formulario"
@@ -14,7 +15,7 @@
                         </div>
                     @endforeach
 
-                    <button type="button" class="btn btn-sm btn-primary btn-ver-mas mt-2">
+                    <button type="button" class="btn btn-sm btn-outline-primary btn-ver-mas mt-2">
                         Ver más...
                     </button>
 </div>

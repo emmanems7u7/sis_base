@@ -121,13 +121,12 @@
                 })
                 .then(data => {
                     loader.style.display = 'none';
-
-                    alertify.success('Correo de prueba enviado con éxito');
+                    mostrarAlerta('success', 'Correo de prueba enviado con éxito');
                 })
                 .catch(error => {
                     loader.style.display = 'none';
+                    mostrarAlerta('error', 'Error al enviar correo de prueba');
 
-                    alertify.error('Error al enviar correo de prueba');
                 });
         }
 

@@ -243,7 +243,8 @@
         html = html.replace(/\s*on\w+="[^"]*"/gi, '');
 
         if (contieneScripts) {
-            alertify.warning('Los scripts y eventos inline han sido eliminados para la vista previa por seguridad. Recuerda que el sistema no dejará que guardes la Descripción si tiene contenido Javascript');
+
+            mostrarAlerta('warning', 'Los scripts y eventos inline han sido eliminados para la vista previa por seguridad. Recuerda que el sistema no dejará que guardes la Descripción si tiene contenido Javascript');
         }
 
         const previewDiv = document.getElementById('previewContent');
@@ -272,11 +273,11 @@
             const nombre = selectedOption.dataset.nombre;
             const descripcion = selectedOption.dataset.descripcion;
 
-            if (!id) return alertify.error('Seleccione un formulario primero.');
+            if (!id) return mostrarAlerta('error', 'Seleccione un formulario primero.');
 
             // Verificar si ya está en la tabla actual
             if (tabla.querySelector(`tr[data-id="${id}"]`)) {
-                return alertify.warning('Este formulario ya está agregado en el módulo.');
+                return mostrarAlerta('warning', 'Este formulario ya está agregado en el módulo.');
             }
 
             // AJAX para verificar si ya está asociado a otro módulo
@@ -284,23 +285,24 @@
                 .then(res => res.json())
                 .then(data => {
                     if (data.exists) {
-                        alertify.confirm(
-                            'Formulario ya asignado',
-                            `Este formulario ya está asociado al módulo "${data.modulo}". ¿Desea continuar y asignarlo también?`,
-                            function () {
+
+
+                        mostrarAlerta('confirm', `Este formulario ya está asociado al módulo "${data.modulo}". ¿Desea continuar y asignarlo también?`, {
+                            titulo: 'Formulario ya asignado',
+                            onOk: () => {
                                 agregarFila(id, nombre, descripcion);
                             },
-                            function () {
-                                alertify.message('Operación cancelada.');
+                            onCancel: () => {
                             }
-                        );
+                        });
+
                     } else {
                         agregarFila(id, nombre, descripcion);
                     }
                 })
                 .catch(err => {
                     console.error(err);
-                    alertify.error('Error al verificar el formulario.');
+                    mostrarAlerta('error', 'Error al verificar el formulario.');
                 });
         });
 
@@ -318,7 +320,7 @@
             <input type="hidden" name="formularios[]" value="${id}">
         `;
             tabla.appendChild(tr);
-            alertify.success(`Formulario "${nombre}" agregado.`);
+            mostrarAlerta('success', `Formulario "${nombre}" agregado.`);
         }
 
         // Eliminar fila

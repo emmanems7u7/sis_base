@@ -57,11 +57,13 @@
             
         @break
 
-        {{-- FECHA / HORA --}}
+        {{-- FECHA --}}
         @case('fecha')
           @include('formularios.componentes.fecha')
            
         @break
+
+        {{-- HORA --}}
 
         @case('hora')
           @include('formularios.componentes.hora')
@@ -91,11 +93,13 @@
         @include('formularios.componentes.archivo')
         
         @break
+        {{-- IMAGEN --}}
 
         @case('imagen')
         @include('formularios.componentes.imagen')
            
         @break
+        {{-- VIDEO --}}
 
         @case('video')
         @include('formularios.componentes.video')

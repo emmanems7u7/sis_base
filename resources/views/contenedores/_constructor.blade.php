@@ -192,14 +192,26 @@
                 btn.onclick = function () {
                     const filaDiv = this.closest('.fila');
                     const filaId = filaDiv.dataset.id;
-                    alertify.confirm('Eliminar fila', '¿Estás seguro de eliminar esta fila?',
-                        function () {
-                            fetch(`/fila/${filaId}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': '{{csrf_token()}}', 'Content-Type': 'application/json' } })
+                    mostrarAlerta('confirm', '¿Estás seguro de eliminar esta fila?', {
+                        titulo: 'Eliminar fila',
+                        onOk: () => {
+                            fetch(`/fila/${filaId}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'X-CSRF-TOKEN': '{{csrf_token()}}',
+                                    'Content-Type': 'application/json'
+                                }
+                            })
                                 .then(res => res.json())
-                                .then(resp => { if (resp.success) filaDiv.remove(); });
+                                .then(resp => {
+                                    if (resp.success) filaDiv.remove();
+                                });
                         },
-                        function () { alertify.error('Acción cancelada'); }
-                    );
+                        onCancel: () => {
+
+                        }
+                    });
+
                 };
             });
 
@@ -207,14 +219,21 @@
                 btn.onclick = function () {
                     const colDiv = this.closest('.columna');
                     const colId = colDiv.dataset.id;
-                    alertify.confirm('Eliminar columna', '¿Estás seguro de eliminar esta columna?',
-                        function () {
+
+
+                    mostrarAlerta('confirm', '¿Estás seguro de eliminar esta columna?', {
+                        titulo: 'Eliminar columna',
+                        onOk: () => {
                             fetch(`/columna/${colId}`, { method: 'DELETE', headers: { 'X-CSRF-TOKEN': '{{csrf_token()}}', 'Content-Type': 'application/json' } })
                                 .then(res => res.json())
                                 .then(resp => { if (resp.success) colDiv.remove(); });
                         },
-                        function () { alertify.error('Acción cancelada'); }
-                    );
+                        onCancel: () => {
+                            mostrarAlerta('error', 'Acción cancelada')
+                        }
+                    });
+
+
                 };
             });
         }

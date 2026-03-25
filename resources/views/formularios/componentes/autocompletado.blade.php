@@ -1,2 +1,2 @@
-<input type="hidden" name="{{ $campo->nombre }}" class="campo-autocompletado"
+<input type="hidden" data-tipo="{{ $campo->campo_nombre }}" name="{{ $campo->nombre }}" class="campo-autocompletado"
     value="{{ $campo->config['autocompletar'] }}" data-default="{{ $campo->config['autocompletar'] }}">

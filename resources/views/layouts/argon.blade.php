@@ -284,9 +284,10 @@
             }).then(res => res.json())
             .then(data => {
                 if (data.status === 'success') {
-                    alertify.success(data.message);
+                    mostrarAlerta('success',data.message);
                 } else {
-                    alertify.error(data.message || 'Ocurrió un error al ordenar');
+                    mostrarAlerta('error',data.message || 'Ocurrió un error al ordenar');
+
                 }
             })
         }
@@ -832,6 +833,8 @@ Fancybox.bind("[data-fancybox='gallery']", {
     <script src="{{asset('argon/js/plugins/perfect-scrollbar.min.js')}}"></script>
     <script src="{{asset('argon/js/plugins/smooth-scrollbar.min.js')}}"></script>
     <script src="{{asset('argon/js/plugins/chartjs.min.js')}}"></script>
+    <script src="{{asset('js/alertas.js')}}"></script>
+
     <script src="{{asset('js/campos.js')}}"></script>
     <script src="{{asset('js/iconos.js')}}"></script>
 

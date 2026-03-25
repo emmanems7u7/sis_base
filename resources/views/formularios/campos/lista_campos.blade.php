@@ -205,7 +205,7 @@
                                 if(data.success)
                                 {
                                     input.value = data.valor;
-                                    alertify.success(data.message);
+                                    mostrarAlerta('error', data.message);
                                 }
                             
                             })

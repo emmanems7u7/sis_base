@@ -339,7 +339,7 @@ document.addEventListener('click', function (e) {
         const campoId = bloque.querySelector('.selectCampos')?.value;
 
         if (!formularioId || !campoId) {
-            alertify.warning('Debe seleccionar formulario y campo');
+            mostrarAlerta('warning', 'Debe seleccionar formulario y campo');
             return;
         }
 
@@ -360,8 +360,8 @@ document.addEventListener('click', function (e) {
         .then(res => res.json())
         .then(data => {
             data.success
-                ? alertify.success(data.message)
-                : alertify.error('Error al guardar');
+                ? mostrarAlerta('success', data.message)
+                : mostrarAlerta('error', 'Error al guardar');
         });
     }
 
@@ -426,7 +426,7 @@ document.addEventListener('click', function (e) {
                     })
                         .then(response => response.json())
                         .then(data => {
-                            alertify.success(data.message);
+                            mostrarAlerta('success', data.message);
                         })
                         .catch(error => {
                             console.error("Error:", error);
@@ -614,7 +614,7 @@ guardarBtn.addEventListener('click', async () => {
         });
         const data = await res.json();
         if(data.success){
-            alertify.success('Configuración guardada correctamente');
+            mostrarAlerta('success', 'Configuración guardada correctamente');
         }
     }catch(err){
         console.error(err);

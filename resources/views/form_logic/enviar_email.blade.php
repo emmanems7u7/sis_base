@@ -122,7 +122,7 @@
             const userText = select.options[select.selectedIndex].text;
 
             if (!userId || usuariosSeleccionados.includes(userId)) {
-                alertify.warning('Usuario ya agregado o no seleccionado.');
+                mostrarAlerta('warning', 'Usuario ya agregado o no seleccionado.');
                 return;
 
             }
@@ -144,21 +144,22 @@
             li.appendChild(button);
 
             li.querySelector('button').onclick = () => {
-                alertify.confirm(
-                    'Confirmación',
-                    '¿Está seguro de quitar este usuario de la lista?',
-                    function () {
+
+                mostrarAlerta('confirm', '¿Está seguro de quitar este usuario de la lista?', {
+                    titulo: 'Confirmación',
+                    onOk: () => {
                         // OK
                         usuariosSeleccionados = usuariosSeleccionados.filter(id => id !== userId);
                         document.getElementById('user-list').removeChild(li);
                         actualizarHidden();
-                        alertify.success('Usuario eliminado');
+                        mostrarAlerta('success', 'Usuario eliminado');
+
                     },
-                    function () {
-                        // Cancel
-                        alertify.message('Acción cancelada');
+                    onCancel: () => {
+                        mostrarAlerta('error', 'Acción cancelada');
                     }
-                );
+                });
+
             };
             document.getElementById('user-list').appendChild(li);
             actualizarHidden();

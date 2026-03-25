@@ -94,22 +94,6 @@
     </div>
 
 
-    <script>
-        /*
-        function confirmDelete(roleId) {
-            alertify.confirm(
-                'Confirmar Eliminación',
-                '¿Estás seguro de eliminar este rol?',
-                function () {
 
-                    document.getElementById('delete-form-' + roleId).submit();
-                },
-                function () {
-
-                    alertify.error('Eliminación cancelada');
-                }
-            ).set('labels', { ok: 'Eliminar', cancel: 'Cancelar' }); // Opcional: Cambia los textos de los botones
-        }*/
-    </script>
 
 @endsection
