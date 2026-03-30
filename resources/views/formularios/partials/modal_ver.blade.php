@@ -17,6 +17,9 @@
                     </div>
                 </div>
             </div>
+            <div class="modal-footer">
+                <button type="button" class="btn bg-gradient-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
         </div>
     </div>
 </div>
@@ -43,13 +46,24 @@
                 function renderValor(tipo, valor) {
                     switch (tipo) {
                         case 'imagen':
-                            return `<img src="${valor}" class="img-fluid rounded mb-1" style="max-height:100px;">`;
+                            return `
+                            <a href="${valor}" 
+                                                                                                                                                                                                                                                           data-fancybox="gallery"
+                                                                                                                                                                                                                                                           class="ver-link">
+                                                                                                                                                                                                                                                           <i class="fas fa-image"></i> Ver imagen
+                                                                                                                                                                                                                                                        </a>
+                            `;
                         case 'video':
-                            return `<video src="${valor}" controls class="w-100 rounded mb-1" style="max-height:120px;"></video>`;
+                            return `<a href="${valor}" target="_blank">
+                                                                                                                                                                                                                                                                <i class="fas fa-video"></i> Ver video
+                                                                                                                                                                                                                                                            </a>`;
                         case 'archivo':
-                            return `<a href="${valor}" target="_blank" class="d-inline-block mb-1 text-decoration-none">📎 Descargar archivo</a>`;
+                            return `<a href="${valor}" 
+                                                                                                                                                                                                                                                                                                           target="_blank">
+                                                                                                                                                                                                                                                                                                           <i class="fas fa-file"></i> Ver archivo
+                                                                                                                                                                                                                                                                                                        </a>`;
                         case 'enlace':
-                            return `<a href="${valor}" target="_blank" class="d-block mb-1 text-decoration-none">🔗 ${valor}</a>`;
+                            return `<a href="${valor}" target="_blank" class="d-block mb-1 text-decoration-none"><i class="fas fa-link"></i> ${valor}</a>`;
                         case 'color':
                             return `<div class="d-flex align-items-center mb-1">
                                 <span style="width:16px;height:16px;border-radius:4px;background:${valor};margin-right:4px;"></span>
@@ -131,9 +145,10 @@
                         }
 
                         contenido.innerHTML = html;
+                        modal.show();
+
                     });
 
-                modal.show();
             });
         });
     });

@@ -6,7 +6,7 @@
             class="modal-content  {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }}">
             <div class="modal-header">
                 <h5 class="modal-title" id="modal_busquedaLabel"><i class="fas fa-filter"></i> Filtrar Resultados</h5>
-                <button type="button" class="btn-close txt-black" data-bs-dismiss="modal" aria-label="Close">
+                <button type="button" class="btn-close text-black" data-bs-dismiss="modal" aria-label="Close">
                     <span aria-hidden="true"></span>
                 </button>
             </div>
