@@ -32,6 +32,6 @@
             </tr>
         </thead>
 
-        @include('formularios.partials.iterador_tabla')
+        @include('formularios.partials.iterador_tabla', ['totalCols' => 3 + $formulario->campos->count(), 'modulo' => 0])
     </table>
 </div>

@@ -59,7 +59,7 @@
                         <th>Acciones</th>
                     </tr>
                 </thead>
-            @include('formularios.partials.iterador_tabla')
+            @include('formularios.partials.iterador_tabla',['totalCols' => $totalCols, 'modulo' => $modulo->id])
             </table>
 
         </div>
