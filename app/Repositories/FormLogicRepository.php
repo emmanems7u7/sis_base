@@ -486,15 +486,14 @@ class FormLogicRepository implements FormLogicInterface
 
                     $CampoDestino = CamposForm::find($parametros['campo_ref_id']);
 
-                    // Normalizamos respuestas (si no es múltiple lo convertimos en colección)
                     $respuestasCollection = $esMultiple
                         ? $respuestas
                         : collect([$respuestas->first() ?? $respuestas]);
 
-                    $respuestaCampoIds = [];
-                    $valor = null;
-
                     foreach ($respuestasCollection as $respuestaOrigen) {
+
+                        $respuestaCampoIds = [];
+                        $valor = null;
 
                         $filasSeleccionadas = $respuestaOrigen->filasSeleccionadas ?? [];
 
@@ -504,9 +503,9 @@ class FormLogicRepository implements FormLogicInterface
                             $CampoDestino->nombre
                         );
 
-                        $respuestaCampoIds = array_merge($respuestaCampoIds, $ids);
+                        $respuestaCampoIds = array_unique($ids);
 
-                        // Determinar valor final (solo una vez si es static)
+                        // Determinar valor
                         if (($parametros['tipo_valor'] ?? 'static') === 'campo') {
 
                             $campoOrigenId = $parametros['valor'];
@@ -516,97 +515,87 @@ class FormLogicRepository implements FormLogicInterface
                                 ->value('valor');
 
                         } else {
-
                             $valor = $action->valor;
                         }
-                    }
 
-                    $respuestaCampoIds = array_unique($respuestaCampoIds);
+                        DB::transaction(function () use ($respuestaCampoIds, $action, $valor, $CampoDestino, $esMultiple, &$audit) {
 
+                            $operacion = $action->OperacionCatalogo ?? 'actualizar';
 
-                    DB::transaction(function () use ($respuestaCampoIds, $action, $valor, $CampoDestino, $esMultiple, &$audit) {
+                            $respuestasDestino = RespuestasCampo::whereIn('id', $respuestaCampoIds)->get();
 
-                        $operacion = $action->OperacionCatalogo ?? 'actualizar';
+                            foreach ($respuestasDestino as $campoResp) {
 
-                        $respuestasDestino = RespuestasCampo::whereIn('id', $respuestaCampoIds)->get();
+                                switch ($operacion) {
 
-                        foreach ($respuestasDestino as $campoResp) {
+                                    case 'sumar':
+                                        $campoResp->valor += (float) $valor;
+                                        break;
 
-                            switch ($operacion) {
+                                    case 'restar':
+                                        $campoResp->valor -= (float) $valor;
+                                        break;
 
-                                case 'sumar':
-                                    $campoResp->valor += (float) $valor;
-                                    break;
+                                    case 'multiplicar':
+                                        $campoResp->valor *= (float) $valor;
+                                        break;
 
-                                case 'restar':
-                                    $campoResp->valor -= (float) $valor;
-                                    break;
+                                    case 'dividir':
+                                        if ((float) $valor !== 0.0) {
+                                            $campoResp->valor /= (float) $valor;
+                                        }
+                                        break;
 
-                                case 'multiplicar':
-                                    $campoResp->valor *= (float) $valor;
-                                    break;
+                                    case 'asignar':
+                                    case 'actualizar':
+                                        $campoResp->valor = $valor;
+                                        break;
 
-                                case 'dividir':
-                                    if ((float) $valor !== 0.0) {
-                                        $campoResp->valor /= (float) $valor;
-                                    }
-                                    break;
+                                    case 'copiar':
+                                        $campoOrigen = RespuestasCampo::find($valor);
+                                        $campoResp->valor = $campoOrigen?->valor;
+                                        break;
 
-                                case 'asignar':
-                                case 'actualizar':
-                                    $campoResp->valor = $valor;
-                                    break;
+                                    case 'concatenar':
+                                        $campoResp->valor = ($campoResp->valor ?? '') . $valor;
+                                        break;
 
-                                case 'copiar':
-                                    $campoOrigen = RespuestasCampo::find($valor);
-                                    $campoResp->valor = $campoOrigen?->valor;
-                                    break;
+                                    case 'limpiar':
+                                        $campoResp->valor = null;
+                                        break;
 
-                                case 'concatenar':
-                                    $campoResp->valor = ($campoResp->valor ?? '') . $valor;
-                                    break;
+                                    case 'incrementar_fecha':
+                                        $campoResp->valor = \Carbon\Carbon::parse($campoResp->valor)
+                                            ->addDays((int) $valor)
+                                            ->format('Y-m-d');
+                                        break;
 
-                                case 'limpiar':
-                                    $campoResp->valor = null;
-                                    break;
+                                    case 'decrementar_fecha':
+                                        $campoResp->valor = \Carbon\Carbon::parse($campoResp->valor)
+                                            ->subDays((int) $valor)
+                                            ->format('Y-m-d');
+                                        break;
+                                }
 
-                                case 'incrementar_fecha':
-                                    $campoResp->valor = \Carbon\Carbon::parse($campoResp->valor)
-                                        ->addDays((int) $valor)
-                                        ->format('Y-m-d');
-                                    break;
-
-                                case 'decrementar_fecha':
-                                    $campoResp->valor = \Carbon\Carbon::parse($campoResp->valor)
-                                        ->subDays((int) $valor)
-                                        ->format('Y-m-d');
-                                    break;
+                                $campoResp->save();
                             }
 
-                            $campoResp->save();
-                        }
-
-                        Log::info(
-                            "TAC-001 ejecutado | Action {$action->id} | Campo {$CampoDestino->nombre}"
-                        );
-
-                        $audit['detalle'][] = [
-                            'tac' => 'TAC-001',
-                            'campo_destino_id' => $CampoDestino->id,
-                            'campo_destino_nombre' => $CampoDestino->nombre,
-                            'operacion' => $action->OperacionCatalogo,
-                            'valor_aplicado' => $valor,
-                            'respuestas_modificadas' => $respuestaCampoIds,
-                            'modo' => $esMultiple ? 'multiple' : 'individual',
-                        ];
-                    });
-
-
+                            $audit['detalle'][] = [
+                                'tac' => 'TAC-001',
+                                'campo_destino_id' => $CampoDestino->id,
+                                'campo_destino_nombre' => $CampoDestino->nombre,
+                                'operacion' => $action->OperacionCatalogo,
+                                'valor_aplicado' => $valor,
+                                'respuestas_modificadas' => $respuestaCampoIds,
+                                'modo' => $esMultiple ? 'multiple' : 'individual',
+                            ];
+                        });
+                    }
 
                     $audit['mensaje'] =
-                        "Se modificaron " . count($respuestaCampoIds) .
-                        " registros del campo {$CampoDestino->nombre}" .
-                        ($esMultiple ? " (modo múltiple)" : "");
+                        "Procesado correctamente en modo " .
+                        ($esMultiple ? "múltiple" : "individual");
+
                     break;
 
 

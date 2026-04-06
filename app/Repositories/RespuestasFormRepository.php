@@ -122,22 +122,38 @@ class RespuestasFormRepository implements RespuestasFormInterface
         return $filasSeleccionadas;
     }
 
-    public function filaDesdeArray(array $registroData)
+    public function filaDesdeArray(array $registroData, $campos)
     {
         $filasSeleccionadas = [];
 
+        // Mapear campos por nombre para acceso rápido
+        $mapCampos = collect($campos)->keyBy('nombre');
+
         foreach ($registroData as $nombreCampo => $valor) {
 
+            // 🧠 Limpiar nombre (por si viene como form_8[campo])
+            preg_match('/\[(.*?)\]/', $nombreCampo, $match);
+            $nombreLimpio = $match[1] ?? $nombreCampo;
+
+            $campo = $mapCampos[$nombreLimpio] ?? null;
+
+            if (!$campo)
+                continue;
+
             // ============================================
-            // 1️⃣ Si es referencia simple (select)
+            // ✅ SOLO SI ES REFERENCIA (TIENE form_ref_id)
             // ============================================
-            if (is_numeric($valor)) {
+            $esReferencia = !empty($campo->form_ref_id);
+
+            // ============================================
+            // 1️⃣ REFERENCIA SIMPLE (select)
+            // ============================================
+            if ($esReferencia && is_numeric($valor)) {
 
                 $fila = RespuestasForm::with('camposRespuestas.campo')
                     ->find($valor);
 
                 if ($fila) {
-
                     $datos = [];
 
                     foreach ($fila->camposRespuestas as $cr) {
@@ -145,38 +161,45 @@ class RespuestasFormRepository implements RespuestasFormInterface
                             $cr->valor . ' - ' . $cr->id;
                     }
 
-                    $filasSeleccionadas[$nombreCampo] = $datos;
+                    $filasSeleccionadas[$nombreLimpio] = $datos;
                 }
+
             }
 
             // ============================================
-            // 2️⃣ Si es referencia múltiple (checkbox)
+            // 2️⃣ REFERENCIA MÚLTIPLE (checkbox)
             // ============================================
-            if (is_array($valor)) {
+            elseif ($esReferencia && is_array($valor)) {
 
                 foreach ($valor as $id) {
 
-                    if (is_numeric($id)) {
+                    if (!is_numeric($id))
+                        continue;
 
-                        $fila = RespuestasForm::with('camposRespuestas.campo')
-                            ->find($id);
+                    $fila = RespuestasForm::with('camposRespuestas.campo')
+                        ->find($id);
 
-                        if ($fila) {
+                    if ($fila) {
+                        $datos = [];
 
-                            $datos = [];
-
-                            foreach ($fila->camposRespuestas as $cr) {
-                                $datos[$cr->campo->nombre] =
-                                    $cr->valor . ' - ' . $cr->id;
-                            }
-
-                            $filasSeleccionadas[$nombreCampo][] = $datos;
+                        foreach ($fila->camposRespuestas as $cr) {
+                            $datos[$cr->campo->nombre] =
+                                $cr->valor . ' - ' . $cr->id;
                         }
+
+                        $filasSeleccionadas[$nombreLimpio][] = $datos;
                     }
                 }
+
+            }
+
+            // ============================================
+            // 🔹 VALOR NORMAL (NO REFERENCIA)
+            // ============================================
+            else {
+                $filasSeleccionadas[$nombreLimpio] = $valor;
             }
         }
-
         return $filasSeleccionadas;
     }
 
