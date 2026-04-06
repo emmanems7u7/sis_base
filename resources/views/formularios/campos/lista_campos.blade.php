@@ -17,6 +17,11 @@
    
    @endif
 
+   @if($campo->campo_nombre == 'identificador')
+<i class="fas fa-question-circle text-primary" data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Campo identificador: defina un prefijo (ej: REG-). El sistema autocompletará con un número correlativo (REG-001, REG-002...). Será de solo lectura al registrar."></i>
+   
+   @endif
  
 @switch(strtolower($campo->campo_nombre))
 
@@ -123,17 +128,47 @@
             placeholder="https://...">
         @break
 
-    @case('fecha')
-        <input type="date" name="{{ $campo->nombre }}" 
-            class="form-control form-control-sm mb-1"
-            {{ $campo->requerido ? 'required' : '' }}>
-        @break
+        @case('fecha')
+            <div class="mb-2">
+                <input type="date"
+                    name="{{ $campo->nombre }}"
+                    class="form-control form-control-sm mb-1"
+                    {{ $campo->requerido ? 'required' : '' }}>
 
-    @case('hora')
-        <input type="time" name="{{ $campo->nombre }}" 
-            class="form-control form-control-sm mb-1"
-            {{ $campo->requerido ? 'required' : '' }}>
-        @break
+                    <div class="form-check form-switch">
+                    <input class="form-check-input"
+                        type="checkbox"
+                        id="auto_hora_{{ $campo->id }}"
+                        onchange="guardarAutoConfig({{ $campo->id }}, 'auto_fecha', this.checked)"
+                        {{ ($campo->config['auto_fecha'] ?? false) ? 'checked' : '' }}>
+                        
+                    <label class="form-check-label">
+                        Autocompletar con fecha actual
+                    </label>
+                </div>
+            </div>
+            @break
+
+
+            @case('hora')
+            <div class="mb-2">
+                <input type="time"
+                    name="{{ $campo->nombre }}"
+                    class="form-control form-control-sm mb-1"
+                    {{ $campo->requerido ? 'required' : '' }}>
+
+                <div class="form-check form-switch">
+                    <input class="form-check-input"
+                        type="checkbox"
+                        id="auto_hora_{{ $campo->id }}"
+                        onchange="guardarAutoConfig({{ $campo->id }}, 'auto_hora', this.checked)"
+                        {{ ($campo->config['auto_hora'] ?? false) ? 'checked' : '' }}>
+                    <label class="form-check-label">
+                        Autocompletar con hora actual
+                    </label>
+                </div>
+            </div>
+            @break
 
     @case('archivo')
         <input type="file" name="{{ $campo->nombre }}" 
@@ -239,6 +274,55 @@
          
                 @break
 
+                @case('identificador')
+                <div class="d-flex gap-2 mb-1">
+                    <input type="text"
+                        id="identificador_{{ $campo->id }}"
+                        name="{{ $campo->nombre }}"
+                        value="{{ $campo->config['prefix'] ?? '' }}"
+                        class="form-control form-control-sm">
+
+                    <button type="button"
+                        class="btn btn-primary btn-sm"
+                        onclick="guardarIdentificador({{ $campo->id }}, '{{ $campo->nombre }}')">
+                        Guardar
+                    </button>
+                </div>
+
+                <script>
+                function guardarIdentificador(campoId, nombre) {
+
+                    let input = document.getElementById('identificador_' + campoId);
+                    let valor = input.value;
+
+                    fetch("{{ route('identificador.store') }}", {
+                        method: "POST",
+                        headers: {
+                            "Content-Type": "application/json",
+                            "X-CSRF-TOKEN": "{{ csrf_token() }}"
+                        },
+                        body: JSON.stringify({
+                            campo_id: campoId,
+                            nombre: nombre,
+                            valor: valor
+                        })
+                    })
+                    .then(res => res.json())
+                    .then(data => {
+
+                        if (data.success) {
+                            mostrarAlerta('success',data.message);
+                        } else {
+                            mostrarAlerta('error','Error al guardar');
+                        }
+                    })
+                    .catch(error => {
+                        console.error(error);
+                        mostrarAlerta('error','Error en la petición');
+                    });
+                }
+                </script>
+                @break
 
             
 
@@ -247,3 +331,32 @@
         <input type="text" name="{{ $campo->nombre }}" 
             class="form-control form-control-sm mb-1">
 @endswitch
+
+<script>
+function guardarAutoConfig(campoId, tipo, valor) {
+
+    fetch("{{ route('campo.config.store') }}", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            "X-CSRF-TOKEN": "{{ csrf_token() }}"
+        },
+        body: JSON.stringify({
+            campo_id: campoId,
+            config_key: tipo,
+            config_value: valor
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+        if (data.success) {
+            mostrarAlerta('success',data.message)
+        } else {
+            mostrarAlerta('error','Error al guardar configuración');
+        }
+    })
+    .catch(error => {
+        console.error(error);
+    });
+}
+</script>

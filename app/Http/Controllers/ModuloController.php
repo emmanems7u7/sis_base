@@ -11,6 +11,7 @@ use Jenssegers\Agent\Agent;
 use App\Interfaces\CatalogoInterface;
 use App\Models\FormLogicRule;
 use App\Interfaces\FormularioInterface;
+use App\Models\ModuloFormularioParalelo;
 use App\Models\RespuestasForm;
 
 class ModuloController extends Controller
@@ -233,8 +234,10 @@ class ModuloController extends Controller
 
         ];
 
-
-        $modulo = Modulo::with('formularios.campos')->find($modulo);
+        $modulo = Modulo::with([
+            'formularios.campos',
+            'formulariosParalelos'
+        ])->findOrFail($modulo);
 
 
 
@@ -288,7 +291,18 @@ class ModuloController extends Controller
             }
         }
 
-        return view('modulos.administrar', compact('isMobile', 'rules', 'modulo', 'breadcrumb', 'grafo'));
+        $grupos = ModuloFormularioParalelo::where('modulo_id', $modulo->id)
+            ->get();
+
+
+        return view('modulos.administrar', compact(
+            'isMobile',
+            'rules',
+            'modulo',
+            'breadcrumb',
+            'grafo',
+            'grupos'
+        ));
 
     }
 

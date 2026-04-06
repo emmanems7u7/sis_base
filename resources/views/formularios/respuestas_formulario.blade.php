@@ -13,7 +13,12 @@
                     <h5>Respuestas del Formulario: {{ $formulario->nombre }}</h5>
                     <a href="{{ route('formularios.index') }}" class="btn btn-xs btn-secondary "><i
                             class="fas fa-arrow-left me-1"></i>Volver</a>
-                    @include('modulosDinamicos.botones_accion', ['formulario' => $formulario, 'modulo' => 0])
+
+                    <a href="{{ route('formularios.respuestas.formulario', $formulario) }}"
+                        class="btn btn-xs btn-secondary "><i class="fas fa-times"></i>
+                        Quitar filtros</a>
+
+                    @include('formularios.partials.botones_accion', ['formulario' => $formulario, 'modulo' => 0])
 
 
                 </div>
@@ -39,15 +44,13 @@
     @if($isMobile)
         @include('formularios.respuestas_movil')
     @else
-        @include('formularios.respuestas_desktop')
+        <div class="card mt-3 shadow-lg">
+            <div class="card-body">
+                @include('formularios.respuestas_desktop')
+
+            </div>
+        </div>
     @endif
-
-    {{-- Cards para móviles --}}
-
-
-    <div class="d-flex justify-content-center mt-2">
-        {{ $respuestas->links('pagination::bootstrap-4') }}
-    </div>
 
 
 

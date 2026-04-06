@@ -8,6 +8,7 @@ use App\Models\CamposForm;
 use App\Interfaces\CatalogoInterface;
 use App\Interfaces\FormularioInterface;
 use App\Interfaces\CamposFormInterface;
+use Illuminate\Support\Facades\DB;
 
 use App\Models\Categoria;
 use App\Models\RespuestasCampo;
@@ -342,7 +343,104 @@ class CamposFormController extends Controller
         ];
     }
 
+    public function guardarIdentificador(Request $request)
+    {
+        // Validación básica
+        $request->validate([
+            'campo_id' => 'required',
+            'valor' => 'required|string|max:255',
+        ]);
+
+        $campo = CamposForm::findOrFail($request->campo_id);
+
+        $config = $campo->config ?? [];
+
+        $config['prefix'] = $request->valor;
+
+        $campo->config = $config;
+        return response()->json([
+            'success' => true,
+            'message' => 'Prefijo agregado correctamente',
+        ]);
 
 
+    }
 
+    public function guardarConfig(Request $request)
+    {
+        $request->validate([
+            'campo_id' => 'required',
+            'config_key' => 'required|string',
+            'config_value' => 'required'
+        ]);
+
+        $campo = CamposForm::findOrFail($request->campo_id);
+
+        $config = $campo->config ?? [];
+
+        $config[$request->config_key] = $request->config_value;
+
+        $campo->config = $config;
+        $campo->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Configuración guardada correctamente',
+        ]);
+    }
+
+    public function generarValor(Request $request)
+    {
+        $campo = CamposForm::findOrFail($request->campo_id);
+
+        $config = $campo->config ?? [];
+
+        switch ($campo->campo_nombre) {
+
+            case 'identificador':
+
+                $prefijo = $config['prefix'] ?? '';
+                $longitud = $config['longitud'] ?? 3;
+
+                $ultimo = DB::table('respuestas_campos')
+                    ->where('cf_id', $campo->id)
+                    ->orderByDesc('id')
+                    ->value('valor');
+
+                if ($ultimo) {
+                    $numero = intval(str_replace($prefijo, '', $ultimo)) + 1;
+                } else {
+                    $numero = 1;
+                }
+
+                $numeroFormateado = str_pad($numero, $longitud, '0', STR_PAD_LEFT);
+
+                return response()->json([
+                    'success' => true,
+                    'valor' => $prefijo . $numeroFormateado
+                ]);
+
+            case 'fecha':
+                if ($config['auto_fecha'] ?? false) {
+                    return response()->json([
+                        'success' => true,
+                        'valor' => now()->format('Y-m-d')
+                    ]);
+                }
+                break;
+
+            case 'hora':
+                if ($config['auto_hora'] ?? false) {
+                    return response()->json([
+                        'success' => true,
+                        'valor' => now()->format('H:i')
+                    ]);
+                }
+                break;
+        }
+
+        return response()->json([
+            'success' => false
+        ]);
+    }
 }

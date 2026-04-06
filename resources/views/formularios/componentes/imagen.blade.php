@@ -7,5 +7,5 @@
     @endif
 </div>
 
-<input type="file" data-tipo="{{ $campo->campo_nombre }}" name="{{ $campo->nombre }}" accept="image/*"
-    class="form-control" {{ $esRequerido ? 'required' : '' }}>
+<input type="file" data-tipo="{{ $campo->campo_nombre }}" name="{{ $inputName }}" accept="image/*" class="form-control"
+    {{ $esRequerido ? 'required' : '' }}>

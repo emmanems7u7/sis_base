@@ -6,9 +6,14 @@
             action="{{ route('formularios.responder', ['form' => $formulario->id, 'modulo' => $modulo, 'tipo' => 1]) }}"
             method="POST" enctype="multipart/form-data">
             @csrf
-            @include('formularios._campos', ['campos' => $formulario->campos->sortBy('posicion'), 'valores' => []])
 
-
+            @include('formularios._campos', [
+                'campos' => $formulario->campos->sortBy('posicion'),
+                'valores' => [],
+                'prefix' => "form_{$formItem->id}",
+                'caso' => 'store'
+            ])
+            
             <button type="submit" class="btn btn-primary mt-3">Registrar</button>
         </form>
     </div>

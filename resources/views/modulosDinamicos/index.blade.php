@@ -30,6 +30,9 @@
                     <a href="{{ route('formularios.index') }}" class="btn btn-sm btn-secondary "><i
                             class="fas fa-arrow-left me-1"></i>Volver</a>
 
+                    <a href="{{route('modulo.index', $modulo->id)  }}" class="btn btn-xs btn-secondary "><i
+                            class="fas fa-times"></i>
+                        Quitar filtros</a>
 
                 </div>
             </div>

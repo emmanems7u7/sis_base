@@ -35,4 +35,5 @@
 
     @include('formularios.partials.iterador_cards', ['modulo_id' => 0])
 
+
 </div>

@@ -5,7 +5,7 @@
 @php
     $tipo = strtolower($campo->campo_nombre);
 
-    $tiposSinLayout = ['campo autocompletado'];
+    $tiposSinLayout = ['campo autocompletado','hidden'];
     $esHidden = in_array($tipo, $tiposSinLayout);
 
     $cols = $cols ?? 2;
@@ -25,6 +25,12 @@
 
     $valoresCampo = $valores[$campo->nombre] ?? [];
     $valor = old($campo->nombre, $valoresCampo[0] ?? '');
+
+    $prefix = $prefix ?? '';
+    $inputName = $prefix ? "{$prefix}[{$campo->nombre}]" : $campo->nombre;
+    $inputId = $prefix 
+        ? "{$prefix}_{$campo->nombre}" 
+        : $campo->nombre;
 @endphp
 
 @if(!$esHidden)
@@ -123,6 +129,20 @@
 
         @break
 
+
+         {{-- CAMPO IDENTIFICADOR --}}
+         @case('identificador')
+        @include('formularios.componentes.identificador')
+
+        @break
+
+        
+         {{-- CAMPO HIDDEN --}}
+         @case('hidden')
+        @include('formularios.componentes.hidden')
+
+        @break
+
     @endswitch
 
 @if(!$esHidden)
@@ -144,13 +164,10 @@ document.addEventListener('change', function (e) {
 
     const select = e.target;
 
-    // Solo para selects dinámicos
     if (!select.classList.contains('campo-dinamico')) return;
 
-    // 🔥 Buscar el formulario contenedor
     const form = select.closest('form');
 
-    // 🔥 Verificar si el formulario tiene al menos un campo-relacion
     if (!form || !form.querySelector('.campo-relacion')) return;
 
     const valorSeleccionado = select.value;
@@ -249,6 +266,51 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
 });
+</script>
+
+
+<script>
+document.addEventListener('DOMContentLoaded', function () {
+    inicializarCamposAutomaticos();
+});
+
+function inicializarCamposAutomaticos() {
+    // CORRECCIÓN: Todo dentro de las mismas comillas separado por coma
+    const selectores = '[data-tipo="identificador"], [data-tipo="fecha"], [data-tipo="hora"]';
+    
+    document.querySelectorAll(selectores).forEach(input => {
+        let caso = input.dataset.caso;
+
+        // Si es 'store', ejecutamos la petición al servidor
+        if (caso === 'store') {
+            generarIdentificadorFetch(input);
+        }
+    });
+}
+
+function generarIdentificadorFetch(input) {
+
+let campoId = input.dataset.campoId;
+
+fetch("{{ route('campo.generar') }}", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-TOKEN": "{{ csrf_token() }}"
+    },
+    body: JSON.stringify({
+        campo_id: campoId
+    })
+})
+.then(res => res.json())
+.then(data => {
+    if (data.success) {
+        input.value = data.valor;
+    }
+})
+.catch(err => console.error(err));
+}
+
 </script>
 
 @include('formularios.campos.modal_busqueda')

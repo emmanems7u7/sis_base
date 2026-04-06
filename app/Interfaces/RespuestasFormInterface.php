@@ -8,8 +8,7 @@ interface RespuestasFormInterface
     public function fila($request);
     public function filaDesdeArray(array $registroData);
 
-    public function validacion($formulario, $campos, $respuestaId = null, $modo = 'store');
-
+    public function validacion($formulario, $campos, $respuestaId = null, $modo = 'store', $prefix = null);
     public function GeneraPlantilla($campos, $form);
 
     function validacion_modulo_form($formularioModelo, $moduloModelo, $modulo);

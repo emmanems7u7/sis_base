@@ -25,7 +25,7 @@
 
                                 <div class="input-group">
 
-                                    @include('formularios._campos', ['cols' => 1, 'requerido' => 0])
+                                    @include('formularios._campos', ['cols' => 1, 'requerido' => 0, 'caso' => 'busqueda'])
 
 
                                 </div>

@@ -180,7 +180,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
         return $filasSeleccionadas;
     }
 
-    public function validacion($formulario, $campos, $respuestaId = null, $modo = 'store')
+    public function validacion($formulario, $campos, $respuestaId = null, $modo = 'store', $prefix = null)
     {
 
 
@@ -210,16 +210,19 @@ class RespuestasFormRepository implements RespuestasFormInterface
                 continue;
             }
 
+            $fieldName = $prefix
+                ? "{$prefix}.{$campo->nombre}"
+                : $campo->nombre;
 
             switch ($tipo) {
 
                 case 'text':
                 case 'textarea':
-                    $rules[$campo->nombre] = [$required, 'string', 'max:255'];
+                    $rules[$fieldName] = [$required, 'string', 'max:255'];
                     break;
 
                 case 'number':
-                    $rules[$campo->nombre] = [$required, 'numeric'];
+                    $rules[$fieldName] = [$required, 'numeric'];
                     break;
 
                 case 'checkbox':
@@ -227,12 +230,12 @@ class RespuestasFormRepository implements RespuestasFormInterface
                     if ($campo->requerido) {
                         $arrayRules[] = 'min:1';
                     }
-                    $rules[$campo->nombre] = $arrayRules;
+                    $rules[$fieldName] = $arrayRules;
                     break;
 
                 case 'radio':
                 case 'selector':
-                    $rules[$campo->nombre] = [$required];
+                    $rules[$fieldName] = [$required];
                     break;
 
                 case 'archivo':
@@ -269,18 +272,18 @@ class RespuestasFormRepository implements RespuestasFormInterface
                     if ($formulario->config['registro_multiple']) {
 
                         // Para registros dinámicos
-                        $rules["registros.*.{$campo->nombre}"] = $fileRules;
+                        $rules["registros.*.{$fieldName}"] = $fileRules;
 
                     } else {
 
                         // Para formulario normal
-                        $rules[$campo->nombre] = $fileRules;
+                        $rules[$fieldName] = $fileRules;
                     }
 
                     break;
 
                 case 'color':
-                    $rules[$campo->nombre] = [
+                    $rules[$fieldName] = [
                         $required,
                         'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'
                     ];
@@ -291,7 +294,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
                         ? "unique:respuestas_campos,valor,{$respuestaId},respuesta_id,cf_id,{$campo->id}"
                         : "unique:respuestas_campos,valor,NULL,id,cf_id,{$campo->id}";
 
-                    $rules[$campo->nombre] = [
+                    $rules[$fieldName] = [
                         $required,
                         'email',
                         'max:255',
@@ -300,7 +303,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
                     break;
 
                 case 'password':
-                    $rules[$campo->nombre] = [
+                    $rules[$fieldName] = [
                         $required,
                         'string',
                         'min:6',
@@ -309,22 +312,21 @@ class RespuestasFormRepository implements RespuestasFormInterface
                     break;
 
                 case 'enlace':
-                    $rules[$campo->nombre] = [$required, 'url'];
+                    $rules[$fieldName] = [$required, 'url'];
                     break;
 
                 case 'fecha':
-                    $rules[$campo->nombre] = [$required, 'date'];
+                    $rules[$fieldName] = [$required, 'date'];
                     break;
 
                 case 'hora':
-                    $rules[$campo->nombre] = [$required, 'date_format:H:i'];
+                    $rules[$fieldName] = [$required, 'date_format:H:i'];
                     break;
 
                 default:
-                    $rules[$campo->nombre] = [$required];
+                    $rules[$fieldName] = [$required];
             }
         }
-
         return $rules;
     }
 

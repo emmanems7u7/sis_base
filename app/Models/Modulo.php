@@ -36,4 +36,8 @@ class Modulo extends Model
             ->withPivot(['configuracion', 'activo'])
             ->withTimestamps();
     }
+    public function formulariosParalelos()
+    {
+        return $this->hasMany(ModuloFormularioParalelo::class);
+    }
 }

@@ -6,7 +6,8 @@
         @include('formularios.contenedor_superior', ['formulario' => $formulario])
         <div class="card mt-3 shadow-lg">
             <div class="card-body">
-                <form action="{{ route('respuestas.update', ['respuesta' => $respuesta ,'modulo' => $modulo ]) }}" method="POST" enctype="multipart/form-data">
+                <form action="{{ route('respuestas.update', ['respuesta' => $respuesta, 'modulo' => $modulo]) }}"
+                    method="POST" enctype="multipart/form-data">
                     @csrf
                     @method('PUT')
 
@@ -20,7 +21,7 @@
                         }
                     @endphp
 
-                    @include('formularios._campos', ['campos' => $formulario->campos->sortBy('posicion'), 'valores' => $valores, 'form' => $formulario->id])
+                    @include('formularios._campos', ['campos' => $formulario->campos->sortBy('posicion'), 'valores' => $valores, 'form' => $formulario->id, 'caso' => 'store'])
 
 
                     <button type="submit" class="btn btn-primary mt-3">Actualizar Respuesta</button>

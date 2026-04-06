@@ -80,33 +80,58 @@ class FormularioRepository implements FormularioInterface
         ]);
     }
 
-    public function guardarCampo($campo, $respuesta_id, Request $request, $form)
+    public function guardarCampo($campo, $respuesta_id, Request $request, $form, $prefix = null)
     {
         $tipo = strtolower($campo->campo_nombre);
         $name = $campo->nombre;
-        if (in_array($tipo, ['imagen', 'video', 'archivo']) && $request->hasFile($name)) {
-            $file = $request->file($name);
-            $filename = uniqid($tipo . '_') . '.' . $file->getClientOriginalExtension();
-            $path = match ($tipo) {
-                'imagen' => public_path("archivos/formulario_{$form}/imagenes"),
-                'video' => public_path("archivos/formulario_{$form}/videos"),
-                'archivo' => public_path("archivos/formulario_{$form}/archivos"),
-            };
-            if (!file_exists($path))
-                mkdir($path, 0777, true);
-            $file->move($path, $filename);
-            $this->guardarValorSimple($campo, $respuesta_id, $filename);
 
+        // 🔥 nombres posibles del input
+        $inputDot = $prefix ? "{$prefix}.{$name}" : $name;
+        $inputArray = $prefix ? "{$prefix}[{$name}]" : $name;
 
+        // =========================================
+        // ARCHIVOS
+        // =========================================
+        if (in_array($tipo, ['imagen', 'video', 'archivo'])) {
 
-        } elseif ($request->has($name)) {
+            $file = $request->file($inputDot)
+                ?? $request->file($inputArray)
+                ?? $request->files->get($inputArray)
+                ?? $request->files->get($inputDot);
 
-            $valor = $request->input($name);
+            if ($file) {
+
+                $filename = uniqid($tipo . '_') . '.' . $file->getClientOriginalExtension();
+
+                $path = match ($tipo) {
+                    'imagen' => public_path("archivos/formulario_{$form}/imagenes"),
+                    'video' => public_path("archivos/formulario_{$form}/videos"),
+                    'archivo' => public_path("archivos/formulario_{$form}/archivos"),
+                };
+
+                if (!file_exists($path)) {
+                    mkdir($path, 0777, true);
+                }
+
+                $file->move($path, $filename);
+
+                $this->guardarValorSimple($campo, $respuesta_id, $filename);
+            }
+
+            return;
+        }
+
+        // =========================================
+        // CAMPOS NORMALES
+        // =========================================
+        if ($request->has($inputDot) || $request->has($inputArray)) {
+
+            $valor = $request->input($inputDot) ?? $request->input($inputArray);
 
             if (is_array($valor)) {
-
-                foreach ($valor as $v)
+                foreach ($valor as $v) {
                     $this->guardarValorSimple($campo, $respuesta_id, $v);
+                }
             } else {
                 $this->guardarValorSimple($campo, $respuesta_id, $valor);
             }
@@ -143,20 +168,24 @@ class FormularioRepository implements FormularioInterface
         }
     }
 
-    public function validarOpcionesCatalogo($campos, $request)
+    public function validarOpcionesCatalogo($campos, $request, $prefix = null)
     {
         $errores = [];
+
 
         foreach ($campos as $campo) {
             $tipo = strtolower($campo->campo_nombre);
             $name = $campo->nombre;
 
+            $inputName = $prefix
+                ? "{$prefix}.{$name}"
+                : $name;
             // Solo validar si el request tiene datos para ese campo
-            if (in_array($tipo, ['checkbox', 'radio', 'selector']) && $request->has($name)) {
+            if (in_array($tipo, ['checkbox', 'radio', 'selector']) && $request->has($inputName)) {
 
-                $valores = is_array($request->input($name))
-                    ? $request->input($name)
-                    : [$request->input($name)];
+                $valores = is_array($request->input($inputName))
+                    ? $request->input($inputName)
+                    : [$request->input($inputName)];
 
                 //Caso 1: campo con categoria_id
                 if ($campo->categoria_id) {
@@ -402,7 +431,7 @@ class FormularioRepository implements FormularioInterface
 
         // PAGINACIÓN
         $respuestas = $query->orderBy('created_at', 'desc')
-            ->paginate(50, ['*'], $pageName ?? 'page')
+            ->paginate(20, ['*'], $pageName ?? 'page')
             ->withQueryString();
 
         // Cargar solo campos visibles en listado

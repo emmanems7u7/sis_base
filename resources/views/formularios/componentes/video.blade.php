@@ -5,5 +5,6 @@
         </a>
     @endif
 </div>
-<input type="file" data-tipo="{{ $campo->campo_nombre }}" name="{{ $campo->nombre }}" accept="video/*"
+
+<input type="file" data-tipo="{{ $campo->campo_nombre }}" name="{{ $inputName }}" id="{{ $inputId }}" accept="video/*"
     class="form-control" {{ $esRequerido ? 'required' : '' }}>

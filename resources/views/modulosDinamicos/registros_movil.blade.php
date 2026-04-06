@@ -11,7 +11,7 @@
     <h5 class="mb-2"><i class="fas fa-file-alt me-2"></i>{{ $formulario->nombre }}</h5>
 
     @include('formularios.modal_busqueda', ['formulario' => $formulario, 'campos' => $formulario->campos, 'modulo' => $modulo->id])
-    @include('modulosDinamicos.botones_accion', ['formulario' => $formulario])
+    @include('formularios.partials.botones_accion', ['formulario' => $formulario])
 
     @include('formularios.partials.iterador_cards', ['modulo_id' => $modulo->id])
 

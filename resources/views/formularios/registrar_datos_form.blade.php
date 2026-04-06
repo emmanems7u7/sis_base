@@ -9,14 +9,15 @@
         <div class="card mt-2">
             <div class="card-body">
                 <h5>Reglas y Acciones para el registro</h5>
-                @if(!empty($humanRules))
+
+                @if($humanRules->isNotEmpty())
                     <div class="list-group">
                         @foreach($humanRules as $rule)
                             <div class="list-group-item">{!! $rule !!}</div>
                         @endforeach
                     </div>
                 @else
-                    <p class="text-muted">No hay reglas de lógica configuradas para este formulario.</p>
+                    <p class="text-muted">No hay reglas de lógica configuradas.</p>
                 @endif
 
             </div>
@@ -30,9 +31,35 @@
                     @csrf
 
 
-                    @include('formularios._campos', ['campos' => $formulario->campos->sortBy('posicion'), 'valores' => []])
+                  
+                    @foreach($formularios as $index => $formItem)
 
-                    @if(isset($formulario->config['registro_multiple']) && $formulario->config['registro_multiple'])
+                    <div class="mb-4 border rounded p-3">
+                        
+                        @if($formularios->count() > 1)
+                            <h5 class="mb-3">
+                                {{ $formItem->nombre }}
+                            </h5>
+                        @endif
+
+                        @include('formularios._campos', [
+                            'campos' => $formItem->campos->sortBy('posicion'),
+                            'valores' => [],
+                            'prefix' => "form_{$formItem->id}" ,
+                            'caso' => 'store'
+                        ])
+
+                    </div>
+
+                    @endforeach
+
+
+
+                    @php
+                        $formPrincipal = $formularios->first();
+                    @endphp
+
+                    @if(isset($formPrincipal->config['registro_multiple']) && $formPrincipal->config['registro_multiple'])
 
                         <button type="button" class="btn btn-success mt-3" id="btn-agregar-registro">
                             Agregar registro
@@ -42,11 +69,8 @@
                             <h5>Registros agregados</h5>
 
                             @if($isMobile)
-
                                 <div id="contenedor-cards"></div>
-
                             @else
-
                                 <div id="contenedor-tabla" class="table-responsive">
                                     <table class="table table-bordered table-striped" id="tabla-registros">
                                         <thead>
@@ -58,14 +82,11 @@
                                         <tbody></tbody>
                                     </table>
                                 </div>
-
                             @endif
                         </div>
 
                         <input type="hidden" name="registros_json" id="registros_json">
                         <div id="hidden_files_container"></div>
-
-
 
                     @endif
 
@@ -86,6 +107,10 @@
         </div>
 
     </div>
+
+
+
+
     @if(isset($formulario->config['registro_multiple']) && $formulario->config['registro_multiple'])
 
         <script>
@@ -100,19 +125,25 @@
                 'id' => $c->id,
                 'nombre' => $c->nombre
             ]));
+            const FORMULAS = JSON.parse('{!! addslashes(json_encode($formulas)) !!}');
         </script>
 
         <script>
 
             function obtenerNombreCampoIncremento() {
-
                 if (!CAMPO_INCREMENTO_ID) return null;
 
                 const campo = CAMPOS.find(c => c.id == CAMPO_INCREMENTO_ID);
-                return campo ? campo.nombre : null;
+                const FORM_ID = {{ $formulario->id }};
+                // Verifica que exista campo
+                if (!campo) return null;
+
+                // Construye la clave completa como viene en tus inputs
+                return `form_${FORM_ID}[${campo.nombre}]`;
             }
             let registros = [];
             let editIndex = null;
+
             document.getElementById('btn-agregar-registro').addEventListener('click', function () {
 
                 let contenedor = document.getElementById('formulario-dinamico');
@@ -122,9 +153,9 @@
                 let tieneError = false;
                 let primerError = null;
 
-                // =============================
+
                 // Limpiar errores previos
-                // =============================
+
                 inputs.forEach(input => {
                     input.classList.remove('is-invalid');
                 });
@@ -135,9 +166,9 @@
 
                     let key = input.name.replace('[]', '');
 
-                    // =============================
+
                     // Obtener nombre visible desde el LABEL
-                    // =============================
+
                     let grupo = input.closest('.mb-3, .form-group, .col-md-6, .col-md-12');
                     let label = grupo ? grupo.querySelector('label') : null;
 
@@ -145,9 +176,9 @@
                         ? label.innerText.replace('*', '').trim()
                         : 'Este campo';
 
-                    // =============================
+
                     // VALIDACIÓN REQUERIDOS
-                    // =============================
+
                     if (input.required) {
 
                         if (input.type === 'checkbox') {
@@ -192,9 +223,9 @@
                         }
                     }
 
-                    // =============================
+
                     // CONSTRUCCIÓN DEL REGISTRO
-                    // =============================
+
 
                     if (input.type === 'checkbox') {
 
@@ -270,7 +301,7 @@
 
                 if (tieneError) {
 
-                    mostrarAlerta('error', primerError ?? 'Complete los campos obligatorios.');
+                    mostrarAlerta('warning', primerError ?? 'Complete los campos obligatorios.');
                     let campoInvalido = contenedor.querySelector('.is-invalid');
                     if (campoInvalido) {
                         campoInvalido.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -280,33 +311,42 @@
                     return;
                 }
 
+                if (!tieneError) {
+   
+                    ejecutarFormulasDinamicas(registro, FORMULAS);
 
+                }
 
+                console.log(registro)
 
-                // =============================
                 // AGRUPACIÓN INTELIGENTE
-                // =============================
-                if (AGRUPACION_ACTIVA) {
 
+                if (AGRUPACION_ACTIVA) {
                     const nombreCampoIncremento = obtenerNombreCampoIncremento();
 
+                    console.log(nombreCampoIncremento)
+                    console.log(registro[nombreCampoIncremento])
+                    console.log(registros)
+                    
                     if (nombreCampoIncremento && registro[nombreCampoIncremento]) {
+                       
 
                         let indexExistente = registros.findIndex(r => {
+                          
+                          return Object.keys(registro).every(key => {
 
-                            return Object.keys(registro).every(key => {
+                              // Ignorar el campo incremento
+                              if (key === nombreCampoIncremento) return true;
 
-                                // Ignorar el campo incremento
-                                if (key === nombreCampoIncremento) return true;
+                              // Comparar valores (solo value)
+                              if (!r[key] || !registro[key]) return false;
 
-                                // Comparar valores (solo value)
-                                if (!r[key] || !registro[key]) return false;
+                              return r[key].value == registro[key].value;
+                          });
 
-                                return r[key].value == registro[key].value;
-                            });
-
-                        });
-
+                      });
+                    console.log(indexExistente) 
+                     
                         if (indexExistente !== -1) {
 
                             // Incrementar valor
@@ -321,12 +361,13 @@
                             };
 
 
-
+                            ejecutarFormulas(registros, FORMULAS,indexExistente)
 
                             render_informacion();
                             actualizarRegistrosJson();
+
                             limpiarFormulario();
-                            mostrarAlerta('error', 'Registro agrupado y cantidad incrementada.');
+                            mostrarAlerta('success', 'Registro agrupado y cantidad incrementada.');
 
                             return;
                         }
@@ -353,7 +394,7 @@
 
                     let value = registro[key];
 
-                    // 1️⃣ Checkbox (array de objetos)
+                    //Checkbox (array de objetos)
                     if (Array.isArray(value)) {
 
                         value.forEach(v => {
@@ -368,21 +409,21 @@
 
                     }
 
-                    // 2️⃣ Archivo nuevo
+                    // Archivo nuevo
                     else if (typeof value === 'object' && value?.type === 'new') {
 
                         formData.append(key, value.file);
 
                     }
 
-                    // 3️⃣ Objeto normal {value, text}
+                    //  Objeto normal {value, text}
                     else if (typeof value === 'object') {
 
                         formData.append(key, value.value ?? '');
 
                     }
 
-                    // 4️⃣ Valor primitivo (por seguridad)
+                    // Valor primitivo 
                     else {
 
                         formData.append(key, value);
@@ -422,7 +463,10 @@
 
                             crearHiddenArchivos(registro, currentIndex, isEdit);
                             mostrarAlerta('success', data.message);
+                            ejecutarFormulas(registros, FORMULAS,currentIndex)
+                            
                             render_informacion();
+
                             limpiarFormulario();
                         }
                         else {
@@ -468,7 +512,7 @@
 
                     if (typeof value === 'object' && value?.type === 'new') {
 
-                        // 🔹 Si es edición, eliminar el anterior de ese registro/campo
+                        //Si es edición, eliminar el anterior de ese registro/campo
                         if (isEdit) {
                             let oldInput = container.querySelector(
                                 `input[name="registros[${index}][${key}]"]`
@@ -476,7 +520,7 @@
                             if (oldInput) oldInput.remove();
                         }
 
-                        // 🔹 Crear nuevo hidden file
+                        //Crear nuevo hidden file
                         let input = document.createElement('input');
                         input.type = 'file';
                         input.style.display = 'none';
@@ -504,12 +548,10 @@
 
                         let value = reg[key];
 
-                        // 1️⃣ Archivo nuevo
                         if (value && typeof value === 'object' && value.preview) {
                             copia[key] = value.preview;
                         }
 
-                        // 2️⃣ Array (checkbox)
                         else if (Array.isArray(value)) {
 
                             copia[key] = value.map(item => {
@@ -523,14 +565,12 @@
 
                         }
 
-                        // 3️⃣ Objeto normal {value, text}
                         else if (value && typeof value === 'object') {
 
                             copia[key] = value.value ?? null;
 
                         }
 
-                        // 4️⃣ Valor primitivo
                         else {
 
                             copia[key] = value;
@@ -557,9 +597,142 @@
 
             }
 
-            // =============================
-            // Render tabla
-            // =============================
+
+function ejecutarFormulas(registros, formulas,index) {
+    if (!formulas || !Array.isArray(formulas)) return;
+
+    formulas.forEach(f => {
+        const destinoForm = `form_${f.destino.form}[${f.destino.nombre}]`;
+
+       
+
+        // Recorremos todos los registros
+        let total = 0;
+
+        registros.forEach(reg => {
+            let resultado = null;
+            let operador = null;
+            let c = 0;
+            f.formula.forEach(item => {
+                if (item.tipo === 'campo') {
+                    const formKey = `form_${item.form}[${item.nombre}]`;
+                    let valor = parseFloat(reg[formKey]?.value);
+
+                 
+
+                    if (isNaN(valor)) {
+                        const input = document.querySelector(`input[name="${formKey}"]`);
+                        valor = input.value;
+                        c = 1;
+
+                    }
+
+                    if (resultado === null) {
+                        resultado = valor;
+                    } else if (operador) {
+                        switch (operador) {
+                            case '+': resultado += valor; break;
+                            case '-': resultado -= valor; break;
+                            case '*': resultado *= valor; break;
+                            case '/': resultado /= valor; break;
+                        }
+                        operador = null;
+                    }
+                } else if (item.tipo === 'operador') {
+                    operador = item.valor;
+                }
+            });
+                if(c == 0)
+                {
+                    total += resultado || 0;
+
+                }else{
+                    total= resultado || 0;
+
+                }
+        });
+
+        if (registros[index] && registros[index][destinoForm]) {
+
+            registros[index][destinoForm] = { value: total, text: total };
+
+        }
+        else{
+           
+            const input2 = document.querySelector(`input[name="${destinoForm}"]`);
+            input2.value = total;
+        }
+      
+
+    });
+}
+
+function ejecutarFormulasDinamicas(registro, formulas, index = null) {
+    if (!formulas || !Array.isArray(formulas)) return;
+
+    formulas.forEach(f => {
+        // Identificamos el formulario y nombre de destino
+        const destinoFormId = f.destino.form; // Ejemplo: 10
+        const destinoNombre = f.destino.nombre; // Ejemplo: 'total'
+        const destinoKeyFull = `form_${destinoFormId}[${destinoNombre}]`;
+
+        let resultado = null;
+        let operador = null;
+
+        // 1. CALCULAR EL RESULTADO
+        f.formula.forEach(item => {
+            if (item.tipo === 'campo') {
+                const formKey = `form_${item.form}[${item.nombre}]`;
+                
+                // Buscamos el valor en el registro o en el DOM
+                let valorRaw = registro[formKey]?.value;
+                if (valorRaw === undefined || valorRaw === "") {
+                    const input = document.querySelector(`input[name="${formKey}"]`);
+                    valorRaw = input ? input.value : 0;
+                }
+                
+                let valor = valorRaw;
+
+                if (resultado === null) {
+                    resultado = valor;
+                } else if (operador) {
+                    switch (operador) {
+                        case '+': resultado += valor; break;
+                        case '-': resultado -= valor; break;
+                        case '*': resultado *= valor; break;
+                        case '/': resultado /= (valor !== 0 ? valor : 1); break;
+                    }
+                    operador = null;
+                }
+            } else if (item.tipo === 'operador') {
+                operador = item.valor;
+            }
+        });
+
+        // 2. LOGICA DE ASIGNACIÓN INTELIGENTE
+        // Extraemos el ID del formulario del registro actual (asumiendo que todas las llaves empiezan igual)
+        // Ejemplo: Si las llaves son form_8[...], el ID es "8"
+        const registroFormId = Object.keys(registro)[0]?.match(/form_(\d+)/)?.[1];
+
+        if (String(destinoFormId) === String(registroFormId)) {
+            // SI EL DESTINO ES EL MISMO FORMULARIO (Ej: form_8 -> form_8)
+            // Se guarda en el objeto para que no se pierda en la tabla
+            registro[destinoKeyFull] = { 
+                value: String(resultado || 0), 
+                text: String(resultado || 0) 
+            };
+        } else {
+            // SI EL DESTINO ES OTRO FORMULARIO (Ej: form_8 -> form_10)
+            // NO lo metemos en el objeto registro de la fila
+            // Solo actualizamos el input visual (Totales generales, etc.)
+            const inputFuera = document.querySelector(`input[name="${destinoKeyFull}"]`);
+            if (inputFuera) {
+                inputFuera.value = resultado || 0;
+            }
+        }
+    });
+}
+
             function render_tabla() {
 
                 const tbody = document.querySelector('#tabla-registros tbody');
@@ -570,15 +743,15 @@
 
                 if (!registros || registros.length === 0) {
                     thead.innerHTML = `
-                                                                                                                                                                                                        <th>#</th>
-                                                                                                                                                                                                        <th>Acciones</th>
-                                                                                                                                                                                                    `;
+                                                                                                                                                                                                                                <th>#</th>
+                                                                                                                                                                                                                                <th>Acciones</th>
+                                                                                                                                                                                                                            `;
                     return;
                 }
 
-                // =============================
-                // 🔥 CAPTURAR CAMPOS UNA SOLA VEZ
-                // =============================
+
+                //  CAPTURAR CAMPOS UNA SOLA VEZ
+
                 let campos = [];
 
                 contenedor.querySelectorAll('input, select, textarea').forEach(input => {
@@ -602,9 +775,9 @@
                     });
                 });
 
-                // =============================
-                // 🔥 ENCABEZADOS
-                // =============================
+
+                // ENCABEZADOS
+
                 thead.innerHTML = `<th>#</th>`;
 
                 campos.forEach(campo => {
@@ -618,9 +791,9 @@
                 thAcciones.textContent = 'Acciones';
                 thead.appendChild(thAcciones);
 
-                // =============================
-                // 🔥 FILAS
-                // =============================
+
+                //  FILAS
+
                 registros.forEach((registro, index) => {
 
                     let tr = document.createElement('tr');
@@ -635,9 +808,9 @@
                         let value = registro[campo.key];
                         let td = document.createElement('td');
 
-                        // 🔥 buscar input SOLO si existe
+                        //  buscar input SOLO si existe
                         let inputRef = contenedor.querySelector(`[name="${campo.key}"]`);
-                        // 🔥 protección contra null
+                        //  protección contra null
                         td.innerHTML = renderCampoContenido(
                             value,
                             inputRef || null,
@@ -648,23 +821,23 @@
                         tr.appendChild(td);
                     });
 
-                    // =============================
-                    // 🔥 ACCIONES
-                    // =============================
+
+                    //  ACCIONES
+
                     let tdAcciones = document.createElement('td');
                     tdAcciones.innerHTML = `
-                                                                                                                                                                                                        <button type="button" 
-                                                                                                                                                                                                                class="btn btn-sm btn-warning me-2"
-                                                                                                                                                                                                                onclick="editarRegistro(${index})">
-                                                                                                                                                                                                            <i class="fas fa-edit"></i>
-                                                                                                                                                                                                        </button>
+                                                                                                                                                                                                                                <button type="button" 
+                                                                                                                                                                                                                                        class="btn btn-sm btn-warning me-2"
+                                                                                                                                                                                                                                        onclick="editarRegistro(${index})">
+                                                                                                                                                                                                                                    <i class="fas fa-edit"></i>
+                                                                                                                                                                                                                                </button>
 
-                                                                                                                                                                                                        <button type="button" 
-                                                                                                                                                                                                                class="btn btn-sm btn-danger"
-                                                                                                                                                                                                                onclick="eliminarRegistro(${index})">
-                                                                                                                                                                                                            <i class="fas fa-trash"></i>
-                                                                                                                                                                                                        </button>
-                                                                                                                                                                                                    `;
+                                                                                                                                                                                                                                <button type="button" 
+                                                                                                                                                                                                                                        class="btn btn-sm btn-danger"
+                                                                                                                                                                                                                                        onclick="eliminarRegistro(${index})">
+                                                                                                                                                                                                                                    <i class="fas fa-trash"></i>
+                                                                                                                                                                                                                                </button>
+                                                                                                                                                                                                                            `;
 
                     tr.appendChild(tdAcciones);
                     tbody.appendChild(tr);
@@ -689,7 +862,7 @@
                     return value ?? '';
                 }
 
-                // 🔥 AUTOCOMPLETADO
+                //  AUTOCOMPLETADO
                 if (input.classList.contains('campo-autocompletado')) {
 
                     let val = 0;
@@ -701,29 +874,29 @@
                     }
 
                     return `
-                                                                                                                                                                                                                                                                                                                                                                                                                <div class="d-flex align-items-center gap-1">
+                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="d-flex align-items-center gap-1">
 
-                                                                                                                                                                                                                                                                                                                                                                                                                    <span class="fw-bold d-flex align-items-center justify-content-center"
-                                                                                                                                                                                                                                                                                                                                                                                                                          style="min-width: 25px; height: 22px;">
-                                                                                                                                                                                                                                                                                                                                                                                                                        ${val}
-                                                                                                                                                                                                                                                                                                                                                                                                                    </span>
+                                                                                                                                                                                                                                                                                                                                                                                                                                            <span class="fw-bold d-flex align-items-center justify-content-center"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                  style="min-width: 25px; height: 22px;">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                ${val}
+                                                                                                                                                                                                                                                                                                                                                                                                                                            </span>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                    <button class="btn btn-sm btn-outline-success p-0 d-flex align-items-center justify-content-center"
-                                                                                                                                                                                                                                                                                                                                                                                                                        style="width:22px; height:22px;"
-                                                                                                                                                                                                                                                                                                                                                                                                                        onclick="cambiarValor(${index}, '${key}', 1)">
-                                                                                                                                                                                                                                                                                                                                                                                                                        +
-                                                                                                                                                                                                                                                                                                                                                                                                                    </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                            <button class="btn btn-sm btn-outline-success p-0 d-flex align-items-center justify-content-center"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                style="width:22px; height:22px;"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                onclick="cambiarValor(${index}, '${key}', 1)">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                +
+                                                                                                                                                                                                                                                                                                                                                                                                                                            </button>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                    ${val > 1 ? `
-                                                                                                                                                                                                                                                                                                                                                                                                                        <button class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center"
-                                                                                                                                                                                                                                                                                                                                                                                                                            style="width:22px; height:22px;"
-                                                                                                                                                                                                                                                                                                                                                                                                                            onclick="cambiarValor(${index}, '${key}', -1)">
-                                                                                                                                                                                                                                                                                                                                                                                                                            -
-                                                                                                                                                                                                                                                                                                                                                                                                                        </button>
-                                                                                                                                                                                                                                                                                                                                                                                                                    ` : ''}
+                                                                                                                                                                                                                                                                                                                                                                                                                                            ${val > 1 ? `
+                                                                                                                                                                                                                                                                                                                                                                                                                                                <button class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    style="width:22px; height:22px;"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    onclick="cambiarValor(${index}, '${key}', -1)">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                    -
+                                                                                                                                                                                                                                                                                                                                                                                                                                                </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                            ` : ''}
 
-                                                                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                                                                            `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                    `;
                 }
 
                 // ARCHIVOS (IMAGEN / VIDEO / OTROS)
@@ -733,31 +906,31 @@
                     if (value.file?.type?.startsWith('image')) {
 
                         return `
-                                                                                                                                                                                                                                                                        <a href="${value.preview}" 
-                                                                                                                                                                                                                                                           data-fancybox="gallery"
-                                                                                                                                                                                                                                                           class="ver-link">
-                                                                                                                                                                                                                                                           <i class="fas fa-image"></i> Ver imagen
-                                                                                                                                                                                                                                                        </a>
-                                                                                                                                                                                                                                                                                                    `;
+                                                                                                                                                                                                                                                                                                <a href="${value.preview}" 
+                                                                                                                                                                                                                                                                                   data-fancybox="gallery"
+                                                                                                                                                                                                                                                                                   class="ver-link">
+                                                                                                                                                                                                                                                                                   <i class="fas fa-image"></i> Ver imagen
+                                                                                                                                                                                                                                                                                </a>
+                                                                                                                                                                                                                                                                                                                            `;
 
                         // VIDEO
                     } else if (value.file?.type?.startsWith('video')) {
 
                         return `
-                                                                                                                                                                                                                                                                                <a href="${value.preview}" target="_blank">
-                                                                                                                                                                                                                                                                <i class="fas fa-video"></i> Ver video
-                                                                                                                                                                                                                                                            </a>
-                                                                                                                                                                                                                                                                                                    `;
+                                                                                                                                                                                                                                                                                                        <a href="${value.preview}" target="_blank">
+                                                                                                                                                                                                                                                                                        <i class="fas fa-video"></i> Ver video
+                                                                                                                                                                                                                                                                                    </a>
+                                                                                                                                                                                                                                                                                                                            `;
 
                         // OTROS ARCHIVOS
                     } else {
 
                         return `
-                                                                                                                                                                                                                                                                                                        <a href="${value.preview}" 
-                                                                                                                                                                                                                                                                                                           target="_blank">
-                                                                                                                                                                                                                                                                                                           <i class="fas fa-file"></i> Ver archivo
-                                                                                                                                                                                                                                                                                                        </a>
-                                                                                                                                                                                                                                                                                                    `;
+                                                                                                                                                                                                                                                                                                                                <a href="${value.preview}" 
+                                                                                                                                                                                                                                                                                                                                   target="_blank">
+                                                                                                                                                                                                                                                                                                                                   <i class="fas fa-file"></i> Ver archivo
+                                                                                                                                                                                                                                                                                                                                </a>
+                                                                                                                                                                                                                                                                                                                            `;
                     }
                 }
 
@@ -771,7 +944,7 @@
                     return value.text ?? value.value ?? '';
                 }
 
-                // 🔥 SIMPLE
+                //  SIMPLE
                 return value ?? '';
             }
 
@@ -783,10 +956,10 @@
 
                 if (!registros || registros.length === 0) {
                     contenedor.innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                <div class="text-center text-muted py-2">
-                                                                                                                                                                                                                                                                                                                                                                    No hay registros
-                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                            `;
+                                                                                                                                                                                                                                                                                                                                                                                        <div class="text-center text-muted py-2">
+                                                                                                                                                                                                                                                                                                                                                                                            No hay registros
+                                                                                                                                                                                                                                                                                                                                                                                        </div>
+                                                                                                                                                                                                                                                                                                                                                                                    `;
                     return;
                 }
 
@@ -816,9 +989,9 @@
                     });
                 });
 
-                // =============================
-                // 🔥 CARDS COMPACTAS
-                // =============================
+
+
+
 
                 registros.forEach((registro, index) => {
 
@@ -836,51 +1009,51 @@
                         );
 
                         contenido += `
-                                                                                                                                                                                                                                                                                                                                                                    <div class="col-6 mb-1">
-                                                                                                                                                                                                                                                                                                                                                                        <small class="text-muted d-block" style="font-size:11px;">
-                                                                                                                                                                                                                                                                                                                                                                          <strong>  ${campo.label}</strong> 
-                                                                                                                                                                                                                                                                                                                                                                        </small>
-                                                                                                                                                                                                                                                                                                                                                                        <div style="font-size:13px; line-height:1.2;">
-                                                                                                                                                                                                                                                                                                                                                                            ${htmlCampo}
-                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                    </div>
-                                                                                                                                                                                                                                                                                                                                                                `;
+                                                                                                                                                                                                                                                                                                                                                                                            <div class="col-6 mb-1">
+                                                                                                                                                                                                                                                                                                                                                                                                <small class="text-muted d-block" style="font-size:11px;">
+                                                                                                                                                                                                                                                                                                                                                                                                  <strong>  ${campo.label}</strong> 
+                                                                                                                                                                                                                                                                                                                                                                                                </small>
+                                                                                                                                                                                                                                                                                                                                                                                                <div style="font-size:13px; line-height:1.2;">
+                                                                                                                                                                                                                                                                                                                                                                                                    ${htmlCampo}
+                                                                                                                                                                                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                                                                                                                                                                                            </div>
+                                                                                                                                                                                                                                                                                                                                                                                        `;
                     });
 
                     let card = document.createElement('div');
                     card.className = 'card mb-2 shadow-sm border-0';
 
                     card.innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                <div class="card-body p-2">
+                                                                                                                                                                                                                                                                                                                                                                                        <div class="card-body p-2">
 
-                                                                                                                                                                                                                                                                                                                                                                    <!-- HEADER -->
-                                                                                                                                                                                                                                                                                                                                                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                                                                                                                                                                                                                                                                                                                                                        <span class="badge bg-secondary" style="font-size:11px;">
-                                                                                                                                                                                                                                                                                                                                                                            #${index + 1}
-                                                                                                                                                                                                                                                                                                                                                                        </span>
+                                                                                                                                                                                                                                                                                                                                                                                            <!-- HEADER -->
+                                                                                                                                                                                                                                                                                                                                                                                            <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                                                                                                                                                                                                                                                                                                                                                <span class="badge bg-secondary" style="font-size:11px;">
+                                                                                                                                                                                                                                                                                                                                                                                                    #${index + 1}
+                                                                                                                                                                                                                                                                                                                                                                                                </span>
 
-                                                                                                                                                                                                                                                                                                                                                                        <div class="d-flex gap-1">
-                                                                                                                                                                                                                                                                                                                                                                        <button type='button' class="btn btn-xs btn-warning p-1 px-2"
-                                                                                                                                                                                                                                                                                                                                                                            title="Editar"
-                                                                                                                                                                                                                                                                                                                                                                            onclick="editarRegistro(${index})">
-                                                                                                                                                                                                                                                                                                                                                                            <i class="fas fa-edit"></i>
-                                                                                                                                                                                                                                                                                                                                                                        </button>
+                                                                                                                                                                                                                                                                                                                                                                                                <div class="d-flex gap-1">
+                                                                                                                                                                                                                                                                                                                                                                                                <button type='button' class="btn btn-xs btn-warning p-1 px-2"
+                                                                                                                                                                                                                                                                                                                                                                                                    title="Editar"
+                                                                                                                                                                                                                                                                                                                                                                                                    onclick="editarRegistro(${index})">
+                                                                                                                                                                                                                                                                                                                                                                                                    <i class="fas fa-edit"></i>
+                                                                                                                                                                                                                                                                                                                                                                                                </button>
 
-                                                                                                                                                                                                                                                                                                                                                                        <button type='button'  class="btn btn-xs btn-danger p-1 px-2"
-                                                                                                                                                                                                                                                                                                                                                                            title="Eliminar"
-                                                                                                                                                                                                                                                                                                                                                                            onclick="eliminarRegistro(${index})">
-                                                                                                                                                                                                                                                                                                                                                                            <i class="fas fa-trash"></i>
-                                                                                                                                                                                                                                                                                                                                                                        </button>
-                                                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                                                                <button type='button'  class="btn btn-xs btn-danger p-1 px-2"
+                                                                                                                                                                                                                                                                                                                                                                                                    title="Eliminar"
+                                                                                                                                                                                                                                                                                                                                                                                                    onclick="eliminarRegistro(${index})">
+                                                                                                                                                                                                                                                                                                                                                                                                    <i class="fas fa-trash"></i>
+                                                                                                                                                                                                                                                                                                                                                                                                </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
+                                                                                                                                                                                                                                                                                                                                                                                            </div>
 
-                                                                                                                                                                                                                                                                                                                                                                    <!-- CONTENIDO -->
-                                                                                                                                                                                                                                                                                                                                                                    <div class="row gx-2">
-                                                                                                                                                                                                                                                                                                                                                                        ${contenido}
-                                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                                                            <!-- CONTENIDO -->
+                                                                                                                                                                                                                                                                                                                                                                                            <div class="row gx-2">
+                                                                                                                                                                                                                                                                                                                                                                                                ${contenido}
+                                                                                                                                                                                                                                                                                                                                                                                            </div>
 
-                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                            `;
+                                                                                                                                                                                                                                                                                                                                                                                        </div>
+                                                                                                                                                                                                                                                                                                                                                                                    `;
                     let col = document.createElement('div');
                     col.className = 'col-12 col-sm-6 col-md-4 col-lg-3 mb-2';
 
@@ -907,20 +1080,19 @@
 
                 let nuevo = actual + cambio;
 
-                // mínimo 0
                 if (nuevo < 0) nuevo = 0;
 
                 registro[key] = {
                     value: nuevo,
                     text: nuevo
                 };
-
+                ejecutarFormulas(registros, FORMULAS,index)
                 render_informacion();
             }
 
-            // =============================
+
             // Editar
-            // =============================
+
             function editarRegistro(index) {
 
                 let registro = registros[index];
@@ -931,9 +1103,9 @@
 
                 document.getElementById('btn-agregar-registro').textContent = 'Actualizar registro';
 
-                // =============================
-                // 1️⃣ LIMPIAR FORMULARIO
-                // =============================
+
+                //  LIMPIAR FORMULARIO
+
                 inputs.forEach(input => {
 
                     if (input.type === 'checkbox' || input.type === 'radio') {
@@ -956,9 +1128,9 @@
 
                 });
 
-                // =============================
-                // 2️⃣ CARGAR DATOS
-                // =============================
+
+                //  CARGAR DATOS
+
 
 
 
@@ -972,9 +1144,9 @@
                     let campo = campos[0];
                     let tipo = campo.dataset.tipo;
 
-                    // =============================
+
                     // CHECKBOX
-                    // =============================
+
                     if (tipo === 'checkbox') {
 
                         campos.forEach(el => {
@@ -984,9 +1156,9 @@
                         });
                     }
 
-                    // =============================
+
                     // RADIO
-                    // =============================
+
                     else if (tipo === 'radio') {
 
                         campos.forEach(radio => {
@@ -995,9 +1167,9 @@
                         });
                     }
 
-                    // =============================
+
                     // SELECTOR / RELACION 🔥
-                    // =============================
+
                     else if (tipo === 'selector' || tipo === 'campo_relacion') {
 
                         let val = value;
@@ -1025,9 +1197,9 @@
                         campo.dispatchEvent(new Event('change', { bubbles: true }));
                     }
 
-                    // =============================
+
                     // ARCHIVOS (archivo, imagen, video)
-                    // =============================
+
 
 
 
@@ -1035,41 +1207,41 @@
 
                         let preview = null;
 
-                        // 1️⃣ Intentar por dataset
+
                         if (campo.dataset.preview) {
                             preview = document.getElementById(campo.dataset.preview);
                         }
 
-                        // 2️⃣ Si no existe, buscar contenedor cercano
+
                         if (!preview) {
                             preview = campo.closest('.form-group, .mb-3, div')?.querySelector('.preview-archivo');
                         }
 
-                        // 3️⃣ Si aún no existe, crear uno dinámicamente
+
                         if (!preview) {
                             preview = document.createElement('div');
                             preview.classList.add('preview-archivo', 'mt-2');
                             campo.parentNode.insertBefore(preview, campo);
                         }
 
-                        // Limpiar contenido anterior
+
                         preview.innerHTML = '';
 
-                        // =============================
-                        // 🔥 ARCHIVO NUEVO (preview JS)
-                        // =============================
+
+                        // ARCHIVO NUEVO 
+
                         if (value && typeof value === 'object' && value.preview) {
 
                             if (value.file?.type?.startsWith('image')) {
 
                                 preview.innerHTML = `
-                                                    <a href="${value.preview}" 
-                                                    data-fancybox="imagenes"
-                                                    data-caption="Imagen seleccionada"
-                                                    class="ver-link">
-                                                        <i class="fas fa-image"></i> Ver imagen
-                                                    </a>
-                                                `;
+                                                                            <a href="${value.preview}" 
+                                                                            data-fancybox="imagenes"
+                                                                            data-caption="Imagen seleccionada"
+                                                                            class="ver-link">
+                                                                                <i class="fas fa-image"></i> Ver imagen
+                                                                            </a>
+                                                                        `;
                                 if (typeof Fancybox !== 'undefined') {
                                     Fancybox.bind('[data-fancybox="imagenes"]');
                                 }
@@ -1077,24 +1249,24 @@
                             } else if (value.file?.type?.startsWith('video')) {
 
                                 preview.innerHTML = `
-                                    <a href="${value.preview}" target="_blank" class="text-primary">
-                                        <i class="fas fa-video"></i> Ver video
-                                    </a>
-                                `;
+                                                            <a href="${value.preview}" target="_blank" class="text-primary">
+                                                                <i class="fas fa-video"></i> Ver video
+                                                            </a>
+                                                        `;
 
                             } else {
 
                                 preview.innerHTML = `
-                                    <a href="${value.preview}" target="_blank" class="text-primary">
-                                        <i class="fas fa-file"></i> Ver archivo
-                                    </a>
-                                `;
+                                                            <a href="${value.preview}" target="_blank" class="text-primary">
+                                                                <i class="fas fa-file"></i> Ver archivo
+                                                            </a>
+                                                        `;
                             }
                         }
 
-                        // =============================
-                        // 📦 ARCHIVO YA GUARDADO (Blade)
-                        // =============================
+
+                        // ARCHIVO YA GUARDADO
+
                         else if (typeof value === 'string' && value !== '') {
 
                             let baseUrl = `/archivos/formulario_${FORM_ID}`; // asegúrate de tener esto global
@@ -1106,13 +1278,13 @@
                                 url = `${baseUrl}/imagenes/${value}`;
 
                                 preview.innerHTML = `
-                                            <a href="${url}" 
-                                            data-fancybox="imagenes_${key}" 
-                                            data-caption="Imagen"
-                                            class="text-primary">
-                                                <i class="fas fa-image"></i> Ver imagen
-                                            </a>
-                                        `;
+                                                                    <a href="${url}" 
+                                                                    data-fancybox="imagenes_${key}" 
+                                                                    data-caption="Imagen"
+                                                                    class="text-primary">
+                                                                        <i class="fas fa-image"></i> Ver imagen
+                                                                    </a>
+                                                                `;
 
                                 // 🔥 Activar Fancybox (clave cuando es dinámico)
                                 if (typeof Fancybox !== 'undefined') {
@@ -1122,26 +1294,26 @@
                             else if (tipo === 'video') {
                                 url = `${baseUrl}/videos/${value}`;
                                 preview.innerHTML = `
-                                    <a href="${url}" target="_blank" class="text-primary">
-                                        <i class="fas fa-video"></i> Ver video
-                                    </a>
-                                `;
+                                                            <a href="${url}" target="_blank" class="text-primary">
+                                                                <i class="fas fa-video"></i> Ver video
+                                                            </a>
+                                                        `;
                             }
                             else {
                                 url = `${baseUrl}/archivos/${value}`;
                                 preview.innerHTML = `
-                                    <a href="${url}" target="_blank" class="text-primary">
-                                        <i class="fas fa-file"></i> Ver archivo
-                                    </a>
-                                `;
+                                                            <a href="${url}" target="_blank" class="text-primary">
+                                                                <i class="fas fa-file"></i> Ver archivo
+                                                            </a>
+                                                        `;
                             }
                         }
                     }
 
 
-                    // =============================
+
                     // FECHA
-                    // =============================
+
                     else if (tipo === 'fecha') {
 
                         let val = getValorPlano(value);
@@ -1154,41 +1326,41 @@
                         campo.value = val;
                     }
 
-                    // =============================
+
                     // HORA
-                    // =============================
+
                     else if (tipo === 'hora') {
 
                         campo.value = getValorPlano(value);
                     }
 
-                    // =============================
+
                     // COLOR
-                    // =============================
+
                     else if (tipo === 'color') {
 
                         campo.value = value || '#000000';
                     }
 
-                    // =============================
+
                     // AUTOCOMPLETADO
-                    // =============================
+
                     else if (tipo === 'campo autocompletado') {
 
                         campo.value = campo.dataset.default ?? campo.value ?? '';
                     }
 
-                    // =============================
+
                     // TEXTAREA
-                    // =============================
+
                     else if (tipo === 'textarea') {
 
                         campo.value = getValorPlano(value);
                     }
 
-                    // =============================
+
                     // INPUTS BÁSICOS
-                    // =============================
+
                     else {
 
                         let val = getValorPlano(value);
@@ -1224,9 +1396,9 @@
                 return val ?? '';
             }
 
-            // =============================
+
             // Eliminar
-            // =============================
+
 
             function eliminarRegistro(index) {
 
@@ -1235,18 +1407,18 @@
                 // Reset encabezado si ya no hay registros
                 if (registros.length === 0) {
                     document.getElementById('thead-dinamico').innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <th>#</th>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <th>Acciones</th>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <th>#</th>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <th>Acciones</th>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        `;
                 }
-
+                ejecutarFormulas(registros, FORMULAS,index)
                 render_informacion();
             }
 
 
-            // =============================
+
             // Limpiar formulario
-            // =============================
+
 
             function limpiarFormulario() {
                 /*
@@ -1255,7 +1427,7 @@
 
                                 elementos.forEach(el => {
 
-                                    // 🔥 NO limpiar hidden autocompletado
+                                    //  NO limpiar hidden autocompletado
                                     if (el.type === 'hidden' && el.classList.contains('campo-autocompletado')) {
                                         return;
                                     }

@@ -13,10 +13,10 @@ interface FormularioInterface
     public function crearRespuesta($form);
     public function CrearRespuestaGrupo();
 
-    public function guardarCampo($campo, $respuesta_id, Request $request, $form);
+    public function guardarCampo($campo, $respuesta_id, Request $request, $form, $prefix = null);
     public function guardarArchivoGenerico($campo, $respuestaId, $form, $ruta);
     public function guardarValorSimple($campo, $respuestaId, $valor);
-    public function validarOpcionesCatalogo($campos, $request);
+    public function validarOpcionesCatalogo($campos, $request, $prefix = null);
     public function CamposFormCat($campos, $limit = 100);
     public function ProcesarCampo($campo, $limit = 20, $offset = 0);
 

@@ -33,7 +33,7 @@
     @can($formulario->id . '.eliminar')
         <button type="button" id="activar-seleccion-masiva_{{ $formulario->id }}" class="btn btn-outline-secondary btn-xs"
             data-form_id="{{ $formulario->id }}">
-            Selección masiva
+            <i class="fas fa-tasks me-1"></i> Selección masiva
         </button>
 
 

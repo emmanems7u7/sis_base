@@ -68,7 +68,36 @@
 
 
     </div>
-    <div class="col-md-6"></div>
+    <div class="col-md-6">
+
+    <div class="card shadow-sm border-0">
+        <div class="card-body">
+            <h6><i class="fas fa-robot"></i>Mostrar registros generados automáticamente</h6>
+        
+            <div class="form-check">
+                <input 
+                    class="form-check-input filtro-check" 
+                    type="checkbox" 
+                    value="usuario" 
+                    id="chkUsuario" {{ ($formulario->config['mostrar_usuario'] ?? false) ? 'checked' : '' }}>
+                <label class="form-check-label" for="chkUsuario">
+                    <i class="fas fa-user me-1"></i> Mostrar autor del registro
+                </label>
+            </div>
+
+            <div class="form-check">
+                <input 
+                    class="form-check-input filtro-check" 
+                    type="checkbox" 
+                    value="fecha" 
+                    id="chkFecha"{{ ($formulario->config['mostrar_fecha'] ?? false) ? 'checked' : '' }}>
+                <label class="form-check-label" for="chkFecha">
+                    <i class="fas fa-calendar-alt me-1"></i> Mostrar fecha de registro
+                </label>
+            </div>
+        </div>
+    </div>
+    </div>
 
 </div>
  
@@ -77,7 +106,38 @@
 
 </div>
 
+<script >
+document.querySelectorAll('.filtro-check').forEach(check => {
+    check.addEventListener('change', enviarFiltros);
+});
 
+function enviarFiltros() {
+    let seleccionados = [];
+
+    document.querySelectorAll('.filtro-check:checked').forEach(chk => {
+        seleccionados.push(chk.value);
+    });
+
+    fetch('/form/filtros', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
+        },
+        body: JSON.stringify({
+            formulario_id: {{ $formulario->id }},
+            filtros: seleccionados
+        })
+    })
+    .then(res => res.json())
+    .then(data => {
+
+        mostrarAlerta('success', data.message)
+
+    })
+    .catch(err => console.error(err));
+}
+</script>
 
 
 <script>

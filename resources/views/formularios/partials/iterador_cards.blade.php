@@ -7,8 +7,13 @@
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="card shadow-sm h-100">
                     <div class="card-header p-2">
+                    @if($formulario->config['mostrar_usuario'] ?? false)
+
                         <strong>{{ $respuesta->actor->name ?? 'Anónimo' }}</strong>
+                    @endif
+                    @if($formulario->config['mostrar_fecha'] ?? false)
                         <span class="text-muted small">({{ $respuesta->created_at->format('d/m/Y H:i') }})</span>
+                    @endif
                     </div>
 
 

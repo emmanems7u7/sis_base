@@ -37,6 +37,7 @@ use App\Http\Controllers\SeederController;
 use App\Http\Controllers\ContenedorGridController;
 use App\Http\Controllers\FilaController;
 use App\Http\Controllers\ColumnaController;
+use App\Http\Controllers\ModuloFormularioParaleloController;
 use App\Http\Controllers\WidgetController;
 
 /*
@@ -365,6 +366,14 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('/campos/obtener/data', [CamposFormController::class, 'obtenerData'])->name('campos.obtenerData');
 
+    Route::post('/identificador/store', [CamposFormController::class, 'guardarIdentificador'])
+        ->name('identificador.store');
+    Route::post('/campo/config', [CamposFormController::class, 'guardarConfig'])
+        ->name('campo.config.store');
+
+    Route::post('/campo/generar', [CamposFormController::class, 'generarValor'])
+        ->name('campo.generar');
+
     Route::get('/respuestas/{respuesta}/edit/{modulo}', [RespuestasFormController::class, 'edit'])
         ->name('respuestas.edit');
 
@@ -378,6 +387,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('formularios.exportPdf');
     Route::get('/formularios/{form}/export/excel', [FormularioController::class, 'exportExcel'])->name('formularios.exportExcel');
 
+    Route::post('/form/filtros', [FormularioController::class, 'Cambiarfiltros'])->name('form.filtros');
 
     Route::get('/formularios/{form}/carga', [RespuestasFormController::class, 'CargaMasiva'])
         ->name('formularios.carga_masiva');
@@ -420,6 +430,28 @@ Route::middleware(['auth'])->group(function () {
     //actualizar configuracion
     Route::put('/modulos/{modulo}/configuracion', [ModuloController::class, 'actualizarConfiguracion'])
         ->name('modulos.configuracion.update');
+
+
+
+    Route::get('grupos/create/{modulo}', [ModuloFormularioParaleloController::class, 'create'])
+        ->name('grupos.create');
+
+    Route::post('grupos/{modulo}', [ModuloFormularioParaleloController::class, 'store'])
+        ->name('grupos.store');
+
+    // 🔹 Editar
+    Route::get('grupos/{grupo}/edit', [ModuloFormularioParaleloController::class, 'edit'])
+        ->name('grupos.edit');
+
+    Route::put('grupos/{grupo}', [ModuloFormularioParaleloController::class, 'update'])
+        ->name('grupos.update');
+
+    // 🔹 Eliminar grupo completo
+    Route::delete('grupos/{grupo}', [ModuloFormularioParaleloController::class, 'destroy'])
+        ->name('grupos.destroy');
+
+    Route::post('/formularios/campos-multiples', [ModuloFormularioParaleloController::class, 'camposMultiples'])
+        ->name('formularios.campos.multiples');
 
 
     Route::prefix('admin/form-logic')->middleware(['auth'])->group(function () {

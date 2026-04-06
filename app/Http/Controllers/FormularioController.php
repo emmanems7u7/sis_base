@@ -393,4 +393,32 @@ class FormularioController extends Controller
             'message' => 'Configuración de agrupación guardada correctamente.'
         ]);
     }
+
+
+    public function Cambiarfiltros(Request $request)
+    {
+        $request->validate([
+            'formulario_id' => 'required|exists:formularios,id',
+            'filtros' => 'nullable|array',
+            'filtros.*' => 'in:usuario,fecha'
+        ]);
+
+        $formulario = Formulario::find($request->formulario_id);
+
+        $config = $formulario->config ?? [];
+
+        $filtros = $request->input('filtros', []);
+
+        $config['mostrar_usuario'] = in_array('usuario', $filtros);
+        $config['mostrar_fecha'] = in_array('fecha', $filtros);
+
+        $formulario->config = $config;
+        $formulario->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Filtros actualizados correctamente.',
+            'config' => $config
+        ]);
+    }
 }
