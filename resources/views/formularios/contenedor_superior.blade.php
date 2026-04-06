@@ -21,7 +21,7 @@
     <div class="col-md-6 ">
         <div class="card shadow-lg ">
             <div class="card-body">
-                <p class="text-muted">{{ $formulario->descripcion }}</p>
+                <p class="text-muted">{!! $formulario->descripcion !!}</p>
             </div>
         </div>
     </div>
