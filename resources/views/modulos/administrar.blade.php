@@ -131,4 +131,26 @@
         </div>
     </div>
 
+
+    @php
+        function interpretarFormula($item)
+        {
+            $formulaTexto = '';
+
+            foreach ($item['formula'] as $parte) {
+                if ($parte['tipo'] === 'campo') {
+                    $formulaTexto .= $parte['nombre'] . ' ';
+                } elseif ($parte['tipo'] === 'operador') {
+                    $formulaTexto .= $parte['valor'] . ' ';
+                }
+            }
+
+            return trim($formulaTexto);
+        }
+
+        function interpretarDestino($destino)
+        {
+            return $destino['nombre'] ?? 'Sin destino';
+        }
+    @endphp
 @endsection
