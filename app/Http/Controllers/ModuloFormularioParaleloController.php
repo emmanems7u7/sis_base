@@ -95,18 +95,7 @@ class ModuloFormularioParaleloController extends Controller
             }
 
             // Validar que haya al menos un operador
-            $tieneOperador = false;
-            foreach ($formula as $item) {
-                if (isset($item['tipo']) && $item['tipo'] === 'operador') {
-                    $tieneOperador = true;
-                    break;
-                }
-            }
-            if (!$tieneOperador) {
-                return back()->withErrors([
-                    'operaciones_json' => "La operación #" . ($opIndex + 1) . " debe contener al menos un operador."
-                ]);
-            }
+
 
             // Validar que no termine con operador
             $ultimo = end($formula);
