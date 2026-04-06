@@ -51,27 +51,7 @@
                         </div>
                         <div class="modal-body">
 
-                            @php
-                                function interpretarFormula($item)
-                                {
-                                    $formulaTexto = '';
 
-                                    foreach ($item['formula'] as $parte) {
-                                        if ($parte['tipo'] === 'campo') {
-                                            $formulaTexto .= $parte['nombre'] . ' ';
-                                        } elseif ($parte['tipo'] === 'operador') {
-                                            $formulaTexto .= $parte['valor'] . ' ';
-                                        }
-                                    }
-
-                                    return trim($formulaTexto);
-                                }
-
-                                function interpretarDestino($destino)
-                                {
-                                    return $destino['nombre'] ?? 'Sin destino';
-                                }
-                            @endphp
                             @if ($grupo->config && is_array($grupo->config))
 
                                 @foreach ($grupo->config as $operacion)
