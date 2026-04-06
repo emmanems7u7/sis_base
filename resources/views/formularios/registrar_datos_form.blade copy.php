@@ -22,6 +22,25 @@
         </div>
     </div>
 
+
+    <div class="card mt-2">
+        <div class="card-body">
+            <h5>Reglas y Acciones para el registro</h5>
+
+            @if($humanRules->isNotEmpty())
+            <div class="list-group">
+                @foreach($humanRules as $rule)
+                <div class="list-group-item">{!! $rule !!}</div>
+                @endforeach
+            </div>
+            @else
+            <p class="text-muted">No hay reglas de lógica configuradas.</p>
+            @endif
+
+        </div>
+    </div>
+
+
     <div class="card mt-3 shadow-lg">
         <div class="card-body">
             <form

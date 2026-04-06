@@ -6,22 +6,7 @@
         @include('formularios.contenedor_superior', ['formulario' => $formulario])
 
 
-        <div class="card mt-2">
-            <div class="card-body">
-                <h5>Reglas y Acciones para el registro</h5>
-
-                @if($humanRules->isNotEmpty())
-                    <div class="list-group">
-                        @foreach($humanRules as $rule)
-                            <div class="list-group-item">{!! $rule !!}</div>
-                        @endforeach
-                    </div>
-                @else
-                    <p class="text-muted">No hay reglas de lógica configuradas.</p>
-                @endif
-
-            </div>
-        </div>
+        
 
         <div class="card mt-3 shadow-lg">
             <div class="card-body">
@@ -49,59 +34,68 @@
                             'caso' => 'store'
                         ])
 
+                        @php
+                        $formPrincipal = $formularios->first();
+                    @endphp
+                        @if($formPrincipal->id == $formItem->id)
+                        @if(isset($formPrincipal->config['registro_multiple']) && $formPrincipal->config['registro_multiple'])
+
+                        <button type="button" class="btn btn-success btm-xs w-100 mt-3" id="btn-agregar-registro">
+    Agregar
+</button>
+
+<div class="mt-1">
+    <h6>Registros agregados</h6>
+
+    @if($isMobile)
+        <div id="contenedor-cards"></div>
+    @else
+        <div id="contenedor-tabla" class="table-responsive">
+            <table class="table table-bordered table-striped" id="tabla-registros">
+                <thead>
+                    <tr id="thead-dinamico">
+                        <th>#</th>
+                        <th>Acciones</th>
+                    </tr>
+                </thead>
+                <tbody></tbody>
+            </table>
+        </div>
+    @endif
+</div>
+
+<input type="hidden" name="registros_json" id="registros_json">
+<div id="hidden_files_container"></div>
+
+@endif
+@endif
                     </div>
 
                     @endforeach
 
 
-
-                    @php
-                        $formPrincipal = $formularios->first();
-                    @endphp
-
-                    @if(isset($formPrincipal->config['registro_multiple']) && $formPrincipal->config['registro_multiple'])
-
-                        <button type="button" class="btn btn-success mt-3" id="btn-agregar-registro">
-                            Agregar registro
-                        </button>
-
-                        <div class="mt-4">
-                            <h5>Registros agregados</h5>
-
-                            @if($isMobile)
-                                <div id="contenedor-cards"></div>
-                            @else
-                                <div id="contenedor-tabla" class="table-responsive">
-                                    <table class="table table-bordered table-striped" id="tabla-registros">
-                                        <thead>
-                                            <tr id="thead-dinamico">
-                                                <th>#</th>
-                                                <th>Acciones</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody></tbody>
-                                    </table>
-                                </div>
-                            @endif
-                        </div>
-
-                        <input type="hidden" name="registros_json" id="registros_json">
-                        <div id="hidden_files_container"></div>
-
-                    @endif
+                 
 
 
-                    @if(!$moduloModelo)
-                        <a href="{{ route('formularios.index') }}" class="btn btn-secondary mt-3"><i
-                                class="fas fa-arrow-left me-1"></i>Volver</a>
-                    @else
-                        <a href="{{ route('modulo.index', $moduloModelo->id) }}" class="btn btn-secondary mt-3"><i
-                                class="fas fa-arrow-left me-1"></i>Volver</a>
-                    @endif
+                    <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
 
-                    <button type="submit" class="btn btn-primary mt-3">Registrar</button>
+@if(!$moduloModelo)
+    <a href="{{ route('formularios.index') }}" 
+       class="btn btn-secondary px-4 py-2">
+        <i class="fas fa-arrow-left me-1"></i> Volver
+    </a>
+@else
+    <a href="{{ route('modulo.index', $moduloModelo->id) }}" 
+       class="btn btn-secondary px-4 py-2">
+        <i class="fas fa-arrow-left me-1"></i> Volver
+    </a>
+@endif
 
+<button type="submit" class="btn btn-primary px-4 py-2">
+    Registrar
+</button>
 
+</div>
                 </form>
             </div>
         </div>
@@ -759,7 +753,9 @@ function ejecutarFormulasDinamicas(registro, formulas, index = null) {
                     if (!input.name) return;
 
                     let key = input.name.replace('[]', '');
-
+                    let key_visible = key.includes('[')
+                    ? key.split('[').pop().replace(']', '')
+                    : key;
                     if (campos.some(c => c.key === key)) return;
 
                     let grupo = input.closest('.mb-3, .form-group, .col-md-6, .col-md-12');
@@ -771,6 +767,7 @@ function ejecutarFormulasDinamicas(registro, formulas, index = null) {
 
                     campos.push({
                         key,
+                        key_visible,
                         label: textoLabel
                     });
                 });
@@ -782,7 +779,7 @@ function ejecutarFormulasDinamicas(registro, formulas, index = null) {
 
                 campos.forEach(campo => {
                     let th = document.createElement('th');
-                    th.textContent = campo.label;
+                    th.textContent = campo.key_visible;
                     th.setAttribute('data-key', campo.key);
                     thead.appendChild(th);
                 });
@@ -963,8 +960,8 @@ function ejecutarFormulasDinamicas(registro, formulas, index = null) {
                     return;
                 }
 
-                let inputs = document.querySelectorAll('#formulario-dinamico input, #formulario-dinamico select, #formulario-dinamico textarea');
-
+                let contenedorForm = document.getElementById('formulario-dinamico');
+                let inputs = contenedorForm.querySelectorAll('input, select, textarea');
                 let campos = [];
 
                 inputs.forEach(input => {
@@ -972,7 +969,9 @@ function ejecutarFormulasDinamicas(registro, formulas, index = null) {
                     if (!input.name) return;
 
                     let key = input.name.replace('[]', '');
-
+                    let key_visible = key.includes('[')
+                    ? key.split('[').pop().replace(']', '')
+                    : key;
                     if (campos.some(c => c.key === key)) return;
 
                     let grupo = input.closest('.mb-3, .form-group, .col-md-6, .col-md-12');
@@ -985,6 +984,7 @@ function ejecutarFormulasDinamicas(registro, formulas, index = null) {
                     campos.push({
                         key,
                         label: textoLabel,
+                        key_visible,
                         input
                     });
                 });
@@ -1011,7 +1011,7 @@ function ejecutarFormulasDinamicas(registro, formulas, index = null) {
                         contenido += `
                                                                                                                                                                                                                                                                                                                                                                                             <div class="col-6 mb-1">
                                                                                                                                                                                                                                                                                                                                                                                                 <small class="text-muted d-block" style="font-size:11px;">
-                                                                                                                                                                                                                                                                                                                                                                                                  <strong>  ${campo.label}</strong> 
+                                                                                                                                                                                                                                                                                                                                                                                                  <strong>  ${campo.key_visible}</strong> 
                                                                                                                                                                                                                                                                                                                                                                                                 </small>
                                                                                                                                                                                                                                                                                                                                                                                                 <div style="font-size:13px; line-height:1.2;">
                                                                                                                                                                                                                                                                                                                                                                                                     ${htmlCampo}
@@ -1455,7 +1455,7 @@ function ejecutarFormulasDinamicas(registro, formulas, index = null) {
 
                                 });*/
 
-                document.getElementById('btn-agregar-registro').textContent = 'Agregar Registro';
+                document.getElementById('btn-agregar-registro').textContent = 'Agregar';
             }
         </script>
 
