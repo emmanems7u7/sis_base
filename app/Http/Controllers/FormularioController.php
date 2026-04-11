@@ -296,20 +296,21 @@ class FormularioController extends Controller
 
         $datos = [];
         foreach ($respuesta->camposRespuestas as $respuestaCampo) {
-
             $config = $respuestaCampo->campo->config;
             $asociado = isset($config['asociacion']) ?? false;
+
+
             if ($asociado) {
 
                 $asociacion = $config['asociacion'];
 
                 $formRefId = $asociacion['form_ref_id'] ?? null;
                 $campoRefId = $asociacion['campo_ref_id'] ?? null;
-
+                break;
 
             }
         }
-
+        dd($asociado);
         if ($asociado) {
 
 
