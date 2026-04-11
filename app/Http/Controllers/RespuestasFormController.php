@@ -530,16 +530,15 @@ class RespuestasFormController extends Controller
         }
     }
 
-    private function procesarFormularioMultipleDesdeArray($datosFormulario, $form, $campos, $prefix, $rules)
+    private function procesarFormularioMultipleDesdeArray($datosFormulario, $form, $campos, $prefix, $rules, $grupo)
     {
         DB::beginTransaction();
 
         try {
 
-            $grupo = $this->FormularioRepository->CrearRespuestaGrupo();
             $respuestas = [];
 
-            // 🔥 SOLO UN REGISTRO (no foreach)
+
             $registroLimpio = $this->limpiarRegistro($datosFormulario);
 
             $validator = Validator::make([$prefix => $registroLimpio], $rules);
@@ -606,7 +605,6 @@ class RespuestasFormController extends Controller
 
     public function store(Request $request, $form, $modulo, $tipo)
     {
-
         $moduloModelo = $modulo > 0 ? Modulo::find($modulo) : null;
         $formularioModelo = Formulario::find($form);
 
@@ -616,73 +614,121 @@ class RespuestasFormController extends Controller
         $formularios = $this->obtenerFormularios($form, $moduloModelo);
 
         $respuestasCreadas = [];
+
+        // =====================================================
+        // 1️⃣ PROCESAR FORMULARIOS MÚLTIPLES (JSON)
+        // =====================================================
         $registros = json_decode($request->registros_json, true);
 
-        foreach ($registros as $registro) {
+        if (!empty($registros)) {
 
-            // 🔥 detectar formularios dentro del registro
-            $formulariosEnRegistro = collect($registro)
-                ->keys()
-                ->map(fn($key) => explode('[', $key)[0]) // form_8
-                ->unique();
+            $grupo = $this->FormularioRepository->CrearRespuestaGrupo();
 
-            foreach ($formulariosEnRegistro as $formPrefix) {
+            foreach ($registros as $registro) {
 
-                $formId = (int) str_replace('form_', '', $formPrefix);
+                $formulariosEnRegistro = collect($registro)
+                    ->keys()
+                    ->map(fn($key) => explode('[', $key)[0]) // form_8
+                    ->unique();
 
-                $formularioModelo = $formularios->firstWhere('id', $formId);
-                if (!$formularioModelo)
-                    continue;
+                foreach ($formulariosEnRegistro as $formPrefix) {
 
-                $campos = CamposForm::where('form_id', $formId)->get();
+                    $formId = (int) str_replace('form_', '', $formPrefix);
 
-                // 🔥 FILTRAR SOLO LOS DATOS DE ESTE FORMULARIO
-                $datosFormulario = collect($registro)
-                    ->filter(fn($value, $key) => str_starts_with($key, $formPrefix))
-                    ->toArray();
+                    $formularioModelo = $formularios->firstWhere('id', $formId);
+                    if (!$formularioModelo)
+                        continue;
 
-                $rules = $this->RespuestasFormInterface
-                    ->validacion($formularioModelo, $campos, null, 'store', $formPrefix);
+                    $multiple = $formularioModelo->config['registro_multiple'] ?? false;
 
-                $multiple = $formularioModelo->config['registro_multiple'] ?? false;
+                    // 🔥 SOLO múltiples
+                    if (!$multiple)
+                        continue;
 
-                try {
+                    $campos = CamposForm::where('form_id', $formId)->get();
 
-                    if (!$multiple) {
+                    $datosFormulario = collect($registro)
+                        ->filter(fn($value, $key) => str_starts_with($key, $formPrefix))
+                        ->toArray();
 
-                        $respuestasCreadas[] = $this->procesarFormularioNormalDesdeArray(
-                            $datosFormulario,
-                            $formId,
-                            $campos,
-                            $formPrefix,
-                            $rules
-                        );
+                    $rules = $this->RespuestasFormInterface
+                        ->validacion($formularioModelo, $campos, null, 'store', $formPrefix);
 
-                    } else {
+                    try {
 
                         $res = $this->procesarFormularioMultipleDesdeArray(
                             $datosFormulario,
                             $formId,
                             $campos,
                             $formPrefix,
-                            $rules
+                            $rules,
+                            $grupo
                         );
 
                         $respuestasCreadas = array_merge($respuestasCreadas, $res);
-                    }
 
-                } catch (\Exception $e) {
+                    } catch (\Exception $e) {
+                        return back()->withErrors($e->getMessage());
+                    }
                 }
             }
         }
+
+        // =====================================================
+        // 2️⃣ PROCESAR FORMULARIOS NORMALES (REQUEST)
+        // =====================================================
+        foreach ($formularios as $formularioModelo) {
+
+            $formId = $formularioModelo->id;
+            $formPrefix = "form_{$formId}";
+            $multiple = $formularioModelo->config['registro_multiple'] ?? false;
+
+            // 🔥 SOLO normales
+            if ($multiple)
+                continue;
+
+            if (!$request->has($formPrefix))
+                continue;
+
+            $campos = CamposForm::where('form_id', $formId)->get();
+
+            $datosFormulario = collect($request->input($formPrefix))
+                ->mapWithKeys(function ($value, $key) use ($formPrefix) {
+                    return ["{$formPrefix}[$key]" => $value];
+                })
+                ->toArray();
+
+            $rules = $this->RespuestasFormInterface
+                ->validacion($formularioModelo, $campos, null, 'store', $formPrefix);
+
+            try {
+
+                $respuestasCreadas[] = $this->procesarFormularioNormalDesdeArray(
+                    $datosFormulario,
+                    $formId,
+                    $campos,
+                    $formPrefix,
+                    $rules
+                );
+
+            } catch (\Exception $e) {
+                return back()->withErrors($e->getMessage());
+            }
+        }
+
+        // =====================================================
+        // 3️⃣ AGRUPAR POR FORMULARIO
+        // =====================================================
         $agrupadas = collect($respuestasCreadas)->groupBy(function ($item) {
             return is_array($item)
                 ? ($item['form_id'] ?? null)
                 : ($item->form_id ?? null);
         });
 
+        // =====================================================
+        // 4️⃣ EJECUTAR COLAS (BATCH POR FORMULARIO)
+        // =====================================================
         foreach ($agrupadas as $formId => $respuestasForm) {
-
 
             EjecutarLogicaFormulario::dispatch(
                 $respuestasForm->toArray(),
@@ -692,8 +738,9 @@ class RespuestasFormController extends Controller
             );
         }
 
-
-
+        // =====================================================
+        // 5️⃣ REDIRECCIONES
+        // =====================================================
         if ($tipo == 0) {
 
             if ($moduloModelo) {

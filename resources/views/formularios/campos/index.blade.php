@@ -287,12 +287,12 @@ document.addEventListener('DOMContentLoaded', function () {
                             <!-- Botones -->
                             <div class="d-flex gap-1">
                                 <button class="btn btn-xs btn-warning btnEditarCampo" data-id="{{ $campo->id }}">
-                                    Editar
+                                <i class="fas fa-pencil-alt"></i>
                                 </button>
 
                                 <a class="btn btn-xs btn-danger"
                                     onclick="eliminarCampo('eliminarCampo_{{ $campo->id }}',{{ $campo->id }})">
-                                    Eliminar
+                                    <i class="fas fa-trash-alt"></i>
                                 </a>
 
                                 <form id="eliminarCampo_{{ $campo->id }}" action="{{ route('campos.destroy', $campo) }}"
@@ -302,8 +302,12 @@ document.addEventListener('DOMContentLoaded', function () {
                                 </form>
                             </div>
 
+
+                        
                             <!-- Check visible en listado -->
                             <div class="form-check m-0">
+
+                            
                                 <input class="form-check-input toggle-visible-listado" type="checkbox"
                                     data-id="{{ $campo->id }}" {{ $campo->config['visible_listado'] ?? false ? 'checked' : '' }}>
                                 <label class="form-check-label small" for="visible_listado_{{ $campo->id }}">
@@ -364,6 +368,43 @@ document.addEventListener('click', function (e) {
                 : mostrarAlerta('error', 'Error al guardar');
         });
     }
+
+
+    if (e.target.classList.contains('boton_asociado')) {
+
+e.preventDefault();
+
+const bloque = e.target.closest('.config-asociacion');
+
+const formularioId = bloque.querySelector('.selectFormulario')?.value;
+const campoId = bloque.querySelector('.selectCampos')?.value;
+
+if (!formularioId || !campoId) {
+    mostrarAlerta('warning', 'Debe seleccionar formulario y campo');
+    return;
+}
+
+fetch("{{ route('campos.guardarAsociacion') }}", {
+    method: "POST",
+    headers: {
+        "Content-Type": "application/json",
+        "X-CSRF-TOKEN": document
+            .querySelector('meta[name="csrf-token"]')
+            .getAttribute("content")
+    },
+    body: JSON.stringify({
+        campo_principal_id: e.target.dataset.campo,
+        form_ref_id: formularioId,
+        campo_ref_id: campoId
+    })
+})
+.then(res => res.json())
+.then(data => {
+    data.success
+        ? mostrarAlerta('success', data.message)
+        : mostrarAlerta('error', 'Error al guardar');
+});
+}
 
 
 });

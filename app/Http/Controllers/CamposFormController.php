@@ -58,11 +58,23 @@ class CamposFormController extends Controller
 
         $campos = $this->FormularioRepository->CamposFormCat($campos, $limitOpciones);
 
+
+        /*
         $formsRefIds = CamposForm::where('form_id', $formulario->id)
             ->whereNotNull('form_ref_id')
             ->pluck('form_ref_id')
             ->unique()
+            ->values();*/
+
+        /*TEMPORAL TRAER TODOS LOS FORMULARIOS PARA ASIGNAR, POSTERIORMENTE EL MODULO DE FORMULARIOS
+        SERA COMPLEMENTO DEL MODULO DE MODULOS DINAMICOS Y SE EXTRAERAN LOS FORMULARIOS ASOCIADOS
+        A UN MODULO DINAMICO*/
+        $formsRefIds = Formulario::all()
+            ->pluck('id')
+            ->unique()
             ->values();
+
+
 
         $formularios_ref = Formulario::with('campos')->whereIn('id', $formsRefIds)->get();
         return view('formularios.campos.index', compact(
@@ -296,6 +308,41 @@ class CamposFormController extends Controller
         ]);
     }
 
+
+    public function guardarAsociacion(Request $request)
+    {
+        $request->validate([
+            'campo_principal_id' => 'required|exists:campos_forms,id',
+            'form_ref_id' => 'required|exists:formularios,id',
+            'campo_ref_id' => 'required|exists:campos_forms,id',
+        ]);
+
+        $campo = CamposForm::findOrFail($request->campo_principal_id);
+
+        // Si tienes cast a array en el modelo
+        $config = $campo->config ?? [];
+
+        if (is_string($config)) {
+            $config = json_decode($config, true) ?? [];
+        }
+
+        // Guardar relación dentro de config
+        $config['asociacion'] = [
+
+            'form_ref_id' => $request->form_ref_id,
+            'campo_ref_id' => $request->campo_ref_id,
+        ];
+
+        $campo->config = $config;
+
+        $campo->save();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Asociación guardada correctamente'
+        ]);
+    }
+
     public function obtenerData(Request $request)
     {
         $request->validate([
@@ -391,56 +438,58 @@ class CamposFormController extends Controller
 
     public function generarValor(Request $request)
     {
-        $campo = CamposForm::findOrFail($request->campo_id);
+        $resultados = [];
 
-        $config = $campo->config ?? [];
+        foreach ($request->campos as $item) {
 
-        switch ($campo->campo_nombre) {
+            $campo = CamposForm::find($item['campo_id']);
+            if (!$campo)
+                continue;
 
-            case 'identificador':
+            $config = $campo->config ?? [];
 
-                $prefijo = $config['prefix'] ?? '';
-                $longitud = $config['longitud'] ?? 3;
+            $valor = null;
 
-                $ultimo = DB::table('respuestas_campos')
-                    ->where('cf_id', $campo->id)
-                    ->orderByDesc('id')
-                    ->value('valor');
+            switch ($campo->campo_nombre) {
 
-                if ($ultimo) {
-                    $numero = intval(str_replace($prefijo, '', $ultimo)) + 1;
-                } else {
-                    $numero = 1;
-                }
+                case 'identificador':
 
-                $numeroFormateado = str_pad($numero, $longitud, '0', STR_PAD_LEFT);
+                    $prefijo = $config['prefix'] ?? '';
+                    $longitud = $config['longitud'] ?? 3;
 
-                return response()->json([
-                    'success' => true,
-                    'valor' => $prefijo . $numeroFormateado
-                ]);
+                    $ultimo = DB::table('respuestas_campos')
+                        ->where('cf_id', $campo->id)
+                        ->orderByDesc('id')
+                        ->value('valor');
 
-            case 'fecha':
-                if ($config['auto_fecha'] ?? false) {
-                    return response()->json([
-                        'success' => true,
-                        'valor' => now()->format('Y-m-d')
-                    ]);
-                }
-                break;
+                    $numero = $ultimo
+                        ? intval(str_replace($prefijo, '', $ultimo)) + 1
+                        : 1;
 
-            case 'hora':
-                if ($config['auto_hora'] ?? false) {
-                    return response()->json([
-                        'success' => true,
-                        'valor' => now()->format('H:i')
-                    ]);
-                }
-                break;
+                    $valor = $prefijo . str_pad($numero, $longitud, '0', STR_PAD_LEFT);
+                    break;
+
+                case 'fecha':
+                    if ($config['auto_fecha'] ?? false) {
+                        $valor = now()->format('Y-m-d');
+                    }
+                    break;
+
+                case 'hora':
+                    if ($config['auto_hora'] ?? false) {
+                        $valor = now()->format('H:i');
+                    }
+                    break;
+            }
+
+            if ($valor !== null) {
+                $resultados[] = [
+                    'campo_id' => $campo->id,
+                    'valor' => $valor
+                ];
+            }
         }
 
-        return response()->json([
-            'success' => false
-        ]);
+        return response()->json($resultados);
     }
 }

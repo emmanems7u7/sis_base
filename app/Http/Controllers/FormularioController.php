@@ -17,6 +17,7 @@ use App\Interfaces\FormularioInterface;
 use App\Interfaces\PermisoInterface;
 
 use App\Models\AuditoriaAccion;
+use App\Models\RespuestasCampo;
 
 use function Laravel\Prompts\form;
 
@@ -209,19 +210,15 @@ class FormularioController extends Controller
     }
     public function obtenerFila($form_id, $respuesta_id)
     {
+
         $respuesta = RespuestasForm::with(['camposRespuestas.campo'])
             ->where('form_id', $form_id)
             ->where('id', $respuesta_id)
             ->first();
 
-        if (!$respuesta) {
-            return response()->json(['error' => 'No se encontró la respuesta'], 404);
-        }
 
-        $datos = [];
-        foreach ($respuesta->camposRespuestas as $cr) {
-            $datos[$cr->campo->nombre] = $cr->valor;
-        }
+        $datos = $this->GetfilaByFormResp($form_id, $respuesta);
+
         $formulario = Formulario::find($form_id);
 
         return response()->json([
@@ -231,7 +228,19 @@ class FormularioController extends Controller
             'datos' => $datos
         ]);
     }
+    public function GetfilaByFormResp($form_id, $respuesta)
+    {
 
+        if (!$respuesta) {
+            return response()->json(['error' => 'No se encontró la respuesta'], 404);
+        }
+
+        $datos = [];
+        foreach ($respuesta->camposRespuestas as $cr) {
+            $datos[$cr->campo->nombre] = $cr->valor;
+        }
+        return $datos;
+    }
 
     public function obtenerFilaVisor($form_id, $respuesta_id)
     {
@@ -244,15 +253,22 @@ class FormularioController extends Controller
             ->where('form_id', $form_id)
             ->where('id', $respuesta_id)
             ->first();
-
         if (!$respuesta) {
             return response()->json(['error' => 'No se encontró la respuesta'], 404);
         }
+
+
 
         $formulario = $respuesta->formulario;
 
         // Procesar la respuesta principal
         $camposRespuestaPrincipal = $this->FormularioRepository->procesarCamposRespuesta($respuesta, $formulario);
+
+        $asociado = false;
+
+
+
+
 
         // Revisar si pertenece a algún grupo
         $grupo = $respuesta->grupos->first(); // tomamos el primer grupo si hay
@@ -272,12 +288,57 @@ class FormularioController extends Controller
             }
         }
 
+
+
+
+
+        /* OBTENER REGISTRO ASOCIADO 1:1 CON FORMULARIO*/
+
+        $datos = [];
+        foreach ($respuesta->camposRespuestas as $respuestaCampo) {
+
+            $config = $respuestaCampo->campo->config;
+            $asociado = isset($config['asociacion']) ?? false;
+            if ($asociado) {
+
+                $asociacion = $config['asociacion'];
+
+                $formRefId = $asociacion['form_ref_id'] ?? null;
+                $campoRefId = $asociacion['campo_ref_id'] ?? null;
+
+
+            }
+        }
+
+        if ($asociado) {
+
+
+            $campoAsociado = collect($camposRespuestaPrincipal)
+                ->firstWhere('tipo', 'asociado');
+
+            $valorAsociado = $campoAsociado['valores'][0] ?? null;
+
+            $resp = RespuestasCampo::where('cf_id', $campoRefId)->where('valor', $valorAsociado)->first()->respuesta_id ?? null;
+
+            $respuesta = RespuestasForm::with(['camposRespuestas.campo'])
+                ->where('form_id', $formRefId)
+                ->where('id', $resp)
+                ->first();
+
+            $datos = $this->GetfilaByFormResp($form_id, $respuesta);
+
+        }
+
+        /* OBTENER REGISTRO ASOCIADO 1:1 CON FORMULARIO*/
+
+
         return response()->json([
             'nombre_formulario' => $formulario->nombre,
             'campos' => $camposRespuestaPrincipal,
             'grupo_id' => $grupo->id ?? null,
             'codigo_grupo' => $grupo->codigo ?? null,
-            'respuestas_grupo' => $respuestasGrupo
+            'respuestas_grupo' => $respuestasGrupo,
+            'datos_asociados' => $datos
         ]);
     }
     /**

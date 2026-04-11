@@ -22,6 +22,12 @@
                             title="Campo identificador: defina un prefijo (ej: REG-). El sistema autocompletará con un número correlativo (REG-001, REG-002...). Será de solo lectura al registrar."></i>
    
    @endif
+
+   @if($campo->campo_nombre == 'asociado')
+<i class="fas fa-question-circle text-primary" data-bs-toggle="tooltip" data-bs-placement="top"
+                            title="Campo asociador: Este campo es asociador entre formularios en tiempo real, esta funcion solo esta disponible desde los registros de un modulo"></i>
+   
+   @endif
  
 @switch(strtolower($campo->campo_nombre))
 
@@ -323,9 +329,18 @@
                 }
                 </script>
                 @break
+                @case('asociado')
+                <div class="config-asociacion">
 
-            
+                @include('formularios.campos.carga_campos')
 
+                <button class="btn btn-xs btn-dark boton_asociado"
+                        data-campo="{{ $campo->id }}">
+                    Guardar
+                </button>
+
+                </div>
+                @break
 
     @default
         <input type="text" name="{{ $campo->nombre }}" 

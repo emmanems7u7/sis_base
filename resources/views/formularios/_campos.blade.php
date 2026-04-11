@@ -5,7 +5,7 @@
 @php
     $tipo = strtolower($campo->campo_nombre);
 
-    $tiposSinLayout = ['campo autocompletado','hidden'];
+    $tiposSinLayout = ['campo autocompletado','hidden','asociado'];
     $esHidden = in_array($tipo, $tiposSinLayout);
 
     $cols = $cols ?? 2;
@@ -143,6 +143,11 @@
 
         @break
 
+        @case('asociado')
+        @include('formularios.componentes.hidden')
+
+        @break
+
     @endswitch
 
 @if(!$esHidden)
@@ -275,22 +280,26 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 function inicializarCamposAutomaticos() {
-    // CORRECCIÓN: Todo dentro de las mismas comillas separado por coma
-    const selectores = '[data-tipo="identificador"], [data-tipo="fecha"], [data-tipo="hora"]';
-    
-    document.querySelectorAll(selectores).forEach(input => {
-        let caso = input.dataset.caso;
 
-        // Si es 'store', ejecutamos la petición al servidor
-        if (caso === 'store') {
-            generarIdentificadorFetch(input);
-        }
-    });
-}
+const inputs = document.querySelectorAll('[data-tipo="identificador"], [data-tipo="fecha"], [data-tipo="hora"]');
 
-function generarIdentificadorFetch(input) {
+let campos = [];
 
-let campoId = input.dataset.campoId;
+inputs.forEach(input => {
+
+    if (input.dataset.autogenerado === 'true') return;
+
+    if (input.dataset.caso === 'store') {
+
+        campos.push({
+            campo_id: input.dataset.campoId
+        });
+
+        input.dataset.autogenerado = 'true';
+    }
+});
+
+if (campos.length === 0) return;
 
 fetch("{{ route('campo.generar') }}", {
     method: "POST",
@@ -298,17 +307,17 @@ fetch("{{ route('campo.generar') }}", {
         "Content-Type": "application/json",
         "X-CSRF-TOKEN": "{{ csrf_token() }}"
     },
-    body: JSON.stringify({
-        campo_id: campoId
-    })
+    body: JSON.stringify({ campos })
 })
 .then(res => res.json())
 .then(data => {
-    if (data.success) {
-        input.value = data.valor;
-    }
-})
-.catch(err => console.error(err));
+
+    data.forEach(item => {
+        let input = document.querySelector(`[data-campo-id="${item.campo_id}"]`);
+        if (input) input.value = item.valor;
+    });
+
+});
 }
 
 </script>
