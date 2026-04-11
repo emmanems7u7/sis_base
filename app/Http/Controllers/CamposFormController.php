@@ -297,9 +297,6 @@ class CamposFormController extends Controller
 
         $campo->config = $config;
 
-        // También puedes guardar directamente en la columna
-        $campo->form_ref_id = $request->form_ref_id;
-
         $campo->save();
 
         return response()->json([
@@ -392,7 +389,6 @@ class CamposFormController extends Controller
 
     public function guardarIdentificador(Request $request)
     {
-        // Validación básica
         $request->validate([
             'campo_id' => 'required',
             'valor' => 'required|string|max:255',
@@ -405,6 +401,9 @@ class CamposFormController extends Controller
         $config['prefix'] = $request->valor;
 
         $campo->config = $config;
+
+        $campo->save();
+
         return response()->json([
             'success' => true,
             'message' => 'Prefijo agregado correctamente',
