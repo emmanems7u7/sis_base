@@ -533,7 +533,6 @@ class FormLogicRepository implements FormLogicInterface
                     } else {
                         $mensaje = "el valor destino no cumple la condición ({$valor_principal} {$condicion['operador']} {$registro->valor})";
                     }
-                    dd($mensaje);
 
 
                     break;

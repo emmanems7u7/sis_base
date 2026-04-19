@@ -68,7 +68,6 @@ class FormLogicController extends Controller
             'acciones_json' => 'required|string',
         ]);
 
-        dd($request);
         $rule = $this->FormLogicRepository->CrearRegla($request);
 
         return redirect()->route('modulo.administrar', $modulo->id)->with('success', 'Regla creada correctamente.');
@@ -136,7 +135,7 @@ class FormLogicController extends Controller
                         'valor' => $p['valor'] ?? null,
 
                         'valor_text' => ($p['tipo_valor'] ?? null) === 'campo'
-                            ? 'Campo "' . ($p['valor_text'] ?? '---') . '" del formulario de origen'
+                            ? ($p['valor_text'] ?? '---')
                             : ('Valor estático "' . ($p['valor'] ?? '') . '"'),
 
                         'filtros_relacion' => $p['filtros_relacion'] ?? [],
