@@ -11,7 +11,7 @@ interface FormLogicInterface
     public function CrearRegla($request);
     public function EditarRegla($request, $form_logic);
 
-    public function ejecutarLogica($respuestas, $evento, $usuario): array;
+    public function ejecutarLogica($reglas, $respuestas, $evento, $usuario): array;
     public function ejecutarAccion(RespuestasForm $respuestaOrigen, $filasSeleccionadas, $action, $usuario);
 
     public function validarAccion(

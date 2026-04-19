@@ -45,35 +45,6 @@ class LoginController extends Controller
         $this->middleware('auth')->only('logout');
     }
 
-    use \Illuminate\Foundation\Auth\AuthenticatesUsers {
-        // Se expone el trait con otro alias por si se requiere
-        attemptLogin as baseAttemptLogin;
-    }
-
-    /* ================================ */
-    /*  MÉTODOS PERSONALIZADOS AQUÍ     */
-    /* ================================ */
-
-    /** Sobrescribe attemptLogin para limitar sesiones */
-    protected function attemptLogin(Request $request)
-    {
-        $credentials = $this->credentials($request);
-
-        if (Auth::validate($credentials)) {
-            $user = Auth::getProvider()->retrieveByCredentials($credentials);
-
-            $limite = DB::table('configuracion')->value('limite_de_sesiones');
-            $sesiones = DB::table('sessions')->where('user_id', $user->id)->count();
-
-            if ($sesiones >= $limite) {
-                return false;           // Se bloquea el login
-            }
-            DB::disconnect();
-            return Auth::attempt($credentials, $request->filled('remember'));
-        }
-
-        return false;
-    }
 
     /** Sobrescribe authenticated para disparar el 2FA */
     protected function authenticated(Request $request, $user)

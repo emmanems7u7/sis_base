@@ -119,10 +119,20 @@
 }
 </style>
 
-<div id="loader" style="display: none;">
-    <div id="loader-spinner" class="spinner-border text-light" role="status" style="width: 3rem; height: 3rem;">
-        <span class="visually-hidden">Cargando...</span>
-    </div>
+<div id="overlay-spinner" style="
+    display:none;
+    position:fixed;
+    top:0; left:0;
+    width:100%; height:100%;
+    background:rgba(0,0,0,0.5);
+    z-index:9999;
+    justify-content:center;
+    align-items:center;
+    flex-direction: column;
+    color: white;
+">
+    <div class="spinner-border text-light mb-2" role="status"></div>
+    <span>Cargando...</span>
 </div>
 
 <body class="{{ isset($preferencias) && $preferencias->dark_mode ? 'dark-version' : '' }} g-sidenav-show bg-gray-100">
@@ -431,21 +441,7 @@
       
         @yield('content')
       
-          <!-- Spinner y overlay -->
-        <div id="overlay-spinner" style="
-            display:none;
-            position:fixed;
-            top:0; left:0;
-            width:100%; height:100%;
-            background:rgba(0,0,0,0.5);
-            z-index:9999;
-            justify-content:center;
-            align-items:center;
-        ">
-            <div class="spinner-border text-light" role="status">
-                <span class="visually-hidden">Cargando...</span>
-            </div>
-        </div>
+       
 
             
         </div>
@@ -538,6 +534,15 @@
   
     <script>
 
+document.addEventListener('DOMContentLoaded', function () {
+    const overlay = document.getElementById('overlay-spinner');
+
+    document.addEventListener('submit', function (e) {
+        if (overlay) {
+            overlay.style.display = 'flex'; 
+        }
+    });
+});
 
 Fancybox.bind("[data-fancybox='gallery']", {
     Toolbar: {

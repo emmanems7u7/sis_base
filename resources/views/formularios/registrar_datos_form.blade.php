@@ -64,8 +64,11 @@
     @endif
 </div>
 
-<input type="hidden" name="registros_json" id="registros_json">
-<div id="hidden_files_container"></div>
+            <input type="hidden" name="registros_json" id="registros_json"
+            
+                value="{{ old('registros_json') }}">
+               
+            <div id="hidden_files_container"></div>
 
 @endif
 @endif
@@ -107,6 +110,9 @@
 
     @if(isset($formulario->config['registro_multiple']) && $formulario->config['registro_multiple'])
 
+
+
+    
         <script>
             const AGRUPACION_ACTIVA = @json($formulario->config['agrupacion']['activa'] ?? false);
             const ES_MOBILE = @json($isMobile);
@@ -124,6 +130,51 @@
 
         <script>
 
+        document.addEventListener('DOMContentLoaded', function () {
+
+        let oldData = document.getElementById('registros_json').value;
+
+        if (oldData) {
+
+            registros = JSON.parse(oldData).map(normalizarRegistro);
+
+registros.forEach((_, index) => {
+    ejecutarFormulas(registros, FORMULAS, index);
+});
+            }
+
+            actualizarRegistrosJson();
+
+
+ 
+            render_informacion();
+            
+            
+
+
+        });
+
+        function normalizarRegistro(reg) {
+            let nuevo = {};
+
+            Object.keys(reg).forEach(key => {
+
+                let val = reg[key];
+
+                // Si ya es objeto, lo dejamos
+                if (typeof val === 'object' && val !== null && 'value' in val) {
+                    nuevo[key] = val;
+                } else {
+                    nuevo[key] = {
+                        value: val,
+                        text: val
+                    };
+                }
+
+            });
+
+            return nuevo;
+        }
             function obtenerNombreCampoIncremento() {
                 if (!CAMPO_INCREMENTO_ID) return null;
 
@@ -307,39 +358,50 @@
 
                 if (!tieneError) {
    
-                    ejecutarFormulasDinamicas(registro, FORMULAS);
+                    ejecutarFormulasDinamicas([registro], FORMULAS);
 
                 }
 
                 console.log(registro)
+                console.log(registros)
+
+                const camposCalculados = new Set();
+
+                FORMULAS.forEach(f => {
+                    const key = `form_${f.destino.form}[${f.destino.nombre}]`;
+                    camposCalculados.add(key);
+                });
 
                 // AGRUPACIÓN INTELIGENTE
 
                 if (AGRUPACION_ACTIVA) {
                     const nombreCampoIncremento = obtenerNombreCampoIncremento();
 
-                    console.log(nombreCampoIncremento)
-                    console.log(registro[nombreCampoIncremento])
-                    console.log(registros)
+                  
                     
                     if (nombreCampoIncremento && registro[nombreCampoIncremento]) {
                        
 
-                        let indexExistente = registros.findIndex(r => {
-                          
-                          return Object.keys(registro).every(key => {
+                       let indexExistente = registros.findIndex(r => {
 
-                              // Ignorar el campo incremento
-                              if (key === nombreCampoIncremento) return true;
+    return Object.keys(registro).every(key => {
 
-                              // Comparar valores (solo value)
-                              if (!r[key] || !registro[key]) return false;
+        // 🔥 ignorar campo incremento
+        if (key === nombreCampoIncremento) return true;
 
-                              return r[key].value == registro[key].value;
-                          });
+        // 🔥 ignorar TODOS los campos calculados dinámicamente
+        if (camposCalculados.has(key)) return true;
 
-                      });
-                    console.log(indexExistente) 
+        if (!r[key] || !registro[key]) return false;
+
+        let val1 = String(r[key].value).trim();
+        let val2 = String(registro[key].value).trim();
+
+        return val1 === val2;
+    });
+
+});
+                  
                      
                         if (indexExistente !== -1) {
 
@@ -356,7 +418,6 @@
 
 
                             ejecutarFormulas(registros, FORMULAS,indexExistente)
-
                             render_informacion();
                             actualizarRegistrosJson();
 
@@ -534,50 +595,10 @@
             }
             function actualizarRegistrosJson() {
 
-                let registrosLimpios = registros.map(reg => {
-
-                    let copia = {};
-
-                    Object.keys(reg).forEach(key => {
-
-                        let value = reg[key];
-
-                        if (value && typeof value === 'object' && value.preview) {
-                            copia[key] = value.preview;
-                        }
-
-                        else if (Array.isArray(value)) {
-
-                            copia[key] = value.map(item => {
-
-                                if (typeof item === 'object') {
-                                    return item.value ?? null;
-                                }
-
-                                return item;
-                            });
-
-                        }
-
-                        else if (value && typeof value === 'object') {
-
-                            copia[key] = value.value ?? null;
-
-                        }
-
-                        else {
-
-                            copia[key] = value;
-
-                        }
-
-                    });
-
-                    return copia;
-                });
+               
 
                 document.getElementById('registros_json').value =
-                    JSON.stringify(registrosLimpios);
+                    JSON.stringify(registros);
             }
 
 
@@ -590,141 +611,237 @@
                 }
 
             }
-
-
-function ejecutarFormulas(registros, formulas,index) {
+            function ejecutarFormulas(registros, formulas, index) {
     if (!formulas || !Array.isArray(formulas)) return;
 
     formulas.forEach(f => {
+
         const destinoForm = `form_${f.destino.form}[${f.destino.nombre}]`;
 
-       
-
-        // Recorremos todos los registros
         let total = 0;
 
         registros.forEach(reg => {
+
             let resultado = null;
             let operador = null;
-            let c = 0;
+            let usarDOM = false;
+
             f.formula.forEach(item => {
+
+                // 🔥 OPERADOR
+                if (item.tipo === 'operador') {
+
+                    if (item.valor === '=') return;
+
+                    operador = item.valor;
+                    return;
+                }
+
+                // 🔥 CAMPO
                 if (item.tipo === 'campo') {
+
                     const formKey = `form_${item.form}[${item.nombre}]`;
-                    let valor = parseFloat(reg[formKey]?.value);
 
-                 
+                    let valorRaw = reg[formKey]?.value;
 
-                    if (isNaN(valor)) {
+                    if (valorRaw === undefined) {
                         const input = document.querySelector(`input[name="${formKey}"]`);
-                        valor = input.value;
-                        c = 1;
+                        valorRaw = input ? input.value : '';
+                        usarDOM = true;
+                    }
 
+                    let valor;
+
+                    if (!isNaN(valorRaw) && valorRaw !== '' && valorRaw !== null) {
+                        valor = parseFloat(valorRaw);
+                    } else {
+                        valor = valorRaw;
                     }
 
                     if (resultado === null) {
                         resultado = valor;
-                    } else if (operador) {
-                        switch (operador) {
-                            case '+': resultado += valor; break;
-                            case '-': resultado -= valor; break;
-                            case '*': resultado *= valor; break;
-                            case '/': resultado /= valor; break;
+                        return;
+                    }
+
+                    if (operador) {
+
+                        // 🔥 soporte texto
+                        if (typeof resultado === 'string' || typeof valor === 'string') {
+                            if (operador === '+') {
+                                resultado = String(resultado ?? '') + String(valor ?? '');
+                            }
+                        } else {
+                            switch (operador) {
+                                case '+': resultado += valor; break;
+                                case '-': resultado -= valor; break;
+                                case '*': resultado *= valor; break;
+                                case '/': 
+                                    resultado = valor !== 0 ? resultado / valor : resultado; 
+                                    break;
+                            }
                         }
+
                         operador = null;
                     }
-                } else if (item.tipo === 'operador') {
-                    operador = item.valor;
                 }
+
             });
-                if(c == 0)
-                {
-                    total += resultado || 0;
 
-                }else{
-                    total= resultado || 0;
+            resultado = resultado ?? 0;
 
-                }
+            if (!usarDOM) {
+                total += resultado;
+            } else {
+                total = resultado;
+            }
+
         });
+
+        // =========================
+        // ASIGNACIÓN
+        // =========================
+
+        if (total === '' || total === null || total === undefined) {
+            return; 
+        }
 
         if (registros[index] && registros[index][destinoForm]) {
 
-            registros[index][destinoForm] = { value: total, text: total };
+            registros[index][destinoForm] = {
+                value: total,
+                text: total
+            };
 
-        }
-        else{
-           
+        } else {
+
             const input2 = document.querySelector(`input[name="${destinoForm}"]`);
-            input2.value = total;
+            if (input2) {
+                input2.value = total;
+            }
         }
-      
 
     });
 }
+function ejecutarFormulasDinamicas(registros, formulas) {
 
-function ejecutarFormulasDinamicas(registro, formulas, index = null) {
-    if (!formulas || !Array.isArray(formulas)) return;
+if (!Array.isArray(registros) || !Array.isArray(formulas)) return;
+
+registros.forEach((registro) => {
 
     formulas.forEach(f => {
-        // Identificamos el formulario y nombre de destino
-        const destinoFormId = f.destino.form; // Ejemplo: 10
-        const destinoNombre = f.destino.nombre; // Ejemplo: 'total'
-        const destinoKeyFull = `form_${destinoFormId}[${destinoNombre}]`;
+
+        const destinoFormId = f.destino.form;
+        const destinoNombre = f.destino.nombre;
+        const destinoKey = `form_${destinoFormId}[${destinoNombre}]`;
 
         let resultado = null;
         let operador = null;
 
-        // 1. CALCULAR EL RESULTADO
-        f.formula.forEach(item => {
+        // =========================
+        // 1. CALCULAR RESULTADO
+        // =========================
+        f.formula.forEach((item, i) => {
+
+            if (item.tipo === 'operador') {
+
+                // 🔥 ignorar "=" (solo asignación)
+                if (item.valor === '=') return;
+
+                operador = item.valor;
+                return;
+            }
+
             if (item.tipo === 'campo') {
-                const formKey = `form_${item.form}[${item.nombre}]`;
-                
-                // Buscamos el valor en el registro o en el DOM
-                let valorRaw = registro[formKey]?.value;
-                if (valorRaw === undefined || valorRaw === "") {
-                    const input = document.querySelector(`input[name="${formKey}"]`);
+
+                const key = `form_${item.form}[${item.nombre}]`;
+
+                let valorRaw = registro[key]?.value;
+
+                // fallback DOM
+                if (valorRaw === undefined) {
+                    const input = document.querySelector(`input[name="${key}"]`);
                     valorRaw = input ? input.value : 0;
                 }
-                
-                let valor = valorRaw;
 
+                let valor;
+
+                if (!isNaN(valorRaw) && valorRaw !== '' && valorRaw !== null) {
+                    valor = parseFloat(valorRaw);
+                } else {
+                    valor = valorRaw;
+                }
+
+                if (isNaN(valor)) valor = 0;
+
+                // 🔥 primer valor
                 if (resultado === null) {
                     resultado = valor;
-                } else if (operador) {
+                    return;
+                }
+
+                // 🔥 aplicar operación
+                if (operador) {
                     switch (operador) {
                         case '+': resultado += valor; break;
                         case '-': resultado -= valor; break;
                         case '*': resultado *= valor; break;
-                        case '/': resultado /= (valor !== 0 ? valor : 1); break;
+                        case '/': 
+                            resultado = valor !== 0 ? resultado / valor : resultado; 
+                            break;
                     }
                     operador = null;
                 }
-            } else if (item.tipo === 'operador') {
-                operador = item.valor;
+
             }
+
         });
 
-        // 2. LOGICA DE ASIGNACIÓN INTELIGENTE
-        // Extraemos el ID del formulario del registro actual (asumiendo que todas las llaves empiezan igual)
-        // Ejemplo: Si las llaves son form_8[...], el ID es "8"
+        resultado = resultado ?? 0;
+
+        // =========================
+        // 2. DETECTAR FORM DEL REGISTRO
+        // =========================
         const registroFormId = Object.keys(registro)[0]?.match(/form_(\d+)/)?.[1];
 
+        // =========================
+        // 3. ASIGNACIÓN SEGÚN DESTINO
+        // =========================
+
         if (String(destinoFormId) === String(registroFormId)) {
-            // SI EL DESTINO ES EL MISMO FORMULARIO (Ej: form_8 -> form_8)
-            // Se guarda en el objeto para que no se pierda en la tabla
-            registro[destinoKeyFull] = { 
-                value: String(resultado || 0), 
-                text: String(resultado || 0) 
+
+            // 👉 MISMO FORMULARIO
+            registro[destinoKey] = {
+                value: resultado,
+                text: resultado
             };
+
         } else {
-            // SI EL DESTINO ES OTRO FORMULARIO (Ej: form_8 -> form_10)
-            // NO lo metemos en el objeto registro de la fila
-            // Solo actualizamos el input visual (Totales generales, etc.)
-            const inputFuera = document.querySelector(`input[name="${destinoKeyFull}"]`);
-            if (inputFuera) {
-                inputFuera.value = resultado || 0;
+
+            // 👉 OTRO FORMULARIO → acumulado
+            let total = 0;
+
+            registros.forEach(r => {
+                const key = `form_${destinoFormId}[${destinoNombre}]`;
+
+                if (r[key]) {
+                    let v = parseFloat(r[key].value);
+                    if (!isNaN(v)) total += v;
+                }
+            });
+
+            total += resultado;
+
+            const inputDestino = document.querySelector(`input[name="${destinoKey}"]`);
+
+            if (inputDestino) {
+                inputDestino.value = total;
             }
         }
+
     });
+
+});
+
 }
 
             function render_tabla() {

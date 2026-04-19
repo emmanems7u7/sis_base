@@ -278,6 +278,8 @@
 
         async function inicializarModalOptimizado(editData = null) {
 
+
+
             const formOrigenId = formularioPrincipal.value;
             const formDestinoId = editData?.formulario_destino_id || document.getElementById('modal-form-ref').value;
 
@@ -325,6 +327,10 @@
                     document.getElementById('modal-email-subject').value = editData.subject;
                     editor.setData(editData.body || '');
                 }
+
+                // limpiar antes de cargar
+                const cont = document.getElementById('condiciones-modal-container');
+                cont.innerHTML = '';
 
                 // precargar condiciones
                 if (editData.condiciones && editData.condiciones.length) {
@@ -415,7 +421,7 @@
 
             var form_ref_id = document.getElementById('modal-form-ref_crear_registros').value;
             const accionObj = editingIndex !== null
-                ? { ...accionesArray[editingIndex] }
+                ? { ...accionesArray[editingIndex], condiciones: [] }
                 : {
                     tipo_accion_id: tipoAccion_id,
                     form_ref_id: form_ref_id,
@@ -580,6 +586,7 @@
                 const origen = cond.querySelector('.cond-form-origen');
                 const operador = cond.querySelector('.cond-operador');
                 const destino = cond.querySelector('.cond-form-destino');
+                const mensaje = cond.querySelector('.cond-mensaje');
 
                 accionObj.condiciones.push({
                     campo_condicion_origen: origen.value,
@@ -587,7 +594,8 @@
                     campo_condicion_destino: destino.value,
                     campo_condicion_origen_text: origen.options[origen.selectedIndex]?.text || '',
                     operador_text: operador.options[operador.selectedIndex]?.text || '',
-                    campo_condicion_destino_text: destino.options[destino.selectedIndex]?.text || ''
+                    campo_condicion_destino_text: destino.options[destino.selectedIndex]?.text || '',
+                    mensaje: mensaje?.value || ''
                 });
 
             });
@@ -919,11 +927,30 @@
 
             if (accionObj.condiciones?.length) {
                 contenido += `<hr><strong>Condiciones:</strong><br>`;
-                accionObj.condiciones.forEach(c => {
-                    contenido += `${c.campo_condicion_origen_text} ${c.operador_text || c.operador} ${c.campo_condicion_destino_text}<br>`;
+
+                accionObj.condiciones.forEach((c, i) => {
+
+                    const condicionTexto = `${c.campo_condicion_origen_text} ${c.operador_text || c.operador} ${c.campo_condicion_destino_text}`;
+
+                    if (c.mensaje && c.mensaje.trim() !== '') {
+                        contenido += `
+                <div class="mb-2">
+                    <div><strong>Condición ${i + 1}:</strong></div>
+                    <div class="text-danger">${c.mensaje}</div>
+                    <small class="text-muted">(${condicionTexto})</small>
+                </div>
+            `;
+                    } else {
+                        contenido += `
+                <div class="mb-2">
+                    <strong>Condición ${i + 1}:</strong>
+                    ${condicionTexto}
+                </div>
+            `;
+                    }
+
                 });
             }
-
             return contenido;
         }
 

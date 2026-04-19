@@ -443,10 +443,10 @@ Route::middleware(['auth'])->group(function () {
         ->name('grupos.store');
 
     // 🔹 Editar
-    Route::get('grupos/{grupo}/edit', [ModuloFormularioParaleloController::class, 'edit'])
+    Route::get('grupos/{grupo}/{modulo}/edit', [ModuloFormularioParaleloController::class, 'edit'])
         ->name('grupos.edit');
 
-    Route::put('grupos/{grupo}', [ModuloFormularioParaleloController::class, 'update'])
+    Route::put('grupos/{grupo}/{modulo}', [ModuloFormularioParaleloController::class, 'update'])
         ->name('grupos.update');
 
     // 🔹 Eliminar grupo completo

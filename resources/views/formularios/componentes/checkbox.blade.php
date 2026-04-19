@@ -4,11 +4,10 @@
     $inputNameArray = $prefix
         ? "{$prefix}[{$campo->nombre}][]"
         : "{$campo->nombre}[]";
-
-
 @endphp
 
-<div class="opciones-container" data-campo-id="{{ $campo->id }}">
+<div class="opciones-container {{ $errors->has($inputName) ? 'border border-danger p-2' : '' }}"
+    data-campo-id="{{ $campo->id }}">
     <div class="row">
         @foreach($campo->opciones_catalogo as $opcion)
             @php
@@ -20,8 +19,9 @@
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="form-check">
                     <input type="checkbox" data-tipo="{{ $campo->campo_nombre }}" name="{{ $inputNameArray }}"
-                        value="{{ $opcion->catalogo_codigo }}" class="form-check-input campo-formulario" id="{{ $inputId }}"
-                        {{ in_array($opcion->catalogo_codigo, $checkedValues) ? 'checked' : '' }}>
+                        value="{{ $opcion->catalogo_codigo }}"
+                        class="form-check-input campo-formulario {{ $errors->has($inputName) ? 'is-invalid' : '' }}"
+                        id="{{ $inputId }}" {{ in_array($opcion->catalogo_codigo, $checkedValues) ? 'checked' : '' }}>
 
                     <label class="form-check-label" for="{{ $inputId }}">
                         {{ $opcion->catalogo_descripcion }}
@@ -30,6 +30,12 @@
             </div>
         @endforeach
     </div>
+
+    @if($errors->has($inputName))
+        <div class="invalid-feedback d-block">
+            {{ $errors->first($inputName) }}
+        </div>
+    @endif
 
     <button type="button" class="btn btn-sm btn-outline-primary mt-2 btn-ver-mas-checkbox"
         data-campo-id="{{ $campo->id }}">

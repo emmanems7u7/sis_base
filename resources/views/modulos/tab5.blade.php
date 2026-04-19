@@ -34,6 +34,8 @@
                         data-bs-target="#configModal{{ $grupo->id }}">
                         Ver Configuración
                     </button>
+                    <a href="{{ route('grupos.edit', ['grupo' => $grupo->id, 'modulo' => $modulo->id]) }}"
+                        class="btn btn-sm btn-warning">Editar</a>
                 </td>
             </tr>
 

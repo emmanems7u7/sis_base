@@ -74,9 +74,7 @@
                         </div>
                     </div>
 
-                    <div class="fw-bold fs-4 mt-3">
-                        =
-                    </div>
+
 
                     <div class="flex-grow-1">
                         <small>Operación</small>
@@ -95,6 +93,8 @@
 
                 <!-- OPERADORES -->
                 <div class="mt-3 d-flex gap-1">
+                    <button type="button" class="btn btn-primary btn-xs operador" data-op="="
+                        draggable="true">=</button>
                     <button type="button" class="btn btn-primary btn-xs operador" draggable="true"
                         data-op="+">+</button>
                     <button type="button" class="btn btn-primary btn-xs operador" draggable="true"
@@ -192,10 +192,16 @@
 
         actualizarEstado();
 
+
     });
 
 
-
+    // AUTO CONTINUAR EN EDIT
+    @if(isset($seleccionados) && count($seleccionados) === 2 && isset($principal))
+        setTimeout(() => {
+            document.getElementById('btn_continuar').click();
+        }, 300);
+    @endif
 
 </script>
 
@@ -228,6 +234,7 @@
             return;
         }
 
+
         fetch("{{ route('formularios.campos.multiples') }}", {
             method: 'POST',
             headers: {
@@ -243,9 +250,14 @@
             .then(data => {
                 if (data.success) {
                     renderCampos(data.data);
+
                     var contenedorOperaciones = document.getElementById('contenedor_operaciones');
                     contenedorOperaciones.classList.remove('d-none');
-                }
+
+                    @if(isset($configOperaciones) && count($configOperaciones) > 0)
+                        cargarOperacionesExistentes(@json($configOperaciones));
+                    @endif
+    }
             })
             .catch(err => console.error(err));
 
@@ -525,5 +537,47 @@
             document.querySelector('#contenedor_operaciones').appendChild(inputHidden);
         }
         inputHidden.value = JSON.stringify(operaciones);
+    }
+    function cargarOperacionesExistentes(data) {
+
+        operaciones = data; // sincronizar array global
+
+        let tabla = document.getElementById('tabla_operaciones');
+        tabla.innerHTML = '';
+
+        data.forEach(op => {
+
+            let destino = op.destino.nombre;
+
+            let formulaTexto = op.formula.map(f => {
+                return f.tipo === 'campo' ? f.nombre : f.valor;
+            }).join(' ');
+
+            let fila = `
+        <tr data-id="${op.id}">
+            <td>${destino}</td>
+            <td>${formulaTexto}</td>
+            <td><button type='button' class="btn btn-danger btn-xs btn-eliminar">X</button></td>
+        </tr>
+    `;
+
+            tabla.insertAdjacentHTML('beforeend', fila);
+        });
+
+        // activar eliminar
+        document.querySelectorAll('.btn-eliminar').forEach(btn => {
+            btn.onclick = function () {
+                let tr = this.closest('tr');
+                let id = tr.dataset.id;
+
+                operaciones = operaciones.filter(op => op.id != id);
+
+                tr.remove();
+
+                actualizarHidden();
+            };
+        });
+
+        actualizarHidden();
     }
 </script>

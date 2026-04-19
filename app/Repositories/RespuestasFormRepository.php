@@ -122,7 +122,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
         return $filasSeleccionadas;
     }
 
-    public function filaDesdeArray(array $registroData, $campos)
+    public function filaDesdeArray($respuesta, array $registroData, $campos)
     {
         $filasSeleccionadas = [];
 
@@ -131,7 +131,6 @@ class RespuestasFormRepository implements RespuestasFormInterface
 
         foreach ($registroData as $nombreCampo => $valor) {
 
-            // 🧠 Limpiar nombre (por si viene como form_8[campo])
             preg_match('/\[(.*?)\]/', $nombreCampo, $match);
             $nombreLimpio = $match[1] ?? $nombreCampo;
 
@@ -148,6 +147,8 @@ class RespuestasFormRepository implements RespuestasFormInterface
             // ============================================
             // 1️⃣ REFERENCIA SIMPLE (select)
             // ============================================
+
+
             if ($esReferencia && is_numeric($valor)) {
 
                 $fila = RespuestasForm::with('camposRespuestas.campo')
@@ -155,7 +156,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
 
                 if ($fila) {
                     $datos = [];
-
+                    $datos['respuesta_id'] = $fila->id;
                     foreach ($fila->camposRespuestas as $cr) {
                         $datos[$cr->campo->nombre] =
                             $cr->valor . ' - ' . $cr->id;
@@ -181,7 +182,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
 
                     if ($fila) {
                         $datos = [];
-
+                        $datos['respuesta_id'] = $fila->id;
                         foreach ($fila->camposRespuestas as $cr) {
                             $datos[$cr->campo->nombre] =
                                 $cr->valor . ' - ' . $cr->id;
@@ -197,9 +198,12 @@ class RespuestasFormRepository implements RespuestasFormInterface
             // 🔹 VALOR NORMAL (NO REFERENCIA)
             // ============================================
             else {
+                $filasSeleccionadas['respuesta_id'] = $respuesta->id;
+
                 $filasSeleccionadas[$nombreLimpio] = $valor;
             }
         }
+
         return $filasSeleccionadas;
     }
 

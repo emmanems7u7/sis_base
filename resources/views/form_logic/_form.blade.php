@@ -98,6 +98,20 @@
                         @endforeach
                     </select>
                 </div>
+
+                   <!-- Segundo plano -->
+                   <div class="col-12">
+                    <div class="form-check form-switch mt-2">
+                        <input class="form-check-input" 
+                               type="checkbox" 
+                               name="segundo_plano" 
+                               id="segundo_plano"
+                               {{ old('segundo_plano', $rule->segundo_plano ?? false) ? 'checked' : '' }}>
+                        <label class="form-check-label fw-semibold" for="segundo_plano">
+                            Ejecutar en cola
+                        </label>
+                    </div>
+                </div>
                 <!-- Activo -->
                 <div class="col-12">
                     <div class="form-check form-switch mt-2">
@@ -195,6 +209,10 @@
                                 <button type="button" class="btn btn-sm btn-danger remove-condicion-modal">x</button>
                             </div>
                         </div>
+                    <div class="mt-2">
+                        <input type="text" class="form-control cond-mensaje"
+                            placeholder="Ej: La cantidad ingresada supera el stock disponible">
+                    </div>
                     </div>
                 </template>
 

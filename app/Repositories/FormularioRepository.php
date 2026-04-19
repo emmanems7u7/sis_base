@@ -180,8 +180,13 @@ class FormularioRepository implements FormularioInterface
             $inputName = $prefix
                 ? "{$prefix}.{$name}"
                 : $name;
+
             // Solo validar si el request tiene datos para ese campo
-            if (in_array($tipo, ['checkbox', 'radio', 'selector']) && $request->has($inputName)) {
+            $data = $request instanceof \Illuminate\Http\Request
+                ? $request->all()
+                : $request;
+
+            if (in_array($tipo, ['checkbox', 'radio', 'selector']) && array_key_exists($inputName, $data)) {
 
                 $valores = is_array($request->input($inputName))
                     ? $request->input($inputName)

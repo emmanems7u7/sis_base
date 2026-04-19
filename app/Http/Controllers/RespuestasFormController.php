@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
+use App\Notifications\LogicaFormularioFinalizada;
 use Illuminate\Support\Facades\Session;
 use Illuminate\Http\Request;
 use App\Models\RespuestasForm;
@@ -21,10 +22,12 @@ use App\Models\FormLogicCondition;
 use Jenssegers\Agent\Agent;
 
 use App\Jobs\EjecutarLogicaFormulario;
+use App\Models\AuditoriaAccion;
 use App\Models\FormLogicRule;
 use App\Models\Modulo;
 use App\Models\ModuloFormularioParalelo;
 use App\Models\RespuestasGrupo;
+use App\Models\User;
 
 class RespuestasFormController extends Controller
 {
@@ -467,21 +470,7 @@ class RespuestasFormController extends Controller
 
     private function procesarFormularioNormalDesdeArray($datosFormulario, $form, $campos, $prefix, $rules)
     {
-        // 🔥 convertir a estructura tipo request
-        $data = [$prefix => $this->limpiarRegistro($datosFormulario)];
 
-        $validator = Validator::make($data, $rules);
-
-        if ($validator->fails()) {
-            return back()->withErrors($validator)->withInput();
-        }
-
-        $errores = $this->FormularioRepository
-            ->validarOpcionesCatalogo($campos, $datosFormulario, $prefix);
-
-        if (!empty($errores)) {
-            return back()->withErrors($errores)->withInput();
-        }
 
         DB::beginTransaction();
 
@@ -503,7 +492,7 @@ class RespuestasFormController extends Controller
             }
 
             $filas = $this->RespuestasFormInterface
-                ->filaDesdeArray($datosFormulario, $campos);
+                ->filaDesdeArray($respuesta, $datosFormulario, $campos);
 
             $errores = $this->validarLogica($respuesta, $filas);
 
@@ -572,7 +561,9 @@ class RespuestasFormController extends Controller
             }
 
             $filas = $this->RespuestasFormInterface
-                ->filaDesdeArray($datosFormulario, $campos);
+                ->filaDesdeArray($respuesta, $datosFormulario, $campos);
+
+
 
             $errores = $this->validarLogica($respuesta, $filas);
 
@@ -601,10 +592,44 @@ class RespuestasFormController extends Controller
         }
     }
 
+    private function normalizarRegistros(array $registros): array
+    {
+        return array_map(function ($reg) {
 
+            $nuevo = [];
+
+            foreach ($reg as $key => $value) {
+
+                // Archivos (preview)
+                if (is_array($value) && isset($value['preview'])) {
+                    $nuevo[$key] = $value['preview'];
+                }
+
+                // Arrays (checkbox)
+                elseif (is_array($value) && array_is_list($value)) {
+                    $nuevo[$key] = array_map(function ($item) {
+                        return is_array($item) ? ($item['value'] ?? null) : $item;
+                    }, $value);
+                }
+
+                // Objeto {value, text}
+                elseif (is_array($value) && isset($value['value'])) {
+                    $nuevo[$key] = $value['value'];
+                }
+
+                // Valor simple
+                else {
+                    $nuevo[$key] = $value;
+                }
+            }
+
+            return $nuevo;
+        }, $registros);
+    }
 
     public function store(Request $request, $form, $modulo, $tipo)
     {
+
         $moduloModelo = $modulo > 0 ? Modulo::find($modulo) : null;
         $formularioModelo = Formulario::find($form);
 
@@ -618,7 +643,13 @@ class RespuestasFormController extends Controller
         // =====================================================
         // 1️⃣ PROCESAR FORMULARIOS MÚLTIPLES (JSON)
         // =====================================================
-        $registros = json_decode($request->registros_json, true);
+        $registrosRaw = json_decode($request->registros_json, true);
+
+        if (!is_array($registrosRaw)) {
+            $registrosRaw = [];
+        }
+
+        $registros = $this->normalizarRegistros($registrosRaw);
 
         if (!empty($registros)) {
 
@@ -668,7 +699,8 @@ class RespuestasFormController extends Controller
                         $respuestasCreadas = array_merge($respuestasCreadas, $res);
 
                     } catch (\Exception $e) {
-                        return back()->withErrors($e->getMessage());
+                        return back()->withErrors($e->getMessage())->withInput();
+                        ;
                     }
                 }
             }
@@ -701,7 +733,24 @@ class RespuestasFormController extends Controller
             $rules = $this->RespuestasFormInterface
                 ->validacion($formularioModelo, $campos, null, 'store', $formPrefix);
 
+
             try {
+
+
+                $data = [$formPrefix => $this->limpiarRegistro($datosFormulario)];
+
+                $validator = Validator::make($data, $rules);
+
+                if ($validator->fails()) {
+                    return back()->withErrors($validator)->withInput();
+                }
+
+                $errores = $this->FormularioRepository
+                    ->validarOpcionesCatalogo($campos, $datosFormulario, $formPrefix);
+
+                if (!empty($errores)) {
+                    return back()->withErrors($errores)->withInput();
+                }
 
                 $respuestasCreadas[] = $this->procesarFormularioNormalDesdeArray(
                     $datosFormulario,
@@ -712,7 +761,9 @@ class RespuestasFormController extends Controller
                 );
 
             } catch (\Exception $e) {
-                return back()->withErrors($e->getMessage());
+
+                return back()->withErrors($e->getMessage())->withInput();
+
             }
         }
 
@@ -726,16 +777,45 @@ class RespuestasFormController extends Controller
         });
 
         // =====================================================
-        // 4️⃣ EJECUTAR COLAS (BATCH POR FORMULARIO)
+        // EJECUTAR COLAS (BATCH POR FORMULARIO)
         // =====================================================
+
+
         foreach ($agrupadas as $formId => $respuestasForm) {
 
-            EjecutarLogicaFormulario::dispatch(
-                $respuestasForm->toArray(),
-                'on_create',
-                auth()->id(),
-                env('APP_URL')
-            );
+            $reglas = FormLogicRule::where('form_id', $formId)
+                ->where('evento', 'on_create')
+                ->where('activo', true)
+                ->with([
+                    'actions' => function ($q) {
+                        $q->with('conditions');
+                    }
+                ])
+                ->get();
+
+            if ($reglas->contains('segundo_plano', true)) {
+
+                EjecutarLogicaFormulario::dispatch(
+                    $reglas,
+                    $respuestasForm->toArray(),
+                    'on_create',
+                    auth()->id(),
+                    env('APP_URL')
+                );
+
+            } else {
+
+                $this->handle($reglas, $respuestasForm->toArray(), 'on_create', auth()->id(), env('APP_URL'));
+                /*
+                                EjecutarLogicaFormulario::dispatchSync(
+                                    $reglas,
+                                    $respuestasForm->toArray(),
+                                    'on_create',
+                                    auth()->id(),
+                                    env('APP_URL')
+                                );*/
+            }
+
         }
 
         // =====================================================
@@ -767,13 +847,77 @@ class RespuestasFormController extends Controller
     }
 
 
+
+    public function handle($reglas, array $respuestas, string $evento, $usuario, $url)
+    {
+        $user = User::find($usuario);
+
+        // 🔹 Cargar todas las respuestas primero
+        $respuestasModelos = collect();
+
+        foreach ($respuestas as $item) {
+
+            $respuesta = RespuestasForm::find($item['respuesta_id']);
+
+            if ($respuesta) {
+                $respuesta->filasSeleccionadas = $item['filas'];
+                $respuestasModelos->push($respuesta);
+            }
+        }
+
+
+        $resultado = $this->FormLogicInterface->ejecutarLogica(
+            $reglas,
+            $respuestasModelos,
+            $evento,
+            $usuario
+        );
+
+
+
+        if ($user && !empty($resultado['acciones_ejecutadas'])) {
+
+            foreach ($resultado['acciones_ejecutadas'] as $accion) {
+
+                $tipo_accion = $this->CatalogoRepository
+                    ->getNombreCatalogo($accion['tipo_accion']);
+
+                $detalle = [
+                    'accion_id' => $accion['accion_id'] ?? null,
+                    'tipo_accion' => $tipo_accion ?? null,
+                    'mensaje' => $accion['mensaje'] ?? '',
+                    'detalle' => $accion['detalle'] ?? [],
+                    'errores' => $accion['errores'] ?? [],
+                    'ok' => $accion['ok'] ?? false,
+                ];
+
+                $auditoria = AuditoriaAccion::create([
+                    'action_id' => $accion['accion_id'],
+                    'tipo_accion' => $tipo_accion,
+                    'usuario_id' => $usuario,
+                    'estado' => $accion['ok'] ? 'success' : 'error',
+                    'mensaje' => $accion['mensaje'],
+                    'detalle' => $accion,
+                    'errores' => $accion['errores'],
+                ]);
+
+                $ruta = $url . '/formulario/logica/detalle/' . $auditoria->id;
+
+                $user->notify(
+                    new LogicaFormularioFinalizada($detalle, $ruta)
+                );
+            }
+        }
+
+    }
+
+
     private function validarLogica($respuesta, $filasSeleccionadas)
     {
         $evento = 'on_create';
 
         $resultado = $this->FormLogicInterface
             ->ValidarLogica($respuesta, $filasSeleccionadas, $evento);
-
         return array_filter(
             $resultado,
             fn($msg) => !empty(trim($msg))

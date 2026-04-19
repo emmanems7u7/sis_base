@@ -13,6 +13,7 @@ class FormLogicRule extends Model
         'nombre',
         'evento',
         'activo',
+        'segundo_plano',
         'parametros'
     ];
 

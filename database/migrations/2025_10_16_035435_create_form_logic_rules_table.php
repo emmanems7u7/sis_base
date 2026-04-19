@@ -14,9 +14,9 @@ return new class extends Migration {
             $table->id();
             $table->foreignId('form_id')->constrained('formularios')->onDelete('cascade');
             $table->string('nombre');
-            $table->string('evento'); // on_create, on_update, on_delete, etc.
+            $table->string('evento');
             $table->boolean('activo')->default(true);
-            $table->json('parametros')->nullable(); // datos extra (por ejemplo: {"ejecutar_en_lote": true})
+            $table->json('parametros')->nullable();
             $table->timestamps();
         });
     }

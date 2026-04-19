@@ -27,8 +27,10 @@ class EjecutarLogicaFormulario implements ShouldQueue
     protected $evento;
     protected $usuario;
     protected $url;
-    public function __construct(array $respuestas, string $evento, $usuario, $url)
+    protected $reglas;
+    public function __construct($reglas, array $respuestas, string $evento, $usuario, $url)
     {
+        $this->reglas = $reglas;
         $this->respuestas = $respuestas;
         $this->evento = $evento;
         $this->usuario = $usuario;
@@ -38,7 +40,7 @@ class EjecutarLogicaFormulario implements ShouldQueue
     {
         $user = User::find($this->usuario);
 
-        // 🔹 Cargar todas las respuestas primero
+
         $respuestasModelos = collect();
 
         foreach ($this->respuestas as $item) {
@@ -51,8 +53,9 @@ class EjecutarLogicaFormulario implements ShouldQueue
             }
         }
 
-        // 🔥 Llamar UNA SOLA VEZ
+
         $resultado = $formLogic->ejecutarLogica(
+            $this->reglas,
             $respuestasModelos,
             $this->evento,
             $this->usuario

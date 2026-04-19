@@ -6,4 +6,11 @@
     @endif
 </div>
 
-<input type="file" data-tipo="{{ $campo->campo_nombre }}" name="{{ $inputName }}" class="form-control" {{ $esRequerido ? 'required' : '' }}>
+<input type="file" data-tipo="{{ $campo->campo_nombre }}" name="{{ $inputName }}"
+    class="form-control {{ $errors->has($inputName) ? 'is-invalid' : '' }}" {{ $esRequerido ? 'required' : '' }}>
+
+@if($errors->has($inputName))
+    <div class="invalid-feedback d-block">
+        {{ $errors->first($inputName) }}
+    </div>
+@endif

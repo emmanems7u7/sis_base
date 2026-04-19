@@ -5,6 +5,8 @@
             <th>Formulario Origen</th>
             <th>Evento</th>
             <th>Acciones</th>
+            <th>Estado</th>
+            <th>Ejecución</th>
             <th>Opciones</th>
         </tr>
     </thead>
@@ -22,6 +24,9 @@
                         </div>
                     @endforeach
                 </td>
+                <td>{{ $rule->activo ? 'Activo' : 'Inactivo'}}</td>
+                <td>{{ $rule->segundo_plano ? 'Segundo Plano' : 'Primer Plano' }}</td>
+
                 <td>
                     <a href="{{ route('form-logic.edit', ['rule' => $rule->id, 'modulo' => $modulo->id]) }}"
                         class="btn btn-sm btn-warning">Editar</a>
