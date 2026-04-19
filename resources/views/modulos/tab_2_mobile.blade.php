@@ -23,10 +23,10 @@
                 </div>
                 <div class="card-footer d-flex justify-content-between">
                     <a href="{{ route('form-logic.edit', ['rule' => $rule->id, 'modulo' => $modulo->id]) }}"
-                        class="btn btn-sm btn-warning">Editar</a>
+                        class="btn btn-xs btn-warning">Editar</a>
                     <form action="{{ route('form-logic.delete', $rule->id) }}" method="POST" class="d-inline">
                         @csrf @method('DELETE')
-                        <button class="btn btn-sm btn-danger">Eliminar</button>
+                        <button class="btn btn-xs btn-danger">Eliminar</button>
                     </form>
                 </div>
             </div>
