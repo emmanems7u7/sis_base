@@ -13,7 +13,7 @@ interface FormLogicInterface
 
     public function ejecutarLogica($reglas, $respuestas, $evento, $usuario): array;
     public function ejecutarAccion(RespuestasForm $respuestaOrigen, $filasSeleccionadas, $action, $usuario);
-
+    public function EjecutarReglaLogica($reglas, array $respuestas, string $evento, $usuario, $url);
     public function validarAccion(
         RespuestasForm $respuestaOrigen,
         $filasSeleccionadas,

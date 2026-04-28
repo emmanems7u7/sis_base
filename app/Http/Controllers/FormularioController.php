@@ -267,14 +267,13 @@ class FormularioController extends Controller
         $asociado = false;
 
 
-
-
-
         // Revisar si pertenece a algún grupo
         $grupo = $respuesta->grupos->first(); // tomamos el primer grupo si hay
+
         $respuestasGrupo = [];
 
         if ($grupo) {
+
             foreach ($grupo->respuestas as $resp) {
                 // <-- Aquí filtramos la respuesta actual
                 if ($resp->id == $respuesta->id) {
@@ -295,10 +294,11 @@ class FormularioController extends Controller
         /* OBTENER REGISTRO ASOCIADO 1:1 CON FORMULARIO*/
 
         $datos = [];
+
+
         foreach ($respuesta->camposRespuestas as $respuestaCampo) {
             $config = $respuestaCampo->campo->config;
             $asociado = isset($config['asociacion']) ?? false;
-
 
             if ($asociado) {
 
@@ -316,9 +316,12 @@ class FormularioController extends Controller
             $campoAsociado = collect($camposRespuestaPrincipal)
                 ->firstWhere('tipo', 'asociado');
 
+
             $valorAsociado = $campoAsociado['valores'][0] ?? null;
 
             $resp = RespuestasCampo::where('cf_id', $campoRefId)->where('valor', $valorAsociado)->first()->respuesta_id ?? null;
+
+
 
             $respuesta = RespuestasForm::with(['camposRespuestas.campo'])
                 ->where('form_id', $formRefId)

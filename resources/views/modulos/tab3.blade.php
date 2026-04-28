@@ -8,6 +8,7 @@
         const formularios = @json($grafo['formularios']);
         const relaciones = @json($grafo['relaciones']);
 
+
         // Generar nodos
         const nodes = Object.values(formularios).map(form => ({
             data: {
@@ -16,15 +17,28 @@
             }
         }));
 
-        // Generar conexiones
-        const edges = relaciones.map(rel => ({
-            data: {
-                id: `edge_${rel.from}_${rel.to}`,
-                source: 'form_' + rel.from,
-                target: 'form_' + rel.to,
-                label: rel.campo
-            }
-        }));
+        // 🔥 Crear set de IDs válidos
+        const nodeIds = new Set(nodes.map(n => n.data.id));
+
+        // Generar conexiones (FILTRANDO errores)
+        const edges = relaciones
+            .map(rel => ({
+                data: {
+                    id: `edge_${rel.from}_${rel.to}`,
+                    source: 'form_' + rel.from,
+                    target: 'form_' + rel.to,
+                    label: rel.campo
+                }
+            }))
+            .filter(edge => {
+                const valido = nodeIds.has(edge.data.source) && nodeIds.has(edge.data.target);
+
+                if (!valido) {
+                    console.warn("Relación inválida eliminada:", edge.data);
+                }
+
+                return valido;
+            });
 
         const cy = cytoscape({
             container: document.getElementById('cy'),

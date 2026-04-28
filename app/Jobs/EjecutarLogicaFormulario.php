@@ -36,66 +36,9 @@ class EjecutarLogicaFormulario implements ShouldQueue
         $this->usuario = $usuario;
         $this->url = $url;
     }
-    public function handle(FormLogicInterface $formLogic, CatalogoInterface $catalogoInterface)
+    public function handle(FormLogicInterface $formLogic)
     {
-        $user = User::find($this->usuario);
-
-
-        $respuestasModelos = collect();
-
-        foreach ($this->respuestas as $item) {
-
-            $respuesta = RespuestasForm::find($item['respuesta_id']);
-
-            if ($respuesta) {
-                $respuesta->filasSeleccionadas = $item['filas'];
-                $respuestasModelos->push($respuesta);
-            }
-        }
-
-
-        $resultado = $formLogic->ejecutarLogica(
-            $this->reglas,
-            $respuestasModelos,
-            $this->evento,
-            $this->usuario
-        );
-
-
-
-        if ($user && !empty($resultado['acciones_ejecutadas'])) {
-
-            foreach ($resultado['acciones_ejecutadas'] as $accion) {
-
-                $tipo_accion = $catalogoInterface
-                    ->getNombreCatalogo($accion['tipo_accion']);
-
-                $detalle = [
-                    'accion_id' => $accion['accion_id'] ?? null,
-                    'tipo_accion' => $tipo_accion ?? null,
-                    'mensaje' => $accion['mensaje'] ?? '',
-                    'detalle' => $accion['detalle'] ?? [],
-                    'errores' => $accion['errores'] ?? [],
-                    'ok' => $accion['ok'] ?? false,
-                ];
-
-                $auditoria = AuditoriaAccion::create([
-                    'action_id' => $accion['accion_id'],
-                    'tipo_accion' => $tipo_accion,
-                    'usuario_id' => $this->usuario,
-                    'estado' => $accion['ok'] ? 'success' : 'error',
-                    'mensaje' => $accion['mensaje'],
-                    'detalle' => $accion,
-                    'errores' => $accion['errores'],
-                ]);
-
-                $ruta = $this->url . '/formulario/logica/detalle/' . $auditoria->id;
-
-                $user->notify(
-                    new LogicaFormularioFinalizada($detalle, $ruta)
-                );
-            }
-        }
+        $formLogic->EjecutarReglaLogica($this->reglas, $this->respuestas, 'on_create', auth()->id(), env('APP_URL'));
 
     }
 

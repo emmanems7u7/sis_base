@@ -10,11 +10,13 @@ use App\Models\RespuestasCampo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Interfaces\CatalogoInterface;
+use App\Models\AuditoriaAccion;
 use App\Models\ConfCorreo;
 use App\Models\PlantillaCorreo;
 use App\Models\User;
 use App\Models\FormLogicAction;
 use App\Models\Formulario;
+use App\Notifications\LogicaFormularioFinalizada;
 use App\Services\DynamicMailer;
 use PhpOffice\PhpSpreadsheet\Calculation\LookupRef\Formula;
 
@@ -1234,7 +1236,68 @@ class FormLogicRepository implements FormLogicInterface
 
 
 
+    public function EjecutarReglaLogica($reglas, array $respuestas, string $evento, $usuario, $url)
+    {
+        $user = User::find($usuario);
 
+        // 🔹 Cargar todas las respuestas primero
+        $respuestasModelos = collect();
+
+        foreach ($respuestas as $item) {
+
+            $respuesta = RespuestasForm::find($item['respuesta_id']);
+
+            if ($respuesta) {
+                $respuesta->filasSeleccionadas = $item['filas'];
+                $respuestasModelos->push($respuesta);
+            }
+        }
+
+
+        $resultado = $this->ejecutarLogica(
+            $reglas,
+            $respuestasModelos,
+            $evento,
+            $usuario
+        );
+
+
+
+        if ($user && !empty($resultado['acciones_ejecutadas'])) {
+
+            foreach ($resultado['acciones_ejecutadas'] as $accion) {
+
+                $tipo_accion = $this->CatalogoRepository
+                    ->getNombreCatalogo($accion['tipo_accion']);
+
+                $detalle = [
+                    'accion_id' => $accion['accion_id'] ?? null,
+                    'tipo_accion' => $tipo_accion ?? null,
+                    'mensaje' => $accion['mensaje'] ?? '',
+                    'detalle' => $accion['detalle'] ?? [],
+                    'errores' => $accion['errores'] ?? [],
+                    'ok' => $accion['ok'] ?? false,
+                ];
+
+                $auditoria = AuditoriaAccion::create([
+                    'action_id' => $accion['accion_id'],
+                    'tipo_accion' => $tipo_accion,
+                    'usuario_id' => $usuario,
+                    'estado' => $accion['ok'] ? 'success' : 'error',
+                    'mensaje' => $accion['mensaje'],
+                    'detalle' => $accion,
+                    'errores' => $accion['errores'],
+                ]);
+
+                $ruta = $url . '/formulario/logica/detalle/' . $auditoria->id;
+
+                $user->notify(
+                    new LogicaFormularioFinalizada($detalle, $ruta)
+                );
+            }
+        }
+
+    }
 
 
 
