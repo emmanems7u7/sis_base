@@ -242,6 +242,7 @@ class FormLogicController extends Controller
         $roles = Role::select('id', 'name')->get();
         $plantillas = PlantillaCorreo::where('estado', '1')->get();
 
+        $OpcionesCondiciones = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Opciones Condiciones', true);
 
 
 
@@ -256,7 +257,8 @@ class FormLogicController extends Controller
             'breadcrumb',
             'usuarios',
             'roles',
-            'plantillas'
+            'plantillas',
+            'OpcionesCondiciones'
         ));
     }
 
