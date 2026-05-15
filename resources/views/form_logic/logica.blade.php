@@ -364,7 +364,7 @@
 
         }
 
-        // Función para agregar condición al modal
+        // Función para agregar condición
         function agregarCondicionModal(condData = null) {
             const template = document.getElementById('condicion-modal-template').content.cloneNode(true);
             const container = template.querySelector('.condicion-block');
@@ -409,10 +409,150 @@
             document.getElementById('condiciones-modal-container').appendChild(container);
         }
 
-        document.getElementById('add-condicion-modal').addEventListener('click', () => agregarCondicionModal());
+
+
+        document.getElementById('btn-agregar-condicion').addEventListener('click', () => {
+            const selector = document.getElementById('selector-condicion-modal');
+            const tipo = selector.value;
+
+            switch (tipo) {
+
+                case 'OP-001':
+
+                    // comportamiento actual
+                    agregarCondicionModal();
+                    break;
+
+                case 'OP-002':
+
+                    console.log('Comparar anterior vs nuevo');
+                    // futura lógica
+                    break;
+
+                case 'OP-003':
+
+                    agregarCondicionFormValor();
+                    // futura lógica
+                    break;
+
+                case 'OP-004':
+
+                    console.log('Comparar form destino');
+                    // futura lógica
+                    break;
+
+            }
+
+        });
+
+
+        // =========================================
+        // AGREGAR CONDICIÓN
+        // VALOR FORM ORIGEN / DESTINO
+        // =========================================
+        function agregarCondicionFormValor(condData = null) {
+
+            const template = document
+                .getElementById('condicion-form-valor-template')
+                .content
+                .cloneNode(true);
+
+            const container =
+                template.querySelector('.condicion-form-valor-block');
+
+            const selectTipo =
+                container.querySelector('.cond-tipo-formulario');
+
+            const selectCampo =
+                container.querySelector('.cond-campo');
+
+            const selectOperador =
+                container.querySelector('.cond-operador');
+
+            const inputValor =
+                container.querySelector('.cond-valor');
+
+            const preview =
+                container.querySelector('.preview-condicion');
+
+            const hidden =
+                container.querySelector('.condicion-config-hidden');
+
+            // =====================================
+            // CAMBIO FORMULARIO
+            // =====================================
+            selectTipo.addEventListener('change', function () {
+
+                const formOrigenId =
+                    document.querySelector('.select-formulario').value;
+
+                const formDestinoId =
+                    document.getElementById('modal-form-ref').value;
+
+                let formId = '';
+
+                // origen
+                if (this.value === 'origen') {
+                    formId = formOrigenId;
+                }
+
+                // destino
+                if (this.value === 'destino') {
+                    formId = formDestinoId;
+                }
+
+                // limpiar
+                selectCampo.innerHTML = '';
+
+                // cargar campos
+                cargarCamposCached(
+                    formId,
+                    selectCampo,
+                    '-- Seleccione campo --'
+                );
 
 
 
+            });
+
+
+            // =====================================
+            // ELIMINAR
+            // =====================================
+            container.querySelector('.remove-condicion-form-valor')
+                .addEventListener('click', () => {
+
+                    mostrarAlerta(
+                        'confirm',
+                        '¿Eliminar condición?',
+                        {
+
+                            titulo: 'Eliminar',
+
+                            onOk: () => {
+
+                                container.remove();
+
+                                mostrarAlerta(
+                                    'success',
+                                    'Condición eliminada'
+                                );
+
+                            }
+
+                        }
+                    );
+
+                });
+
+            // =====================================
+            // APPEND
+            // =====================================
+            document.getElementById(
+                'condiciones-modal-container'
+            ).appendChild(container);
+
+        }
 
 
         //Función para capturar datos del modal
@@ -600,6 +740,35 @@
 
             });
 
+            document.querySelectorAll('#condiciones-modal-container .condicion-form-valor-block')
+                .forEach(cond => {
+
+                    const tipoFormulario = cond.querySelector('.cond-tipo-formulario');
+                    const campo = cond.querySelector('.cond-campo');
+                    const operador = cond.querySelector('.cond-operador');
+                    const valor = cond.querySelector('.cond-valor');
+
+                    accionObj.condiciones.push({
+
+                        tipo_condicion: 'form_valor',
+
+                        formulario_tipo: tipoFormulario.value,
+                        formulario_tipo_text:
+                            tipoFormulario.options[tipoFormulario.selectedIndex]?.text || '',
+
+                        campo_condicion: campo.value,
+                        campo_condicion_text:
+                            campo.options[campo.selectedIndex]?.text || '',
+
+                        operador: operador.value,
+                        operador_text:
+                            operador.options[operador.selectedIndex]?.text || '',
+
+                        valor: valor.value
+                    });
+
+                });
+
             return accionObj;
         }
 
@@ -728,7 +897,33 @@
 
             }
 
-            let condicionesInvalidas = accionObj.condiciones.some(c => !c.campo_condicion_origen || !c.operador || !c.campo_condicion_destino);
+
+            let condicionesInvalidas = accionObj.condiciones.some(c => {
+
+                // =====================================
+                // CONDICION FORMULARIO / VALOR
+                // =====================================
+                if (c.tipo_condicion === 'form_valor') {
+
+                    return (
+                        !c.formulario_tipo ||
+                        !c.campo_condicion ||
+                        !c.operador ||
+                        !c.valor
+                    );
+                }
+
+                // =====================================
+                // CONDICION NORMAL
+                // =====================================
+                return (
+                    !c.campo_condicion_origen ||
+                    !c.operador ||
+                    !c.campo_condicion_destino
+                );
+
+            });
+
             if (condicionesInvalidas) {
 
                 mostrarAlerta('warning', 'Complete todos los campos de las condiciones.');

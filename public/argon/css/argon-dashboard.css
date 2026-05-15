@@ -28602,3 +28602,20 @@ pre[class*=language-] {
         padding: 0.35rem 0.75rem;
         font-size: 0.85rem;
     }
+
+
+    .respuesta-card {
+      cursor: pointer;
+      transition: transform 0.12s ease, box-shadow 0.12s ease;
+  }
+  
+  .respuesta-card:active {
+      transform: scale(0.98);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.15) !important;
+  }
+  
+  /* efecto opcional cuando se selecciona */
+  .respuesta-card.clicked {
+      transform: scale(0.97);
+      opacity: 0.85;
+  }

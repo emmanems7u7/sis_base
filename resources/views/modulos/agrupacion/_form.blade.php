@@ -64,6 +64,14 @@
         <div id="contenedor_operaciones" class="card mt-3 d-none">
             <div class="card-body">
 
+                <div class="form-check mb-3">
+                    <input class="form-check-input" type="checkbox" id="relacion_multiple" name="relacion_multiple"
+                        value="1">
+                    <label class="form-check-label" for="relacion_multiple">
+                        Valido para Relación 1:N
+                    </label>
+                </div>
+
                 <!-- FILA PRINCIPAL -->
                 <div class="d-flex flex-wrap align-items-center gap-2">
 
@@ -115,7 +123,9 @@
                         <tr>
                             <th>Destino</th>
                             <th>Fórmula</th>
+                            <th>1:N</th>
                             <th></th>
+
                         </tr>
                     </thead>
                     <tbody id="tabla_operaciones"></tbody>
@@ -487,11 +497,12 @@
             mostrarAlerta('warning', 'Construye una operación');
             return;
         }
-
+        let relacionMultiple = document.getElementById('relacion_multiple')?.checked ? 1 : 0;
         let operacion = {
             id: Date.now(),
             destino: destino,
-            formula: formula
+            formula: formula,
+            relacion_multiple: relacionMultiple
         };
 
         operaciones.push(operacion);
@@ -501,7 +512,9 @@
         <tr data-id="${operacion.id}">
             <td>${destino.nombre}</td>
             <td>${formula.map(f => f.tipo === 'campo' ? f.nombre : f.valor).join(' ')}</td>
+            <td>${operacion.relacion_multiple ? '<span class="badge bg-warning ms-1">SI</span>' : '<span class="badge bg-danger ms-1">SI</span>'}</td>
             <td><button type='button' class="btn btn-danger btn-xs btn-eliminar">X</button></td>
+
         </tr>
     `;
         document.getElementById('tabla_operaciones').insertAdjacentHTML('beforeend', fila);
@@ -557,6 +570,8 @@
         <tr data-id="${op.id}">
             <td>${destino}</td>
             <td>${formulaTexto}</td>
+            <td>${op.relacion_multiple ? '<span class="badge bg-warning ms-1">SI</span>' : '<span class="badge bg-danger ms-1">NO</span>'}</td>
+
             <td><button type='button' class="btn btn-danger btn-xs btn-eliminar">X</button></td>
         </tr>
     `;

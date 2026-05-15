@@ -7,7 +7,7 @@ interface RespuestasFormInterface
     public function GetHumanRules($rules);
     public function fila($request);
     public function filaDesdeArray($respuesta, array $registroData, $campos);
-
+    public function filaDesdeRespuesta($respuesta, $campos);
     public function validacion($formulario, $campos, $respuestaId = null, $modo = 'store', $prefix = null);
     public function GeneraPlantilla($campos, $form);
 

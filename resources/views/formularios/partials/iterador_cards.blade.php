@@ -3,9 +3,14 @@
         @foreach($respuestas as $respuesta)
 
 
+        @php
+            $rid = $respuesta->id ?? null;
+        @endphp
 
             <div class="col-12 col-md-6 col-lg-4">
-                <div class="card shadow-sm h-100">
+            <div class="card shadow-sm h-100 respuesta-card"
+                    data-respuesta-id="{{ $respuesta->id }}"
+                    data-form-id="{{ $formulario->id }}">
                     <div class="card-header p-2">
                     @if($formulario->config['mostrar_usuario'] ?? false)
 
@@ -38,19 +43,20 @@
 
                             @endforeach
                         </div>
-                    </div>
 
-
-                    <div class="card-footer">
-
-                        @include('formularios.partials.Botones', ['modulo' => $modulo_id])
-
-
+                        
                     </div>
                 </div>
             </div>
 
+       
+
         @endforeach
+
+       
+                
+            </div>
+        </div>
     </div>
 
     <div class="d-flex justify-content-center mt-3">
@@ -60,3 +66,33 @@
 @else
     <p class="text-muted">No hay respuestas registradas para este formulario.</p>
 @endif
+
+<div class="offcanvas offcanvas-bottom border-0 rounded-top-4
+    {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }}"
+     tabindex="-1"
+     id="offcanvasAcciones"
+     style="height: 135px;">
+
+    <div class="offcanvas-header justify-content-center position-relative py-2">
+
+        <div class="text-center w-100">
+            <div class="fw-semibold small">
+            <i class="fas fa-bolt me-1"></i>  Acciones Disponibles
+            </div>
+
+            <div style="width: 100%; height: 2px; background:#dee2e6; margin:6px auto 0; border-radius:10px;"></div>
+        </div>
+
+      
+    </div>
+
+    <div class="offcanvas-body d-flex justify-content-center align-items-center gap-2 py-2"
+         id="accionesContenido">
+
+         <div id="acciones-template" class="d-none">
+            @include('formularios.partials.Botones_offcanvas', ['modulo' => $modulo_id])
+        </div>
+    </div>
+</div>
+
+

@@ -40,6 +40,7 @@ class FormLogicController extends Controller
 
         $operaciones = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Operaciones de Campo', true);
         $tipo_acciones = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Tipos de Acción', true);
+        $OpcionesCondiciones = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Opciones Condiciones', true);
 
 
         $usuarios = User::select('id', 'name', 'email')->get();
@@ -54,12 +55,14 @@ class FormLogicController extends Controller
             'breadcrumb',
             'usuarios',
             'roles',
-            'plantillas'
+            'plantillas',
+            'OpcionesCondiciones'
         ));
     }
 
     public function store(Request $request, Modulo $modulo)
     {
+
         $request->validate([
             'nombre' => 'required|string|max:255',
             'formulario_id' => 'required|exists:formularios,id',

@@ -24,8 +24,11 @@
         : (bool) $campo->requerido;
 
     $valoresCampo = $valores[$campo->nombre] ?? [];
-    $valor = old($campo->nombre, $valoresCampo[0] ?? '');
-
+    if (isset($formulario->config['registro_multiple']) && $formulario->config['registro_multiple']) {
+    $valor = '';
+    } else {
+        $valor = old($campo->nombre, $valoresCampo[0] ?? '');
+    }
     $prefix = $prefix ?? '';
     $inputName = $prefix ? "{$prefix}[{$campo->nombre}]" : $campo->nombre;
     $inputId = $prefix 

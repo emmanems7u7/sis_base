@@ -7,8 +7,10 @@
             <div class="card shadow-lg mt-2">
                 <div class="card-body">
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <h5>{{ $modulo->nombre }}</h5>
+                        <h5>Módulo {{ $modulo->nombre }}</h5>
                     </div>
+
+                    @role('admin')
                     <h6 class="mt-2 d-flex align-items-center gap-2">
                         Formularios asociados al Módulo
 
@@ -17,6 +19,7 @@
                             data-container="body" data-animation="true" style="cursor: pointer;">
                         </i>
                     </h6>
+
                     <div class="mb-2">
                         @forelse ($formularios_asociados->formularios as $formulario)
                             <small class="d-block">- {{ $formulario->nombre }}</small>
@@ -24,10 +27,10 @@
                             <small class="d-block">Sin Formularios Asociados</small>
                         @endforelse
                     </div>
+                    @endrole
 
 
-
-                    <a href="{{ route('formularios.index') }}" class="btn btn-sm btn-secondary "><i
+                    <a href="{{ route('formularios.index') }}" class="btn btn-xs btn-secondary "><i
                             class="fas fa-arrow-left me-1"></i>Volver</a>
 
                     <a href="{{route('modulo.index', $modulo->id)  }}" class="btn btn-xs btn-secondary "><i

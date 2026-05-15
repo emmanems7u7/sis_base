@@ -10,6 +10,7 @@
             @include('formularios._campos', [
                 'campos' => $formulario->campos->sortBy('posicion'),
                 'valores' => [],
+                'formulario' => $formItem,
                 'prefix' => "form_{$formItem->id}",
                 'caso' => 'store'
             ])

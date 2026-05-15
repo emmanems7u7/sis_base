@@ -207,6 +207,95 @@ class RespuestasFormRepository implements RespuestasFormInterface
         return $filasSeleccionadas;
     }
 
+    public function filaDesdeRespuesta($respuesta, $campos)
+    {
+        $filasSeleccionadas = [];
+
+        foreach ($campos as $campo) {
+
+            $respuestaCampo = $respuesta->camposRespuestas
+                ->firstWhere('cf_id', $campo->id);
+
+            if (!$respuestaCampo)
+                continue;
+
+            $valor = $respuestaCampo->valor;
+
+            $nombreLimpio = $campo->nombre;
+
+            // ============================================
+            // ✅ SOLO SI ES REFERENCIA
+            // ============================================
+            $esReferencia = !empty($campo->form_ref_id);
+
+            // ============================================
+            // 1️⃣ REFERENCIA SIMPLE
+            // ============================================
+            if ($esReferencia && is_numeric($valor)) {
+
+                $fila = RespuestasForm::with('camposRespuestas.campo')
+                    ->find($valor);
+
+                if ($fila) {
+
+                    $datos = [];
+                    $datos['respuesta_id'] = $fila->id;
+
+                    foreach ($fila->camposRespuestas as $cr) {
+
+                        $datos[$cr->campo->nombre] =
+                            $cr->valor . ' - ' . $cr->id;
+                    }
+
+                    $filasSeleccionadas[$nombreLimpio] = $datos;
+                }
+
+            }
+
+            // ============================================
+            // 2️⃣ REFERENCIA MÚLTIPLE
+            // ============================================
+            elseif ($esReferencia && is_array($valor)) {
+
+                foreach ($valor as $id) {
+
+                    if (!is_numeric($id))
+                        continue;
+
+                    $fila = RespuestasForm::with('camposRespuestas.campo')
+                        ->find($id);
+
+                    if ($fila) {
+
+                        $datos = [];
+                        $datos['respuesta_id'] = $fila->id;
+
+                        foreach ($fila->camposRespuestas as $cr) {
+
+                            $datos[$cr->campo->nombre] =
+                                $cr->valor . ' - ' . $cr->id;
+                        }
+
+                        $filasSeleccionadas[$nombreLimpio][] = $datos;
+                    }
+                }
+
+            }
+
+            // ============================================
+            // 🔹 VALOR NORMAL
+            // ============================================
+            else {
+
+                $filasSeleccionadas['respuesta_id'] = $respuesta->id;
+
+                $filasSeleccionadas[$nombreLimpio] = "[" . $campo->id . "] " . $valor;
+            }
+        }
+
+        return $filasSeleccionadas;
+    }
+
     public function validacion($formulario, $campos, $respuestaId = null, $modo = 'store', $prefix = null)
     {
 

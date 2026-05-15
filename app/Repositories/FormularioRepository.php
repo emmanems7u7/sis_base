@@ -311,10 +311,13 @@ class FormularioRepository implements FormularioInterface
 
             // Si es formulario de referencia
         } elseif ($campo->form_ref_id) {
+
+
             // Obtenemos el primer campo del formulario de referencia
             $campoReferencia = CamposForm::where('form_id', $campo->form_ref_id)
                 ->orderBy('posicion', 'asc')
                 ->first();
+
 
             if (!$campoReferencia)
                 return null;

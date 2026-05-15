@@ -171,10 +171,22 @@
 
 
                 <div id="contenedor_condiciones" class="d-none">
-                <div class="mt-auto d-flex justify-content-end">
-                    <button type="button" class="btn btn-sm btn-primary" id="add-condicion-modal">
-                        + Agregar Condición
+                <div class="mt-2 d-flex gap-2 justify-content-end">
+               
+
+                <select id="selector-condicion-modal" class="form-select form-select-sm w-auto">
+
+                     @foreach ($OpcionesCondiciones as $tipo_accion)
+                            <option value="{{ $tipo_accion->catalogo_codigo }}">{{ $tipo_accion->catalogo_descripcion }}
+                            </option>
+                        @endforeach
+
+                </select>
+
+                    <button type="button" class="btn btn-sm btn-primary" id="btn-agregar-condicion">
+                        + Agregar Acción
                     </button>
+
                 </div>
               
               
@@ -216,6 +228,125 @@
                     </div>
                 </template>
 
+
+           
+
+                <!-- ========================================= -->
+<!-- TEMPLATE VALOR FORM ORIGEN / DESTINO -->
+<!-- ========================================= -->
+<template id="condicion-form-valor-template">
+
+<div class="condicion-form-valor-block mb-2 p-2 border rounded">
+
+    Condición <strong class="num-condicion"></strong>
+
+    <div class="row g-2 align-items-center mt-1">
+
+        <!-- formulario -->
+        <div class="col-md-3">
+
+            <label class="form-label">
+                Formulario
+            </label>
+
+            <select class="form-select cond-tipo-formulario">
+
+                <option value="">
+                    -- Seleccionar --
+                </option>
+
+                <option value="origen">
+                    Formulario Origen
+                </option>
+
+                <option value="destino">
+                    Formulario Destino
+                </option>
+
+            </select>
+
+        </div>
+
+        <!-- campo -->
+        <div class="col-md-3">
+
+            <label class="form-label">
+                Campo
+            </label>
+
+            <select class="form-select cond-campo">
+
+                <option value="">
+                    -- Seleccione campo --
+                </option>
+
+            </select>
+
+        </div>
+
+        <!-- operador -->
+        <div class="col-md-2">
+
+            <label class="form-label">
+                Operador
+            </label>
+
+            <select class="form-select cond-operador">
+
+                <option value="=">=</option>
+                <option value="!=">!=</option>
+                <option value=">">></option>
+                <option value="<"><</option>
+                <option value=">=">>=</option>
+                <option value="<="><=</option>
+
+            </select>
+
+        </div>
+
+        <!-- valor -->
+        <div class="col-md-2">
+
+            <label class="form-label">
+                Valor
+            </label>
+
+            <input type="text"
+                class="form-control cond-valor">
+
+        </div>
+
+        <!-- eliminar -->
+        <div class="col-md-2 d-flex align-items-end justify-content-center">
+
+            <button type="button"
+                class="btn btn-sm btn-danger remove-condicion-form-valor">
+
+                x
+
+            </button>
+
+        </div>
+
+    </div>
+
+
+    <!-- mensaje -->
+    <div class="mt-2">
+
+        <input type="text"
+            class="form-control cond-mensaje"
+            placeholder="Ej: El valor supera el límite permitido">
+
+    </div>
+
+    <!-- hidden -->
+    <input type="hidden"
+        class="condicion-config-hidden">
+
+</div>
+
+</template>
                 </div>
 
                 <div class="d-flex gap-2 justify-content-center d-none" id="contenedor_botones" >
@@ -239,3 +370,6 @@
     </div>
 
 </div>
+
+
+  

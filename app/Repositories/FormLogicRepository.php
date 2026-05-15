@@ -267,7 +267,6 @@ class FormLogicRepository implements FormLogicInterface
         $usuario
     ): array {
 
-
         $esMultiple = $respuestas instanceof \Illuminate\Support\Collection;
 
         $respuestas = $esMultiple
@@ -418,6 +417,7 @@ class FormLogicRepository implements FormLogicInterface
              * TAC-001 modificar_campo
              * ============================== */
             case 'TAC-001':
+
                 if (!$formDestino) {
                     $mensaje = "No existe formulario destino para la acción {$action->id}";
                     break;
@@ -670,9 +670,7 @@ class FormLogicRepository implements FormLogicInterface
         $esMultiple
     ) {
 
-
         try {
-
             $parametros = $action->parametros ?? [];
             $formDestino = $action->formularioDestino;
             $tipoAccion = $action->tipo_accion;
@@ -694,7 +692,6 @@ class FormLogicRepository implements FormLogicInterface
                 case 'TAC-001':
 
                     $CampoDestino = CamposForm::find($parametros['campo_ref_id']);
-
                     $respuestasCollection = $esMultiple
                         ? $respuestas
                         : collect([$respuestas->first() ?? $respuestas]);
@@ -704,6 +701,7 @@ class FormLogicRepository implements FormLogicInterface
                         $valor = null;
 
                         $filasSeleccionadas = $respuestaOrigen->filasSeleccionadas ?? [];
+                        $filasOriginales = $respuestaOrigen->filasOriginales ?? [];
 
                         $CampoDestinoId = $parametros['campo_ref_id'] ?? null;
                         $CampoDestino = CamposForm::find($CampoDestinoId);
@@ -778,9 +776,8 @@ class FormLogicRepository implements FormLogicInterface
                         } else {
                             $valor = $action->valor;
                         }
-
                         // EJECUTAR
-                        DB::transaction(function () use ($respuestaIdsFiltrados, $CampoDestinoId, $action, $valor, $CampoDestino, $esMultiple, &$audit) {
+                        DB::transaction(function () use ($campoOrigenId, $filasOriginales, $respuestaIdsFiltrados, $CampoDestinoId, $action, $valor, $CampoDestino, $esMultiple, &$audit) {
 
                             $operacion = $action->OperacionCatalogo ?? 'actualizar';
 
@@ -837,6 +834,15 @@ class FormLogicRepository implements FormLogicInterface
                                         $campoResp->valor = \Carbon\Carbon::parse($campoResp->valor)
                                             ->subDays((int) $valor)
                                             ->format('Y-m-d');
+                                        break;
+                                    case 'delta':
+
+                                        $valorId = $filasOriginales['cantidad'];
+
+                                        $ValorOriginal = preg_replace('/\[\d+\]\s*/', '', $valorId);
+
+                                        $campoResp->valor = $campoResp->valor + $ValorOriginal - $valor;
+
                                         break;
                                 }
 
@@ -1238,9 +1244,9 @@ class FormLogicRepository implements FormLogicInterface
 
     public function EjecutarReglaLogica($reglas, array $respuestas, string $evento, $usuario, $url)
     {
+
         $user = User::find($usuario);
 
-        // 🔹 Cargar todas las respuestas primero
         $respuestasModelos = collect();
 
         foreach ($respuestas as $item) {
@@ -1249,6 +1255,7 @@ class FormLogicRepository implements FormLogicInterface
 
             if ($respuesta) {
                 $respuesta->filasSeleccionadas = $item['filas'];
+                $respuesta->filasOriginales = $item['filas_originales'] ?? null;
                 $respuestasModelos->push($respuesta);
             }
         }
@@ -1260,8 +1267,6 @@ class FormLogicRepository implements FormLogicInterface
             $evento,
             $usuario
         );
-
-
 
         if ($user && !empty($resultado['acciones_ejecutadas'])) {
 
