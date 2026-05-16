@@ -273,7 +273,6 @@ class RespuestasFormController extends Controller
             ->filaDesdeArray($respuesta, $datosFormulario, $campos);
 
         $errores = $this->validarLogica($respuesta, $filas);
-
         if (!empty($errores)) {
             DB::rollBack();
             throw new \Exception(implode('<br>', $errores));
@@ -326,13 +325,13 @@ class RespuestasFormController extends Controller
             ->filaDesdeArray($respuesta, $datosFormulario, $campos);
 
 
+        /*
+                $errores = $this->validarLogica($respuesta, $filas);
 
-        $errores = $this->validarLogica($respuesta, $filas);
-
-        if (!empty($errores)) {
-            DB::rollBack();
-            throw new \Exception(implode('<br>', $errores));
-        }
+                if (!empty($errores)) {
+                    DB::rollBack();
+                    throw new \Exception(implode('<br>', $errores));
+                }*/
 
         $respuestas[] = [
             'respuesta_id' => $respuesta->id,
@@ -983,6 +982,7 @@ class RespuestasFormController extends Controller
         // =========================
         // RELACION 1:N
         // =========================
+
         if (!empty($formulas)) {
 
             $formula = collect($formulas)->firstWhere('relacion_multiple', 1);
@@ -1063,6 +1063,7 @@ class RespuestasFormController extends Controller
     }
     public function update(Request $request, RespuestasForm $respuesta, $modulo)
     {
+
         DB::beginTransaction();
         try {
 
@@ -1172,7 +1173,6 @@ class RespuestasFormController extends Controller
                 }
 
             }
-
             // =====================================================
             // ACTUALIZAR NORMALES (RELACION 1:N)
             // =====================================================
@@ -1188,37 +1188,114 @@ class RespuestasFormController extends Controller
                 $formId = $formularioModelo->id;
                 $multiple = $formularioModelo->config['registro_multiple'] ?? false;
 
-                // SOLO NORMALES
-                if ($multiple)
-                    continue;
+                if (!$multiple) {
 
-                $formPrefix = "form_{$formId}";
+                    $formPrefix = "form_{$formId}";
 
-                if (!$request->has($formPrefix))
-                    continue;
+                    if (!$request->has($formPrefix))
+                        continue;
 
-                // =========================
-                // obtener fórmula relación
-                // =========================
-                $formulaRelacion = collect($formulas)
-                    ->firstWhere('relacion_multiple', 1);
+                    // =========================
+                    // obtener fórmula relación
+                    // =========================
+                    $formulaRelacion = collect($formulas)
+                        ->firstWhere('relacion_multiple', 1);
 
-                // =========================
-                // VARIABLES SEGURAS
-                // =========================
-                $campoOrigen = null;
 
-                if ($formulaRelacion) {
-                    $campoDestino = $formulaRelacion['destino']['campo_id'];
-                    $campoOrigen = $formulaRelacion['formula'][1]['campo_id'];
-                }
+                    $campoOrigen = null;
 
-                // =====================================================
-                // CASO SIN RELACIÓN (NO ROMPER FLUJO)
-                // =====================================================
-                if (!$campoOrigen) {
+                    if ($formulaRelacion) {
+                        $campoDestino = $formulaRelacion['destino']['campo_id'];
+                        $campoOrigen = $formulaRelacion['formula'][1]['campo_id'];
+                    }
 
-                    // 🔥 fallback: actualización directa sin lógica relacional
+                    // =====================================================
+                    // CASO SIN RELACIÓN 
+                    // =====================================================
+
+
+                    if (!$campoOrigen) {
+
+                        // actualización directa sin lógica relacional
+                        $campos = CamposForm::where('form_id', $formId)->get();
+                        $datosFormulario = collect($request->input($formPrefix))
+                            ->mapWithKeys(function ($value, $key) use ($formPrefix) {
+                                return [
+                                    "{$formPrefix}[$key]" => $value
+                                ];
+                            })
+                            ->toArray();
+
+
+                        // aquí usamos la misma respuesta del flujo original si aplica
+                        $respuestaTarget = $respuesta;
+
+                        $filasOriginales = $this->RespuestasFormInterface
+                            ->filaDesdeRespuesta($respuestaTarget, $campos);
+
+
+                        foreach ($campos as $campo) {
+
+                            if (!$request->has("{$formPrefix}.{$campo->nombre}"))
+                                continue;
+
+                            $valor = $request->input("{$formPrefix}.{$campo->nombre}");
+
+                            $rc = RespuestasCampo::where('respuesta_id', $respuestaTarget->id)
+                                ->where('cf_id', $campo->id)
+                                ->first();
+
+                            if ($rc) {
+                                $rc->update([
+                                    'valor' => $valor
+                                ]);
+                            }
+                        }
+
+                        $filas = $this->RespuestasFormInterface
+                            ->filaDesdeArray($respuestaTarget, $datosFormulario, $campos);
+
+                        $respuestasActualizadas[] = [
+                            'respuesta_id' => $respuestaTarget->id,
+                            'filas' => $filas,
+                            'filas_originales' => $filasOriginales,
+                            'form_id' => $formId
+                        ];
+
+                        continue;
+                    }
+                    // =====================================================
+                    // CASO CON RELACIÓN (TU LÓGICA ORIGINAL)
+                    // =====================================================
+
+                    $campoDestinoModel = CamposForm::find($campoOrigen);
+
+                    if (!$campoDestinoModel)
+                        continue;
+
+                    $valorClave = $request->input(
+                        "form_{$campoDestinoModel->form_id}.{$campoDestinoModel->nombre}"
+                    );
+
+                    if (!$valorClave)
+                        continue;
+
+                    $coincide = RespuestasCampo::where('cf_id', $campoOrigen)
+                        ->where('valor', $valorClave)
+                        ->first();
+
+                    if (!$coincide)
+                        continue;
+
+                    $respuestaTarget = RespuestasForm::with('camposRespuestas')
+                        ->find($coincide->respuesta_id);
+
+                    if (!$respuestaTarget)
+                        continue;
+
+                    // =========================
+                    // actualizar valores
+                    // =========================
                     $campos = CamposForm::where('form_id', $formId)->get();
 
                     $datosFormulario = collect($request->input($formPrefix))
@@ -1228,9 +1305,6 @@ class RespuestasFormController extends Controller
                             ];
                         })
                         ->toArray();
-
-                    // aquí usamos la misma respuesta del flujo original si aplica
-                    $respuestaTarget = $respuesta;
 
                     $filasOriginales = $this->RespuestasFormInterface
                         ->filaDesdeRespuesta($respuestaTarget, $campos);
@@ -1256,6 +1330,13 @@ class RespuestasFormController extends Controller
                     $filas = $this->RespuestasFormInterface
                         ->filaDesdeArray($respuestaTarget, $datosFormulario, $campos);
 
+                    $errores = $this->validarLogica($respuesta, $filas);
+
+                    if (!empty($errores)) {
+                        DB::rollBack();
+                        throw new \Exception(implode('<br>', $errores));
+                    }
+
                     $respuestasActualizadas[] = [
                         'respuesta_id' => $respuestaTarget->id,
                         'filas' => $filas,
@@ -1263,121 +1344,55 @@ class RespuestasFormController extends Controller
                         'form_id' => $formId
                     ];
 
-                    continue;
                 }
 
-                // =====================================================
-                // CASO CON RELACIÓN (TU LÓGICA ORIGINAL)
-                // =====================================================
 
-                $campoDestinoModel = CamposForm::find($campoOrigen);
-
-                if (!$campoDestinoModel)
-                    continue;
-
-                $valorClave = $request->input(
-                    "form_{$campoDestinoModel->form_id}.{$campoDestinoModel->nombre}"
-                );
-
-                if (!$valorClave)
-                    continue;
-
-                $coincide = RespuestasCampo::where('cf_id', $campoOrigen)
-                    ->where('valor', $valorClave)
-                    ->first();
-
-                if (!$coincide)
-                    continue;
-
-                $respuestaTarget = RespuestasForm::with('camposRespuestas')
-                    ->find($coincide->respuesta_id);
-
-                if (!$respuestaTarget)
-                    continue;
-
-                // =========================
-                // actualizar valores
-                // =========================
-                $campos = CamposForm::where('form_id', $formId)->get();
-
-                $datosFormulario = collect($request->input($formPrefix))
-                    ->mapWithKeys(function ($value, $key) use ($formPrefix) {
-                        return [
-                            "{$formPrefix}[$key]" => $value
-                        ];
-                    })
-                    ->toArray();
-
-                $filasOriginales = $this->RespuestasFormInterface
-                    ->filaDesdeRespuesta($respuestaTarget, $campos);
-
-                foreach ($campos as $campo) {
-
-                    if (!$request->has("{$formPrefix}.{$campo->nombre}"))
-                        continue;
-
-                    $valor = $request->input("{$formPrefix}.{$campo->nombre}");
-
-                    $rc = RespuestasCampo::where('respuesta_id', $respuestaTarget->id)
-                        ->where('cf_id', $campo->id)
-                        ->first();
-
-                    if ($rc) {
-                        $rc->update([
-                            'valor' => $valor
-                        ]);
-                    }
-                }
-
-                $filas = $this->RespuestasFormInterface
-                    ->filaDesdeArray($respuestaTarget, $datosFormulario, $campos);
-
-                $respuestasActualizadas[] = [
-                    'respuesta_id' => $respuestaTarget->id,
-                    'filas' => $filas,
-                    'filas_originales' => $filasOriginales,
-                    'form_id' => $formId
-                ];
             }
             $agrupadas = collect($respuestasActualizadas)
                 ->unique('respuesta_id')
                 ->groupBy('form_id');
+
+
             foreach ($agrupadas as $formId => $respuestasForm) {
+                if ($formId == 3) {
 
-                $reglas = FormLogicRule::where('form_id', $formId)
-                    ->where('evento', 'on_update')
-                    ->where('activo', true)
-                    ->with([
-                        'actions' => function ($q) {
-                            $q->with('conditions');
-                        }
-                    ])
-                    ->get();
+                    $reglas = FormLogicRule::where('form_id', $formId)
+                        ->where('evento', 'on_update')
+                        ->where('activo', true)
+                        ->with([
+                            'actions' => function ($q) {
+                                $q->with('conditions');
+                            }
+                        ])
+                        ->get();
 
-                if ($reglas->isEmpty())
-                    continue;
+                    if ($reglas->isEmpty())
+                        continue;
 
-                if ($reglas->contains('segundo_plano', true)) {
+                    if ($reglas->contains('segundo_plano', true)) {
 
-                    EjecutarLogicaFormulario::dispatch(
-                        $reglas,
-                        $respuestasForm->values()->toArray(),
-                        'on_update',
-                        auth()->id(),
-                        env('APP_URL')
-                    );
+                        EjecutarLogicaFormulario::dispatch(
+                            $reglas,
+                            $respuestasForm->values()->toArray(),
+                            'on_update',
+                            auth()->id(),
+                            env('APP_URL')
+                        );
 
-                } else {
+                    } else {
 
-                    $this->FormLogicInterface->EjecutarReglaLogica(
-                        $reglas,
-                        $respuestasForm->values()->toArray(),
-                        'on_update',
-                        auth()->id(),
-                        env('APP_URL')
-                    );
+                        $this->FormLogicInterface->EjecutarReglaLogica(
+                            $reglas,
+                            $respuestasForm->values()->toArray(),
+                            'on_update',
+                            auth()->id(),
+                            env('APP_URL')
+                        );
+                    }
+
                 }
             }
+
             DB::commit();
             DB::disconnect();
 

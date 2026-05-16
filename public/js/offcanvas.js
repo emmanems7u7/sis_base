@@ -1,53 +1,61 @@
-
 document.addEventListener('DOMContentLoaded', function () {
 
-    const offcanvasEl = document.getElementById('offcanvasAcciones');
-    const contenido = document.getElementById('accionesContenido');
-    const templateEl = document.getElementById('acciones-template');
+    document.querySelectorAll('[data-offcanvas]').forEach(offcanvasEl => {
 
-    if (!offcanvasEl || !contenido || !templateEl) {
-        return;
-    }
+        const templateId = offcanvasEl.dataset.template;
+        const contentId = offcanvasEl.dataset.content;
 
-    const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
+        const contenido = document.getElementById(contentId);
+        const templateEl = document.getElementById(templateId);
 
-   
-    document.addEventListener('click', function (e) {
+        if (!contenido || !templateEl) return;
 
-        const card = e.target.closest('.respuesta-card');
-        if (!card) return;
+        const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
 
-        if (e.target.closest('a, button, input')) return;
+        document.addEventListener('click', function (e) {
 
-      
-        card.classList.add('clicked');
+            const trigger = e.target.closest('[data-open-offcanvas]');
 
-        setTimeout(() => {
-            card.classList.remove('clicked');
-        }, 150);
+            if (!trigger) return;
 
-        const respuestaId = card.dataset.respuestaId;
-        const formId = card.dataset.formId;
+            // validar si este trigger pertenece a este offcanvas
+            if (trigger.dataset.openOffcanvas !== offcanvasEl.id) return;
 
+            let template = templateEl.cloneNode(true).innerHTML;
 
-        const templateBase = templateEl.cloneNode(true).innerHTML;
+            // =========================
+            // placeholders dinámicos
+            // =========================
 
-        let template = templateBase;
+            Object.keys(trigger.dataset).forEach(key => {
 
-        template = template.replaceAll('__RESPUESTA_ID__', respuestaId);
-        template = template.replaceAll('__FORM_ID__', formId);
+                if (key === 'openOffcanvas')
+                    return;
 
-        contenido.innerHTML = template;
+                const value = trigger.dataset[key];
 
-        offcanvas.show();
-    });
+                const placeholder = `__${key.toUpperCase()}__`;
 
+                template = template.replaceAll(placeholder, value);
 
-    document.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-        if (!el._tooltipInit) {
-            new bootstrap.Tooltip(el);
-            el._tooltipInit = true;
-        }
+            });
+
+            contenido.innerHTML = template;
+
+            offcanvas.show();
+
+            contenido.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
+
+                if (!el._tooltipInit) {
+
+                    new bootstrap.Tooltip(el);
+
+                    el._tooltipInit = true;
+                }
+            });
+
+        });
+
     });
 
 });

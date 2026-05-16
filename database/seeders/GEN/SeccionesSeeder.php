@@ -50,6 +50,23 @@ class SeccionesSeeder extends Seeder
                 'created_at' => Carbon::parse('2025-05-02 18:38:17'),
                 'updated_at' => Carbon::parse('2025-05-02 18:38:17'),
             ],
+            [
+                'id' => 18,
+                'titulo' => 'Logica Dinamica',
+                'icono' => 'fas fa-spiral',
+                'posicion' => 5,
+                'created_at' => Carbon::parse('2025-05-02 18:38:17'),
+                'updated_at' => Carbon::parse('2025-05-02 18:38:17'),
+            ],
+            [
+                'id' => 19,
+                'titulo' => 'Auditoria',
+                'icono' => 'fas fa-book-open-reader',
+                'posicion' => 6,
+                'created_at' => Carbon::parse('2025-05-02 18:38:17'),
+                'updated_at' => Carbon::parse('2025-05-02 18:38:17'),
+            ],
+
         ]);
     }
 }

@@ -377,6 +377,9 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/campo/generar', [CamposFormController::class, 'generarValor'])
         ->name('campo.generar');
 
+    Route::get('/campos/detalle/{campo_id}', [CamposFormController::class, 'detalle'])
+        ->name('campos.detalle');
+
     Route::get('/respuestas/{respuesta}/edit/{modulo}', [RespuestasFormController::class, 'edit'])
         ->name('respuestas.edit');
 

@@ -2,7 +2,7 @@
 
 
 @if($isMobile)
-    @include('modulos.tab_2_mobile')
+    @include('modulos.tab2.movil')
 @else
-    @include('modulos.tab_2_desktop')
+    @include('modulos.tab2.desktop')
 @endif

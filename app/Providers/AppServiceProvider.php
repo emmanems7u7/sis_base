@@ -30,6 +30,9 @@ use App\Interfaces\CatalogoInterface;
 use App\Repositories\CatalogoRepository;
 use App\Interfaces\NotificationInterface;
 use App\Repositories\NotificationRepository;
+
+use Jenssegers\Agent\Agent;
+use Illuminate\Support\Facades\View;
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -64,6 +67,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        //
+        $agent = new Agent();
+
+        View::share('isMobile', $agent->isMobile());
     }
 }

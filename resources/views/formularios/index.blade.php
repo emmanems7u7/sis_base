@@ -8,7 +8,7 @@
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <h5>Formularios</h5>
 
-                <a href="{{ route('formularios.create') }}" class="btn btn-primary mb-3">Nuevo Formulario</a>
+                <a href="{{ route('formularios.create') }}" class="btn btn-sm btn-primary mb-3">Nuevo Formulario</a>
 
             </div>
         </div>
@@ -17,78 +17,241 @@
     <div class="card mt-3">
         <div class="card-body">
 
-            <!-- Tabla para escritorio -->
-            <div class="table-responsive d-none d-md-block">
-                <table class="table table-bordered">
-                    <thead>
-                        <tr>
-                            <th>Nombre</th>
-                            <th>Estado</th>
-                            <th>Acciones</th>
-                        </tr>
-                    </thead>
-                    <tbody>
+
+            @if($isMobile)
+
+                <div class="d-block">
+                    <div class="row g-2">
+
                         @foreach($formularios as $formulario)
-                            <tr>
-                                <td>{{ $formulario->nombre }}</td>
-                                <td>{{ $formulario->estado_nombre }}</td>
-                                <td>
 
-                                    <a href="{{ route('formularios.respuestas.formulario', $formulario) }}"
-                                        class="btn btn-sm btn-info">
-                                        <i class="fas fa-database"></i> Ver Datos Registrados
-                                    </a>
-                                    <a href="{{ route('formularios.campos.index', $formulario) }}" class="btn btn-sm btn-info">
-                                        <i class="fas fa-list-alt"></i> Campos
-                                    </a>
-                                    <a href="{{ route('formularios.edit', $formulario) }}" class="btn btn-sm btn-warning">
-                                        <i class="fas fa-pencil-alt"></i> Editar
-                                    </a>
-                                    <a type="button" class="btn btn-sm btn-danger"
-                                        onclick="confirmarEliminacion('eliminarFormulario_{{ $formulario->id }}','¿Estás seguro de que deseas eliminar este formulario?')">
-                                        <i class="fas fa-trash-alt"></i> Eliminar
-                                    </a>
+                            @php
+                                $config = $formulario->config ?? [];
 
-                                    <form id="eliminarFormulario_{{ $formulario->id }}" method="POST"
-                                        action="{{ route('formularios.destroy', $formulario) }}" style="display: none;">
-                                        @csrf
-                                        @method('DELETE')
-                                    </form>
-                                </td>
-                            </tr>
+                                $registroMultiple = $config['registro_multiple'] ?? false;
+                                $crearPermisos = $config['crear_permisos'] ?? false;
+                            @endphp
+
+                            <div class="col-12 col-sm-6 col-lg-4">
+
+                                <div class="card border-0 shadow-sm rounded-4 h-100 animacion_card py-1"
+                                    data-open-offcanvas="offcanvasAccionesFormularios" data-formulario-id="{{ $formulario->id }}">
+
+                                    <div class="card-body p-3">
+
+                                        <!-- Header -->
+                                        <div class="d-flex justify-content-between align-items-start mb-2">
+
+                                            <div class="flex-grow-1 pe-2">
+
+                                                <div class="fw-bold small text-truncate">
+                                                    <i class="fas fa-file-alt text-primary me-1"></i>
+                                                    {{ $formulario->nombre }}
+                                                </div>
+
+
+
+                                            </div>
+
+                                            <span class="badge bg-info rounded-pill px-2 py-1">
+                                                {{ $formulario->estado_nombre }}
+                                            </span>
+
+                                        </div>
+                                        <!-- Configuración -->
+                                        <div class="d-flex flex-wrap gap-1 mt-2 small">
+
+                                            <!-- Registro múltiple -->
+                                            <span
+                                                class="badge rounded-pill px-2 py-1  {{ $registroMultiple ? 'bg-success text-white' : 'bg-warning text-white' }}">
+
+                                                <i class="fas fa-layer-group me-1"></i>
+
+                                                {{ $registroMultiple ? 'Multiple' : 'Simple' }}
+
+                                            </span>
+
+                                            <!-- Crear permisos -->
+                                            <span
+                                                class="badge rounded-pill px-2 py-1 {{ $crearPermisos ? 'bg-success text-white' : 'bg-warning text-white' }}">
+
+                                                <i class="fas fa-lock me-1"></i>
+
+                                                {{ $crearPermisos ? 'Permisos' : 'Sin permisos' }}
+
+                                            </span>
+
+                                        </div>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
                         @endforeach
-                    </tbody>
-                </table>
-            </div>
 
-            <!-- Cards para móviles -->
-            <div class="d-block d-md-none">
-                @foreach($formularios as $formulario)
-                    <div class="card mb-3 shadow-sm">
-                        <div class="card-body">
-                            <h5 class="card-title">{{ $formulario->nombre }}</h5>
-                            <p class="card-text"><strong>Estado:</strong> {{ $formulario->estado_nombre }}</p>
-                            <div class="d-flex flex-wrap gap-2">
+                    </div>
+                </div>
 
-                                <a href="{{ route('formularios.respuestas.formulario', $formulario) }}"
-                                    class="btn btn-sm btn-info">
-                                    <i class="fas fa-database"></i> Ver Datos Registrados
+                <x-offcanvas-acciones id="offcanvasAccionesFormularios" titulo="Acciones Reglas" icono="fas fa-bolt"
+                    contenidoId="accionesContenidoFormularios" templateId="acciones-template-formularios">
+
+                    <template id="acciones-template-formularios">
+
+                        @php
+                            $fid = '__FORMULARIOID__';
+                        @endphp
+
+                        <div class="row w-100 g-2 justify-content-center">
+                            <div class="col-3">
+                                <a href="{{ route('formularios.respuestas.formulario', $fid) }}"
+                                    class="btn w-100  btn-xs btn-outline-info">
+                                    <i class="fas fa-database"></i><br> Registros
                                 </a>
-                                <a href="{{ route('formularios.campos.index', $formulario) }}" class="btn btn-sm btn-info">
-                                    <i class="fas fa-list-alt"></i> Campos
+
+                            </div>
+                            <div class="col-3">
+
+                                <a href="{{ route('formularios.campos.index', $fid) }}"
+                                    class="btn w-100  btn-xs btn-outline-info">
+                                    <i class="fas fa-list-alt"></i> <br> Campos
                                 </a>
-                                <a href="{{ route('formularios.edit', $formulario) }}" class="btn btn-sm btn-warning">
-                                    <i class="fas fa-pencil-alt"></i> Editar
+
+
+                            </div>
+                            <div class="col-3">
+                                <a href="{{ route('formularios.edit', $fid) }}" class="btn w-100  btn-xs btn-outline-warning">
+                                    <i class="fas fa-pencil-alt"></i> <br> Editar
                                 </a>
-                                <a type="button" class="btn btn-sm btn-danger"
-                                    onclick="confirmarEliminacion('eliminarFormulario_{{ $formulario->id }}', '¿Estás seguro de que deseas eliminar este formulario?')">
-                                    <i class="fas fa-trash-alt"></i> Eliminar
+
+                            </div>
+                            <div class="col-3">
+                                <a type="button" class="btn w-100  btn-xs btn-outline-danger"
+                                    onclick="confirmarEliminacion('eliminarFormulario_{{$fid}}', '¿Estás seguro de que deseas eliminar este formulario?')">
+                                    <i class="fas fa-trash-alt"></i> <br> Eliminar
                                 </a>
+
                             </div>
                         </div>
-                    </div>
-                @endforeach
-            </div>
+                    </template>
+                </x-offcanvas-acciones>
+
+            @else
+
+                <div class="table-responsive">
+                    <table class="table table-bordered">
+                        <thead>
+                            <tr>
+                                <th>Nombre</th>
+                                <th>Estado</th>
+                                <th>Config</th>
+                                <th>Acciones</th>
+                            </tr>
+                        </thead>
+
+                        <tbody>
+
+                            @foreach($formularios as $formulario)
+
+                                        @php
+                                            $config = $formulario->config ?? [];
+
+                                            $registroMultiple = $config['registro_multiple'] ?? false;
+                                            $crearPermisos = $config['crear_permisos'] ?? false;
+                                        @endphp
+
+                                        <tr>
+
+                                            <td>{{ $formulario->nombre }}</td>
+
+                                            <td>{{ $formulario->estado_nombre }}</td>
+
+                                            <!-- Config -->
+                                            <td>
+
+                                                <div class="d-flex flex-wrap gap-1 small">
+
+                                                    <!-- Registro múltiple -->
+                                                    <span class="badge rounded-pill px-2 py-1
+                                                                        {{ $registroMultiple
+                                ? 'bg-success text-white'
+                                : 'bg-danger text-white' }}">
+
+                                                        <i class="fas fa-layer-group me-1"></i>
+
+                                                        {{ $registroMultiple ? 'Multi' : 'Simple' }}
+
+                                                    </span>
+
+                                                    <!-- Permisos -->
+                                                    <span class="badge rounded-pill px-2 py-1
+                                                                        {{ $crearPermisos
+                                ? 'bg-success text-white'
+                                : 'bg-danger text-white' }}">
+
+                                                        <i class="fas fa-lock me-1"></i>
+
+                                                        {{ $crearPermisos ? 'Permisos' : 'Sin permisos' }}
+
+                                                    </span>
+
+                                                </div>
+
+                                            </td>
+
+                                            <td>
+
+                                                <a href="{{ route('formularios.respuestas.formulario', $formulario) }}"
+                                                    class="btn btn-xs btn-info">
+
+                                                    <i class="fas fa-database"></i>
+                                                    Ver Datos Registrados
+
+                                                </a>
+
+                                                <a href="{{ route('formularios.campos.index', $formulario) }}" class="btn btn-xs btn-info">
+
+                                                    <i class="fas fa-list-alt"></i>
+                                                    Campos
+
+                                                </a>
+
+                                                <a href="{{ route('formularios.edit', $formulario) }}" class="btn btn-xs btn-warning">
+
+                                                    <i class="fas fa-pencil-alt"></i>
+                                                    Editar
+
+                                                </a>
+
+                                                <a type="button" class="btn btn-xs btn-danger" onclick="confirmarEliminacion(
+                                                                        'eliminarFormulario_{{ $formulario->id }}',
+                                                                        '¿Estás seguro de que deseas eliminar este formulario?'
+                                                                    )">
+
+                                                    <i class="fas fa-trash-alt"></i>
+                                                    Eliminar
+
+                                                </a>
+
+                                                <form id="eliminarFormulario_{{ $formulario->id }}" method="POST"
+                                                    action="{{ route('formularios.destroy', $formulario) }}" style="display: none;">
+
+                                                    @csrf
+                                                    @method('DELETE')
+
+                                                </form>
+
+                                            </td>
+
+                                        </tr>
+
+                            @endforeach
+
+                        </tbody>
+                    </table>
+                </div>
+            @endif
 
             <!-- Paginación -->
             <div class="d-flex justify-content-center">

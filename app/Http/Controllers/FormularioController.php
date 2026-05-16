@@ -181,7 +181,7 @@ class FormularioController extends Controller
 
         $fecha = Carbon::now()->format('d-m-Y H:i:s');
 
-        $export = new ExportExcel('formularios.export_respuestas', [
+        $export = new ExportExcel('formularios.export_excel', [
             'formulario' => $formulario,
             'respuestas' => $datos,
             'export' => $formulario->nombre,

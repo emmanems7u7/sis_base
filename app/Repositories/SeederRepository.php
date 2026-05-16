@@ -95,22 +95,62 @@ class SeederRepository extends BaseRepository implements SeederInterface
 
     private function eliminarRegistro(
         string $ruta,
-        string $pattern,
+        callable $callbackEliminar,
         string $stage,
         string $tipo,
         string $clase
     ): void {
+
         $contenido = File::get($ruta);
+
         $original = $contenido;
 
-        $contenido = preg_replace($pattern, '', $contenido, 1);
-        $contenido = preg_replace("/,\s*(\s*\])/s", "$1", $contenido);
-        $contenido = preg_replace("/\[\s*\]/s", '[]', $contenido);
+        // buscar array principal
+        preg_match('/=\s*\[(.*)\];/s', $contenido, $match);
 
-        if (Str::contains($contenido, '[]')) {
+        if (!isset($match[1])) {
+            return;
+        }
+
+        $arrayContenido = $match[1];
+
+        // obtener bloques [
+        preg_match_all('/\[\s*(.*?)\s*\]\s*,?/s', $arrayContenido, $bloques);
+
+        $items = [];
+
+        foreach ($bloques[0] as $bloqueCompleto) {
+
+            // decidir si conservar
+            if (!$callbackEliminar($bloqueCompleto)) {
+                $items[] = trim($bloqueCompleto);
+            }
+        }
+
+        // si no quedan items eliminar archivo
+        if (empty($items)) {
+
             File::delete($ruta);
-            $this->eliminarLlamadaDeSeederPadre($stage, $tipo, $clase);
-        } elseif ($contenido !== $original) {
+
+            $this->eliminarLlamadaDeSeederPadre(
+                $stage,
+                $tipo,
+                $clase
+            );
+
+            return;
+        }
+
+        // reconstruir array
+        $nuevoArray = implode("\n        ", $items);
+
+        $contenido = preg_replace(
+            '/=\s*\[(.*)\];/s',
+            "= [\n        {$nuevoArray}\n    ];",
+            $contenido
+        );
+
+        if ($contenido !== $original) {
             File::put($ruta, $contenido);
         }
     }
@@ -118,29 +158,31 @@ class SeederRepository extends BaseRepository implements SeederInterface
     private function procesarEliminacion(
         string $tipo,
         string $prefijoSeeder,
-        string $pattern
+        callable $callbackEliminar
     ): void {
+
         $stage = strtoupper(env('APP_STAGE'));
+
         $ruta = database_path("seeders/{$stage}/{$tipo}");
 
-        // Si no existe la carpeta, no hay nada que eliminar
         if (!File::exists($ruta)) {
             return;
         }
 
         foreach (File::files($ruta) as $seeder) {
 
-            // Solo seeders del tipo correcto
             if (!Str::contains($seeder->getFilename(), $prefijoSeeder)) {
                 continue;
             }
 
-            $clase = pathinfo($seeder->getFilename(), PATHINFO_FILENAME);
+            $clase = pathinfo(
+                $seeder->getFilename(),
+                PATHINFO_FILENAME
+            );
 
-            // Elimina el registro dentro del seeder
             $this->eliminarRegistro(
                 $seeder->getRealPath(),
-                $pattern,
+                $callbackEliminar,
                 $stage,
                 $tipo,
                 $clase
@@ -196,7 +238,14 @@ PHP;
         $this->procesarEliminacion(
             'Menus',
             'SeederMenu_',
-            "/\[\s*'nombre'\s*=>\s*'" . preg_quote($menu->nombre, '/') . "'.*?\],?/s"
+
+            function ($bloque) use ($menu) {
+
+                return Str::contains(
+                    $bloque,
+                    "'nombre' => '{$menu->nombre}'"
+                );
+            }
         );
     }
 
@@ -241,7 +290,14 @@ PHP;
         $this->procesarEliminacion(
             'Secciones',
             'SeederSeccion_',
-            "/\[\s*'titulo'\s*=>\s*'" . preg_quote($seccion->titulo, '/') . "'.*?\],?/s"
+
+            function ($bloque) use ($seccion) {
+
+                return Str::contains(
+                    $bloque,
+                    "'titulo' => '{$seccion->titulo}'"
+                );
+            }
         );
     }
 
@@ -289,7 +345,19 @@ PHP;
         $this->procesarEliminacion(
             'Permisos',
             'SeederPermisos_',
-            "/\[\s*'name'\s*=>\s*'" . preg_quote($permiso->name, '/') . "'\s*,\s*'tipo'\s*=>\s*'" . preg_quote($permiso->tipo, '/') . "'.*?\],?/s"
+
+            function ($bloque) use ($permiso) {
+
+                return Str::contains(
+                    $bloque,
+                    "'name' => '{$permiso->name}'"
+                )
+                    &&
+                    Str::contains(
+                        $bloque,
+                        "'tipo' => '{$permiso->tipo}'"
+                    );
+            }
         );
     }
     /* =====================================================
@@ -349,12 +417,12 @@ PHP;
             [
                 'id' => {$catalogo->id},
                 'categoria_id' => {$catalogo->categoria_id},
-                'catalogo_parent' => {$catalogo->catalogo_parent},
+                'catalogo_parent' => !empty($catalogo->catalogo_parent)? $catalogo->catalogo_parent: '',
                 'catalogo_codigo' => '{$catalogo->catalogo_codigo}',
                 'catalogo_descripcion' => '{$catalogo->catalogo_descripcion}',
                 'catalogo_estado' => '{$catalogo->catalogo_estado}',
             ],
-PHP;
+            PHP;
 
         if (!File::exists($data['ruta'])) {
             $this->crearSeederBase(

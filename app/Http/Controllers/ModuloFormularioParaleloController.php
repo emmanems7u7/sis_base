@@ -62,7 +62,6 @@ class ModuloFormularioParaleloController extends Controller
         ]);
     }
 
-    // 🔹 GUARDAR
     public function store(Request $request, $modulo)
     {
         $request->validate([
@@ -164,7 +163,6 @@ class ModuloFormularioParaleloController extends Controller
         ]);
     }
 
-    // 🔹 ACTUALIZAR
     public function update(Request $request, $grupo, $modulo)
     {
         $request->validate([
@@ -232,8 +230,6 @@ class ModuloFormularioParaleloController extends Controller
 
         return redirect()->back()->with('status', 'Grupo actualizado');
     }
-
-    // 🔹 ELIMINAR
     public function destroy($modulo, $grupo)
     {
         ModuloFormularioParalelo::where('modulo_id', $modulo)

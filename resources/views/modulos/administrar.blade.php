@@ -104,7 +104,7 @@
 
                 <!-- Lógica del Módulo -->
                 <div class="tab-pane fade" id="logica" role="tabpanel" aria-labelledby="logica-tab">
-                    @include('modulos.tab2')
+                    @include('modulos.tab2.tab2')
 
                 </div>
 
@@ -123,7 +123,7 @@
                 <!-- asociacion de registros -->
                 <div class="tab-pane fade" id="asociacion_registros" role="tabpanel"
                     aria-labelledby="asociacion_registros-tab">
-                    @include('modulos.tab5')
+                    @include('modulos.tab5.tab5')
 
                 </div>
             </div>

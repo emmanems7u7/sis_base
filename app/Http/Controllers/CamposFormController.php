@@ -491,4 +491,22 @@ class CamposFormController extends Controller
 
         return response()->json($resultados);
     }
+    public function detalle($campo_id)
+    {
+        $limitOpciones = 10;
+
+        $campos = CamposForm::where('id', $campo_id)
+            ->orderBy('posicion')
+            ->get();
+
+        $campos = $this->FormularioRepository->CamposFormCat($campos, $limitOpciones);
+
+        $campo = $campos->first();
+
+        return response()->json([
+            'status' => true,
+            'data' => $campo,
+            'opciones_catalogo' => $campo->opciones_catalogo ?? []
+        ]);
+    }
 }

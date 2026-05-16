@@ -14,6 +14,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 use Carbon\Carbon;
+use Psy\VarDumper\Dumper;
+
 class FormularioRepository implements FormularioInterface
 {
     protected $model;
@@ -45,10 +47,21 @@ class FormularioRepository implements FormularioInterface
     {
         $config = $formulario->config ?? [];
 
-        $config['crear_permisos'] = $request->has('crear_permisos') && $request->crear_permisos === 'on';
-        $config['registro_multiple'] = $request->has('registro_multiple') && $request->registro_multiple === 'on';
+        if (($config['crear_permisos'] ?? false) === true) {
+            $config['crear_permisos'] = true;
+        } else {
+            $config['crear_permisos'] =
+                $request->has('crear_permisos') &&
+                $request->crear_permisos === 'on';
+        }
 
-        $formulario->update(['config' => $config]);
+        $config['registro_multiple'] =
+            $request->has('registro_multiple') &&
+            $request->registro_multiple === 'on';
+
+        $formulario->update([
+            'config' => $config
+        ]);
     }
     public function EditarFormulario($request, $formulario)
     {
@@ -491,7 +504,6 @@ class FormularioRepository implements FormularioInterface
             $campo = $campoRespOrCampo;
         }
 
-
         if ($campo && $campo->form_ref_id) {
 
             $formulario = Formulario::find($campo->form_ref_id);
@@ -542,6 +554,7 @@ class FormularioRepository implements FormularioInterface
         $datos = [];
         foreach ($respuestas as $respuesta) {
             $fila = [];
+            $fila['id'] = $respuesta->id;
 
             foreach ($formulario->campos->sortBy('posicion') as $campo) {
                 $valores = $respuesta->camposRespuestas
@@ -586,7 +599,6 @@ class FormularioRepository implements FormularioInterface
 
                 $fila[$campo->etiqueta] = implode(' ', $display);
             }
-
             $fila['Actor'] = $respuesta->actor->name ?? 'Anónimo';
             $fila['Registrado'] = $respuesta->created_at->format('d/m/Y H:i');
 

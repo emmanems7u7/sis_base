@@ -28604,18 +28604,18 @@ pre[class*=language-] {
     }
 
 
-    .respuesta-card {
+    .animacion_card {
       cursor: pointer;
       transition: transform 0.12s ease, box-shadow 0.12s ease;
   }
   
-  .respuesta-card:active {
+  .animacion_card:active {
       transform: scale(0.98);
       box-shadow: 0 2px 10px rgba(0,0,0,0.15) !important;
   }
   
   /* efecto opcional cuando se selecciona */
-  .respuesta-card.clicked {
+  .animacion_card.clicked {
       transform: scale(0.97);
       opacity: 0.85;
   }

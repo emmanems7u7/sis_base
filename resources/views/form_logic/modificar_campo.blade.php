@@ -15,10 +15,12 @@
                 <option value="">-- Ninguno --</option>
             </select>
         </div>
-        <div class="col-md-4">
+
+
+        <div class="col-md-3">
             <label>Operación</label>
             <select id="modal-operacion" class="form-select">
-                <option value="-1" selected disabled>Seleccione un tipo de operación</option>
+                <option value="-1" selected disabled>-- Seleccione --</option>
                 @foreach ($operaciones as $operacion)
                     <option value="{{ $operacion->catalogo_codigo }}">{{ $operacion->catalogo_descripcion }}
                     </option>
@@ -26,7 +28,7 @@
 
             </select>
         </div>
-        <div class="col-md-8">
+        <div class="col-md-7">
             <label>Valor</label>
             <div class="input-group">
                 <select id="modal-tipo-valor" class="form-select">
@@ -37,6 +39,14 @@
                 <select id="modal-valor-campo" class="form-select d-none">
                     <option value="">-- Seleccionar campo --</option>
                 </select>
+            </div>
+        </div>
+        <div class="col-md-2 text-center" id="col-invertir-operacion" style="display: none;">
+            <label>Invertir operación</label>
+            <div class="d-flex justify-content-center mt-2">
+                <div class="form-check">
+                    <input class="form-check-input" type="checkbox" id="invertir_operacion" name="invertir_operacion">
+                </div>
             </div>
         </div>
     </div>

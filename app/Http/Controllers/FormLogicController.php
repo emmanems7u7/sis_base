@@ -129,6 +129,7 @@ class FormLogicController extends Controller
 
                         'campo_ref_id' => $action->campoDestino?->id,
                         'campo_ref_text' => $action->campoDestino?->nombre ?? 'No asignado',
+                        'operacion_rev' => $p['operacion_rev'] ?? 0,
 
                         'operacion' => $p['operacion'] ?? null,
                         'operacion_text' => $action->operacion_catalogo,

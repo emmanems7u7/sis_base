@@ -115,6 +115,20 @@
 
     document.addEventListener('DOMContentLoaded', () => {
 
+        const selectOperacion = document.getElementById("modal-operacion");
+        const invertirCol = document.getElementById("col-invertir-operacion");
+
+        function toggleInvertir() {
+            if (selectOperacion.value === "OPC-012") {
+                invertirCol.style.display = "block";
+            } else {
+                invertirCol.style.display = "none";
+                document.getElementById("invertir_operacion").checked = false;
+            }
+        }
+
+        selectOperacion.addEventListener("change", toggleInvertir);
+
 
         // Objeto para almacenar filtros
         const filtrosGuardados = {};
@@ -388,6 +402,9 @@
             // precargar operador
             if (condData?.operador) {
                 container.querySelector('.cond-operador').value = condData.operador;
+            }
+            if (condData?.mensaje) {
+                container.querySelector('.cond-mensaje').value = condData.mensaje;
             }
 
             container.querySelector('.remove-condicion-modal')
@@ -772,6 +789,73 @@
             return accionObj;
         }
 
+
+        document.addEventListener('change', async function (e) {
+
+            if (!e.target.classList.contains('cond-campo')) return;
+
+            const campoId = e.target.value;
+
+            if (!campoId) return;
+
+            try {
+                const urlCamposDetalle = "{{ route('campos.detalle', ['campo_id' => ':id']) }}";
+                const url = urlCamposDetalle.replace(':id', encodeURIComponent(campoId));
+
+                const response = await fetch(url, {
+                    method: 'GET',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+
+                const data = await response.json();
+
+                if (!data.status) return;
+
+                const opciones = data.opciones_catalogo;
+
+                // 🔥 CLAVE: SOLO el bloque actual
+                const block = e.target.closest('.condicion-form-valor-block');
+
+                const valorContainer = block.querySelector('.col-md-2:has(.cond-valor)')
+                    || block.querySelector('.cond-valor')?.closest('.col-md-2');
+
+                const oldInput = block.querySelector('.cond-valor');
+
+                if (!oldInput) return;
+
+                // 🟢 SI HAY OPCIONES → SELECT
+                if (opciones && opciones.length > 0) {
+
+                    const select = document.createElement('select');
+                    select.classList.add('form-select', 'cond-valor');
+
+                    select.innerHTML = `<option value="">-- Seleccione --</option>`;
+
+                    opciones.forEach(op => {
+                        select.innerHTML += `
+                <option value="${op.catalogo_codigo}">
+                    ${op.catalogo_descripcion}
+                </option>
+            `;
+                    });
+
+                    oldInput.replaceWith(select);
+
+                } else {
+
+                    const input = document.createElement('input');
+                    input.type = 'text';
+                    input.classList.add('form-control', 'cond-valor');
+
+                    oldInput.replaceWith(input);
+                }
+
+            } catch (error) {
+                console.error(error);
+            }
+        });
 
         // Guardar acción desde el modal con validación
         document.getElementById('guardar-accion-modal').addEventListener('click', async () => {
@@ -1189,45 +1273,49 @@
             const tipoAccionSelect = document.getElementById('modal-tipo-accion');
             tipoAccionSelect.value = accion.tipo_accion_id;
             tipoAccionSelect.dispatchEvent(new Event('change'));
-
+            await abrirContenedor()
             if (accion.tipo_accion_id === 'TAC-001') {
+
+
                 const formSelect = document.getElementById('modal-form-ref');
                 const campoSelect = document.getElementById('modal-campo-ref');
                 const operacionSelect = document.getElementById('modal-operacion');
 
-                // IDs correctos: formulario origen (el form principal) y formulario destino (formRef)
-                const formOrigenId = document.querySelector('.select-formulario').value; // <-- ORIGEN
-                const formDestinoId = accion.form_ref_id || formSelect.value; // <-- DESTINO (para campo_ref)
+                const formOrigenId = document.querySelector('.select-formulario').value; //
+                const formDestinoId = accion.form_ref_id || formSelect.value; // 
 
-                // Setear el form destino (para elegir campo_destino)
                 formSelect.value = accion.form_ref_id;
                 formSelect.dispatchEvent(new Event('change'));
 
-                // Cargar campos del formulario destino para campo_ref (correcto)
                 await cargarCamposCached(formDestinoId, campoSelect, '-- Seleccione campo destino --');
                 campoSelect.value = accion.campo_ref_id;
 
                 // Operación
                 operacionSelect.value = accion.operacion;
+                toggleInvertir();
 
-                // Tipo de valor (static / campo) y cargar select correspondiente
                 document.getElementById('modal-tipo-valor').value = accion.tipo_valor;
                 document.getElementById('modal-tipo-valor').dispatchEvent(new Event('change'));
 
                 if (accion.tipo_valor === 'static') {
                     document.getElementById('modal-valor-estatico').value = accion.valor;
                 } else {
-                    // IMPORTANTÍSIMO: cargar campos del FORMULARIO ORIGEN para el select "modal-valor-campo"
                     const valorCampoSelect = document.getElementById('modal-valor-campo');
 
-                    // <-- aquí estaba el error: no uses form_ref_id, usa formOrigenId
                     await cargarCamposCached(formOrigenId, valorCampoSelect, '-- Seleccione campo origen --');
 
-                    // luego asigna el valor (id del campo origen)
                     valorCampoSelect.value = accion.valor;
                 }
-            }
 
+                const checkbox = document.getElementById("invertir_operacion");
+
+                if (accion.operacion_rev == 1) {
+                    checkbox.checked = true;
+                } else {
+                    checkbox.checked = false;
+                }
+
+            }
 
 
 
@@ -1334,11 +1422,7 @@
             const container = document.getElementById('condiciones-modal-container');
             container.innerHTML = '';
             for (const c of accion.condiciones) {
-                agregarCondicionModal({
-                    campo_origen_id: c.campo_condicion_origen,
-                    operador: c.operador,
-                    campo_destino_id: c.campo_condicion_destino
-                });
+                agregarCondicionModal(c);
             }
 
 
@@ -1360,6 +1444,11 @@
 
         // abrir modal para agregar acción
         document.getElementById('open-modal-accion').addEventListener('click', async () => {
+
+            await abrirContenedor()
+        });
+
+        async function abrirContenedor() {
             const nombreRegla = document.querySelector('input[name="nombre"]').value.trim();
             const formularioOrigen = formularioPrincipal.value;
             const evento = document.querySelector('select[name="evento"]').value;
@@ -1391,10 +1480,7 @@
             limpiarModal();
             CargaTipoAccion()
             await inicializarModalOptimizado();
-
-        });
-
-
+        }
 
         /*TAC-005*/
         function getInfoForm(editData = null) {
