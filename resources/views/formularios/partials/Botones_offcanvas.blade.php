@@ -1,6 +1,6 @@
 @php
-    $rid = '__RESPUESTA_ID__';
-    $fid = '__FORM_ID__';
+    $rid = '__RESPUESTAID__';
+    $fid = '__FORMID__';
 
 @endphp
 
