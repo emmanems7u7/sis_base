@@ -15,6 +15,8 @@ use App\Exports\ExportExcel;
 use Maatwebsite\Excel\Facades\Excel;
 use App\Interfaces\FormularioInterface;
 use App\Interfaces\PermisoInterface;
+use App\Interfaces\CamposFormInterface;
+
 
 use App\Models\AuditoriaAccion;
 use App\Models\RespuestasCampo;
@@ -27,16 +29,23 @@ class FormularioController extends Controller
     protected $FormularioRepository;
     protected $PermisoRepository;
 
+    protected $CamposFormRepository;
     protected $CatalogoRepository;
     public function __construct(
         CatalogoInterface $catalogoInterface,
         FormularioInterface $formularioInterface,
-        PermisoInterface $permisoInterface
+        PermisoInterface $permisoInterface,
+        CamposFormInterface $camposFormInterface
+
     ) {
 
         $this->CatalogoRepository = $catalogoInterface;
         $this->FormularioRepository = $formularioInterface;
         $this->PermisoRepository = $permisoInterface;
+        $this->PermisoRepository = $permisoInterface;
+        $this->CamposFormRepository = $camposFormInterface;
+
+
 
     }
     public function index()
@@ -130,7 +139,7 @@ class FormularioController extends Controller
     {
         $formulario = Formulario::with('campos')->findOrFail($id);
 
-        $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
+        $camposProcesados = $this->CamposFormRepository->CamposFormCat($formulario->campos);
 
         $formulario->campos = $camposProcesados;
 
@@ -199,7 +208,7 @@ class FormularioController extends Controller
     {
         $formulario = Formulario::with('campos')->findOrFail($id);
 
-        $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
+        $camposProcesados = $this->CamposFormRepository->CamposFormCat($formulario->campos);
 
         return response()->json($camposProcesados->map(function ($campo) {
             return [
@@ -357,7 +366,7 @@ class FormularioController extends Controller
             return response()->json(['error' => 'Formulario no encontrado'], 404);
         }
 
-        $formulario->campos = $this->FormularioRepository->CamposFormCat($formulario->campos);
+        $formulario->campos = $this->CamposFormRepository->CamposFormCat($formulario->campos);
 
         $camposConReferencia = $formulario->campos->filter(fn($campo) => $campo->form_ref_id !== null);
         $formIdsRelacionados = $camposConReferencia->pluck('form_ref_id')->unique();

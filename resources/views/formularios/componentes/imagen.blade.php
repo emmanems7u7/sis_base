@@ -1,6 +1,6 @@
 <div class="preview-archivo mb-2">
     @if($valor)
-        <a href="{{ asset('archivos/formulario_' . $form . '/imagenes/' . $valor) }}"
+        <a href="{{ asset('archivos/formulario_' . $formulario->id . '/imagenes/' . $valor) }}"
             data-fancybox="imagenes_{{ $campo->id }}" data-caption="Imagen" class="text-primary">
             <i class="fas fa-image"></i> Ver imagen
         </a>

@@ -1,6 +1,6 @@
 <div class="preview-archivo mb-2">
     @if($valor)
-        <a href="{{ asset('archivos/formulario_' . $form . '/videos/' . $valor) }}" target="_blank">
+        <a href="{{ asset('archivos/formulario_' . $formulario->id . '/videos/' . $valor) }}" target="_blank">
             <i class="fas fa-video"></i> Ver video
         </a>
     @endif

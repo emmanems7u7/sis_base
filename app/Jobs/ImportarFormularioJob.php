@@ -70,7 +70,7 @@ class ImportarFormularioJob implements ShouldQueue
                         if (in_array($tipo, ['imagen', 'video', 'archivo'])) {
                             app('App\Repositories\FormularioRepository')->guardarArchivoGenerico($campo, $respuesta->id, $this->form, $valor);
                         } else {
-                            app('App\Repositories\FormularioRepository')->guardarValorSimple($campo, $respuesta->id, $valor);
+                            app('App\Repositories\CamposFormRepository')->guardarValorSimple($campo, $respuesta->id, $valor);
                         }
                     }
 

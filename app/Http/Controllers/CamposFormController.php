@@ -56,7 +56,7 @@ class CamposFormController extends Controller
         // Procesar campos para la vista solo con un límite inicial de opciones
         $limitOpciones = 10;
 
-        $campos = $this->FormularioRepository->CamposFormCat($campos, $limitOpciones);
+        $campos = $this->CamposFormRepository->CamposFormCat($campos, $limitOpciones);
 
 
         /*
@@ -94,7 +94,7 @@ class CamposFormController extends Controller
         $offset = $request->input('offset');
         $limit = $request->input('limit');
 
-        $campoProcesado = $this->FormularioRepository->CamposFormCat(collect([$campo]), $limit, $offset)->first();
+        $campoProcesado = $this->CamposFormRepository->CamposFormCat(collect([$campo]), $limit, $offset)->first();
 
         return response()->json($campoProcesado->opciones_catalogo);
     }
@@ -499,7 +499,7 @@ class CamposFormController extends Controller
             ->orderBy('posicion')
             ->get();
 
-        $campos = $this->FormularioRepository->CamposFormCat($campos, $limitOpciones);
+        $campos = $this->CamposFormRepository->CamposFormCat($campos, $limitOpciones);
 
         $campo = $campos->first();
 

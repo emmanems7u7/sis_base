@@ -1,7 +1,7 @@
 <?php
 
 namespace App\Http\Controllers;
-use App\Notifications\LogicaFormularioFinalizada;
+
 use Illuminate\Support\Facades\Session;
 use Illuminate\Http\Request;
 use App\Models\RespuestasForm;
@@ -9,26 +9,23 @@ use App\Models\RespuestasCampo;
 use App\Models\CamposForm;
 use App\Models\Formulario;
 use Illuminate\Support\Facades\DB;
-use App\Models\Catalogo;
 use App\Interfaces\CatalogoInterface;
 use App\Interfaces\FormularioInterface;
 use App\Interfaces\FormLogicInterface;
 use App\Interfaces\RespuestasFormInterface;
+use App\Interfaces\CamposFormInterface;
+
 use Illuminate\Support\Facades\Validator;
-
 use App\Models\FormLogicCondition;
-
 
 use Jenssegers\Agent\Agent;
 
 use App\Jobs\EjecutarLogicaFormulario;
-use App\Models\AuditoriaAccion;
+
 use App\Models\FormLogicRule;
 use App\Models\Modulo;
 use App\Models\ModuloFormularioParalelo;
-use App\Models\RespuestasGrupo;
-use App\Models\User;
-use PhpOffice\PhpSpreadsheet\Writer\Xlsx\Rels;
+
 
 class RespuestasFormController extends Controller
 {
@@ -38,19 +35,23 @@ class RespuestasFormController extends Controller
     protected $FormularioRepository;
     protected $FormLogicInterface;
     protected $RespuestasFormInterface;
+    protected $CamposFormRepository;
 
 
     public function __construct(
         CatalogoInterface $catalogoInterface,
         FormularioInterface $formularioInterface,
         FormLogicInterface $formLogicInterface,
-        RespuestasFormInterface $respuestasFormInterface
+        RespuestasFormInterface $respuestasFormInterface,
+        CamposFormInterface $camposFormInterface
     ) {
 
         $this->CatalogoRepository = $catalogoInterface;
         $this->FormularioRepository = $formularioInterface;
         $this->FormLogicInterface = $formLogicInterface;
         $this->RespuestasFormInterface = $respuestasFormInterface;
+        $this->CamposFormRepository = $camposFormInterface;
+
 
 
     }
@@ -84,27 +85,7 @@ class RespuestasFormController extends Controller
         return view('formularios.respuestas_formulario', array_merge($resultado, compact('isMobile', 'breadcrumb', 'campos')));
     }
 
-    private function obtenerFormulariosDelGrupo($formularioId, $moduloId)
-    {
-        $grupo = ModuloFormularioParalelo::where('modulo_id', $moduloId)->get()
-            ->first(function ($g) use ($formularioId) {
-                return collect($g->formularios)->pluck('id')->contains($formularioId);
-            });
 
-        if (!$grupo) {
-            return null;
-        }
-
-        $formularios = collect($grupo->formularios);
-
-        $formPrincipal = $formularios->firstWhere('es_principal', 1);
-
-        return [
-            'grupo' => $grupo,
-            'formularios' => $formularios,
-            'principal_id' => $formPrincipal['id'] ?? null
-        ];
-    }
 
     private function cargarFormularioCompleto($formularioId)
     {
@@ -114,7 +95,7 @@ class RespuestasFormController extends Controller
             }
         ])->findOrFail($formularioId);
 
-        $camposProcesados = $this->FormularioRepository->CamposFormCat($formulario->campos);
+        $camposProcesados = $this->CamposFormRepository->CamposFormCat($formulario->campos);
         $formulario->campos = $camposProcesados;
 
         return $formulario;
@@ -164,7 +145,7 @@ class RespuestasFormController extends Controller
 
         if ($moduloModelo) {
 
-            $grupoData = $this->obtenerFormulariosDelGrupo($form, $moduloModelo->id);
+            $grupoData = $this->FormularioRepository->obtenerFormulariosDelGrupo($form, $moduloModelo->id);
 
             $formulas = $grupoData['grupo']->config ?? [];
             if ($grupoData && $grupoData['principal_id'] == $form) {
@@ -213,43 +194,8 @@ class RespuestasFormController extends Controller
     }
 
 
-    private function obtenerFormularios($form, $moduloModelo)
-    {
-        $formulariosFinales = collect();
-        $formularioModelo = Formulario::find($form);
 
-        if ($moduloModelo) {
 
-            $grupoData = $this->obtenerFormulariosDelGrupo($form, $moduloModelo->id);
-
-            if ($grupoData && $grupoData['principal_id'] == $form) {
-
-                foreach ($grupoData['formularios'] as $f) {
-                    $formulariosFinales->push(Formulario::find($f['id']));
-                }
-
-            } else {
-                $formulariosFinales->push($formularioModelo);
-            }
-
-        } else {
-            $formulariosFinales->push($formularioModelo);
-        }
-
-        return $formulariosFinales;
-    }
-    private function limpiarRegistro($registroData)
-    {
-        $registroLimpio = [];
-
-        foreach ($registroData as $key => $value) {
-            if (preg_match('/\[(.*?)\]/', $key, $matches)) {
-                $registroLimpio[$matches[1]] = $value;
-            }
-        }
-
-        return $registroLimpio;
-    }
 
     private function procesarFormularioNormalDesdeArray($datosFormulario, $form, $campos, $prefix, $rules)
     {
@@ -258,15 +204,13 @@ class RespuestasFormController extends Controller
 
         foreach ($campos as $campo) {
 
-            $nombre = $campo->nombre;
-            $inputName = "{$prefix}[$nombre]";
-
-            $valor = $datosFormulario[$inputName] ?? null;
-
-            if ($valor !== null) {
-                $this->FormularioRepository
-                    ->guardarValorSimple($campo, $respuesta->id, $valor);
-            }
+            $this->CamposFormRepository->guardarCampo(
+                $campo,
+                $respuesta->id,
+                $datosFormulario,
+                $form,
+                $prefix
+            );
         }
 
         $filas = $this->RespuestasFormInterface
@@ -292,53 +236,29 @@ class RespuestasFormController extends Controller
 
         $respuestas = [];
 
-
-        $registroLimpio = $this->limpiarRegistro($datosFormulario);
-
-        $validator = Validator::make([$prefix => $registroLimpio], $rules);
-
-        if ($validator->fails()) {
-            DB::rollBack();
-            return back()->withErrors($validator)->withInput();
-        }
-
         $respuesta = $this->FormularioRepository->crearRespuesta($form);
         $grupo->respuestas()->attach($respuesta->id);
 
         foreach ($campos as $campo) {
 
-            $tipo = strtolower($campo->campo_nombre);
-            $nombre = $campo->nombre;
-            $inputName = "{$prefix}[$nombre]";
-
-            $valor = $datosFormulario[$inputName] ?? null;
-
-            if ($valor !== null) {
-
-
-                $this->FormularioRepository
-                    ->guardarValorSimple($campo, $respuesta->id, $valor);
-            }
+            $this->CamposFormRepository->guardarCampo(
+                $campo,
+                $respuesta->id,
+                $datosFormulario,
+                $form,
+                $prefix
+            );
         }
 
         $filas = $this->RespuestasFormInterface
             ->filaDesdeArray($respuesta, $datosFormulario, $campos);
 
 
-        /*
-                $errores = $this->validarLogica($respuesta, $filas);
-
-                if (!empty($errores)) {
-                    DB::rollBack();
-                    throw new \Exception(implode('<br>', $errores));
-                }*/
-
         $respuestas[] = [
             'respuesta_id' => $respuesta->id,
             'filas' => $filas,
             'form_id' => $form
         ];
-
 
 
         return $respuestas;
@@ -389,16 +309,11 @@ class RespuestasFormController extends Controller
             $moduloModelo = $modulo > 0 ? Modulo::find($modulo) : null;
             $formularioModelo = Formulario::find($form);
 
-            $this->RespuestasFormInterface
-                ->validacion_modulo_form($formularioModelo, $moduloModelo, $modulo);
+            $this->RespuestasFormInterface->validacion_modulo_form($formularioModelo, $moduloModelo, $modulo);
 
-            $formularios = $this->obtenerFormularios($form, $moduloModelo);
-            $respuestasActualizadas = [];
+            $formularios = $this->FormularioRepository->obtenerFormularios($form, $moduloModelo);
             $respuestasCreadas = [];
 
-            // =====================================================
-            // 1️⃣ PROCESAR FORMULARIOS MÚLTIPLES (JSON)
-            // =====================================================
             $registrosRaw = json_decode($request->registros_json, true);
 
             if (!is_array($registrosRaw)) {
@@ -420,7 +335,12 @@ class RespuestasFormController extends Controller
 
                     foreach ($formulariosEnRegistro as $formPrefix) {
 
+                        if (!is_string($formPrefix)) {
+                            continue;
+                        }
+
                         $formId = (int) str_replace('form_', '', $formPrefix);
+
 
                         $formularioModelo = $formularios->firstWhere('id', $formId);
                         if (!$formularioModelo)
@@ -434,12 +354,20 @@ class RespuestasFormController extends Controller
 
                         $campos = CamposForm::where('form_id', $formId)->get();
 
-                        $datosFormulario = collect($registro)
-                            ->filter(fn($value, $key) => str_starts_with($key, $formPrefix))
-                            ->toArray();
 
                         $rules = $this->RespuestasFormInterface
                             ->validacion($formularioModelo, $campos, null, 'store', $formPrefix);
+
+                        $resultado = $this->FormularioRepository->GetData($request, $formPrefix, $rules);
+
+                        $datosFormulario = $resultado['datosFormulario'];
+                        $validator = $resultado['validator'];
+
+                        if ($validator->fails()) {
+                            DB::rollBack();
+                            return back()->withErrors($validator)->withInput();
+                        }
+
 
                         try {
 
@@ -463,9 +391,6 @@ class RespuestasFormController extends Controller
                 }
             }
 
-            // =====================================================
-            // 2️⃣ PROCESAR FORMULARIOS NORMALES (REQUEST)
-            // =====================================================
             foreach ($formularios as $formularioModelo) {
 
                 $formId = $formularioModelo->id;
@@ -481,22 +406,16 @@ class RespuestasFormController extends Controller
 
                 $campos = CamposForm::where('form_id', $formId)->get();
 
-                $datosFormulario = collect($request->input($formPrefix))
-                    ->mapWithKeys(function ($value, $key) use ($formPrefix) {
-                        return ["{$formPrefix}[$key]" => $value];
-                    })
-                    ->toArray();
-
-                $rules = $this->RespuestasFormInterface
-                    ->validacion($formularioModelo, $campos, null, 'store', $formPrefix);
-
 
                 try {
 
+                    $rules = $this->RespuestasFormInterface
+                        ->validacion($formularioModelo, $campos, null, 'store', $formPrefix);
 
-                    $data = [$formPrefix => $this->limpiarRegistro($datosFormulario)];
+                    $resultado = $this->FormularioRepository->GetData($request, $formPrefix, $rules);
 
-                    $validator = Validator::make($data, $rules);
+                    $datosFormulario = $resultado['datosFormulario'];
+                    $validator = $resultado['validator'];
 
                     if ($validator->fails()) {
                         DB::rollBack();
@@ -510,6 +429,7 @@ class RespuestasFormController extends Controller
                         DB::rollBack();
                         return back()->withErrors($errores)->withInput();
                     }
+
 
                     $respuestasCreadas[] = $this->procesarFormularioNormalDesdeArray(
                         $datosFormulario,
@@ -526,46 +446,14 @@ class RespuestasFormController extends Controller
                 }
             }
 
-            // =====================================================
-            // 3️⃣ AGRUPAR POR FORMULARIO
-            // =====================================================
             $agrupadas = collect($respuestasCreadas)->groupBy(function ($item) {
                 return is_array($item)
                     ? ($item['form_id'] ?? null)
                     : ($item->form_id ?? null);
             });
 
-            // =====================================================
-            // EJECUTAR COLAS (BATCH POR FORMULARIO)
-            // =====================================================
+            $this->FormularioRepository->EjecutarAcciones($agrupadas);
 
-
-            foreach ($agrupadas as $formId => $respuestasForm) {
-
-                $reglas = FormLogicRule::where('form_id', $formId)
-                    ->where('evento', 'on_create')
-                    ->where('activo', true)
-                    ->with([
-                        'actions' => function ($q) {
-                            $q->with('conditions');
-                        }
-                    ])
-                    ->get();
-
-                if ($reglas->contains('segundo_plano', true)) {
-
-                    EjecutarLogicaFormulario::dispatch($reglas, $respuestasForm->toArray(), 'on_create', auth()->id(), env('APP_URL'));
-
-                } else {
-                    $this->FormLogicInterface->EjecutarReglaLogica($reglas, $respuestasForm->toArray(), 'on_create', auth()->id(), env('APP_URL'));
-
-                }
-
-            }
-
-            // =====================================================
-            // 5️⃣ REDIRECCIONES
-            // =====================================================
 
             DB::commit();
             DB::disconnect();
@@ -859,7 +747,7 @@ class RespuestasFormController extends Controller
 
         if ($moduloModelo) {
 
-            $grupoData = $this->obtenerFormulariosDelGrupo($formularioModelo->id, $moduloModelo->id);
+            $grupoData = $this->FormularioRepository->obtenerFormulariosDelGrupo($formularioModelo->id, $moduloModelo->id);
 
             $formulas = $grupoData['grupo']->config ?? [];
 
@@ -1061,6 +949,8 @@ class RespuestasFormController extends Controller
             'formulas' => $formulas,
         ]);
     }
+
+
     public function update(Request $request, RespuestasForm $respuesta, $modulo)
     {
 
@@ -1074,12 +964,12 @@ class RespuestasFormController extends Controller
             $this->RespuestasFormInterface
                 ->validacion_modulo_form($formularioModelo, $moduloModelo, $modulo);
 
-            $formularios = $this->obtenerFormularios($form, $moduloModelo);
+            $formularios = $this->FormularioRepository->obtenerFormularios($form, $moduloModelo);
             $respuestasActualizadas = [];
             $grupo = $respuesta->grupos()->with('respuestas.camposRespuestas')->first();
 
             // =====================================================
-            // ACTUALIZAR MÚLTIPLES (SIN BORRAR)
+            // ACTUALIZAR MÚLTIPLES
             // =====================================================
             $registrosRaw = json_decode($request->registros_json, true) ?? [];
             $registros = $this->normalizarRegistros($registrosRaw);
@@ -1098,7 +988,12 @@ class RespuestasFormController extends Controller
 
                     foreach ($formulariosEnRegistro as $formPrefix) {
 
+                        if (!is_string($formPrefix)) {
+                            continue;
+                        }
+
                         $formId = (int) str_replace('form_', '', $formPrefix);
+
 
                         $formularioModelo = $formularios->firstWhere('id', $formId);
                         if (!$formularioModelo)
@@ -1110,10 +1005,30 @@ class RespuestasFormController extends Controller
 
                         $campos = CamposForm::where('form_id', $formId)->get();
 
-                        $datosFormulario = collect($registro)
-                            ->filter(fn($value, $key) => str_starts_with($key, $formPrefix))
-                            ->toArray();
+                        $rules = $this->RespuestasFormInterface
+                            ->validacion($formularioModelo, $campos, null, 'update', $formPrefix);
+
+                        $resultado = $this->FormularioRepository->GetData($request, $formPrefix, $rules);
+
+                        $datosFormulario = $resultado['datosFormulario'];
+                        $validator = $resultado['validator'];
+
+                        if ($validator->fails()) {
+                            DB::rollBack();
+                            return back()->withErrors($validator)->withInput();
+                        }
+
+                        $errores = $this->FormularioRepository
+                            ->validarOpcionesCatalogo($campos, $datosFormulario, $formPrefix);
+
+                        if (!empty($errores)) {
+                            DB::rollBack();
+                            return back()->withErrors($errores)->withInput();
+                        }
+
+
                         //obtener respuesta por índice
+
                         $respuestaTarget = $respuestasMultiples[$formId][$index] ?? null;
 
 
@@ -1126,34 +1041,15 @@ class RespuestasFormController extends Controller
                                 $campos
                             );
 
-                        foreach ($registro as $key => $value) {
+                        foreach ($campos as $campo) {
 
-                            if (!str_starts_with($key, $formPrefix))
-                                continue;
-
-                            preg_match('/\[(.*?)\]/', $key, $match);
-
-                            $campoNombre = $match[1] ?? null;
-
-                            $campo = CamposForm::where('form_id', $formId)
-                                ->where('nombre', $campoNombre)
-                                ->first();
-
-                            if (!$campo)
-                                continue;
-
-                            $valor = $value['value'] ?? $value;
-
-                            $rc = RespuestasCampo::where('respuesta_id', $respuestaTarget->id)
-                                ->where('cf_id', $campo->id)
-                                ->first();
-
-                            if ($rc) {
-
-                                $rc->update([
-                                    'valor' => $valor
-                                ]);
-                            }
+                            $this->CamposFormRepository->actualizarCampo(
+                                $campo,
+                                $respuestaTarget->id,
+                                $datosFormulario,
+                                $formId,
+                                $formPrefix
+                            );
                         }
 
                         $filas = $this->RespuestasFormInterface
@@ -1173,13 +1069,15 @@ class RespuestasFormController extends Controller
                 }
 
             }
+
+
             // =====================================================
             // ACTUALIZAR NORMALES (RELACION 1:N)
             // =====================================================
             $formulas = [];
 
             if ($moduloModelo) {
-                $grupoData = $this->obtenerFormulariosDelGrupo($form, $moduloModelo->id);
+                $grupoData = $this->FormularioRepository->obtenerFormulariosDelGrupo($form, $moduloModelo->id);
                 $formulas = $grupoData['grupo']->config ?? [];
             }
 
@@ -1218,14 +1116,29 @@ class RespuestasFormController extends Controller
 
                         // actualización directa sin lógica relacional
                         $campos = CamposForm::where('form_id', $formId)->get();
-                        $datosFormulario = collect($request->input($formPrefix))
-                            ->mapWithKeys(function ($value, $key) use ($formPrefix) {
-                                return [
-                                    "{$formPrefix}[$key]" => $value
-                                ];
-                            })
-                            ->toArray();
 
+
+                        $rules = $this->RespuestasFormInterface
+                            ->validacion($formularioModelo, $campos, null, 'update', $formPrefix);
+
+                        $resultado = $this->FormularioRepository->GetData($request, $formPrefix, $rules);
+
+                        $datosFormulario = $resultado['datosFormulario'];
+                        $validator = $resultado['validator'];
+
+                        if ($validator->fails()) {
+                            DB::rollBack();
+                            return back()->withErrors($validator)->withInput();
+                        }
+
+
+                        $errores = $this->FormularioRepository
+                            ->validarOpcionesCatalogo($campos, $datosFormulario, $formPrefix);
+
+                        if (!empty($errores)) {
+                            DB::rollBack();
+                            return back()->withErrors($errores)->withInput();
+                        }
 
                         // aquí usamos la misma respuesta del flujo original si aplica
                         $respuestaTarget = $respuesta;
@@ -1236,20 +1149,13 @@ class RespuestasFormController extends Controller
 
                         foreach ($campos as $campo) {
 
-                            if (!$request->has("{$formPrefix}.{$campo->nombre}"))
-                                continue;
-
-                            $valor = $request->input("{$formPrefix}.{$campo->nombre}");
-
-                            $rc = RespuestasCampo::where('respuesta_id', $respuestaTarget->id)
-                                ->where('cf_id', $campo->id)
-                                ->first();
-
-                            if ($rc) {
-                                $rc->update([
-                                    'valor' => $valor
-                                ]);
-                            }
+                            $this->CamposFormRepository->actualizarCampo(
+                                $campo,
+                                $respuestaTarget->id,
+                                $datosFormulario,
+                                $formId,
+                                $formPrefix
+                            );
                         }
 
                         $filas = $this->RespuestasFormInterface
@@ -1264,6 +1170,7 @@ class RespuestasFormController extends Controller
 
                         continue;
                     }
+
                     // =====================================================
                     // CASO CON RELACIÓN (TU LÓGICA ORIGINAL)
                     // =====================================================
@@ -1298,33 +1205,34 @@ class RespuestasFormController extends Controller
                     // =========================
                     $campos = CamposForm::where('form_id', $formId)->get();
 
-                    $datosFormulario = collect($request->input($formPrefix))
-                        ->mapWithKeys(function ($value, $key) use ($formPrefix) {
-                            return [
-                                "{$formPrefix}[$key]" => $value
-                            ];
-                        })
-                        ->toArray();
+
+                    $rules = $this->RespuestasFormInterface
+                        ->validacion($formularioModelo, $campos, null, 'update', $formPrefix);
+
+                    $resultado = $this->FormularioRepository->GetData($request, $formPrefix, $rules);
+
+                    $datosFormulario = $resultado['datosFormulario'];
+
+                    $validator = $resultado['validator'];
+
+                    if ($validator->fails()) {
+                        DB::rollBack();
+                        return back()->withErrors($validator)->withInput();
+                    }
 
                     $filasOriginales = $this->RespuestasFormInterface
                         ->filaDesdeRespuesta($respuestaTarget, $campos);
 
+
                     foreach ($campos as $campo) {
 
-                        if (!$request->has("{$formPrefix}.{$campo->nombre}"))
-                            continue;
-
-                        $valor = $request->input("{$formPrefix}.{$campo->nombre}");
-
-                        $rc = RespuestasCampo::where('respuesta_id', $respuestaTarget->id)
-                            ->where('cf_id', $campo->id)
-                            ->first();
-
-                        if ($rc) {
-                            $rc->update([
-                                'valor' => $valor
-                            ]);
-                        }
+                        $this->CamposFormRepository->actualizarCampo(
+                            $campo,
+                            $respuestaTarget->id,
+                            $datosFormulario,
+                            $formId,
+                            $formPrefix
+                        );
                     }
 
                     $filas = $this->RespuestasFormInterface
@@ -1348,50 +1256,13 @@ class RespuestasFormController extends Controller
 
 
             }
-            $agrupadas = collect($respuestasActualizadas)
-                ->unique('respuesta_id')
-                ->groupBy('form_id');
 
 
-            foreach ($agrupadas as $formId => $respuestasForm) {
-                if ($formId == 3) {
 
-                    $reglas = FormLogicRule::where('form_id', $formId)
-                        ->where('evento', 'on_update')
-                        ->where('activo', true)
-                        ->with([
-                            'actions' => function ($q) {
-                                $q->with('conditions');
-                            }
-                        ])
-                        ->get();
+            $agrupadas = collect($respuestasActualizadas)->unique('respuesta_id')->groupBy('form_id');
 
-                    if ($reglas->isEmpty())
-                        continue;
+            $this->FormularioRepository->EjecutarAcciones($agrupadas);
 
-                    if ($reglas->contains('segundo_plano', true)) {
-
-                        EjecutarLogicaFormulario::dispatch(
-                            $reglas,
-                            $respuestasForm->values()->toArray(),
-                            'on_update',
-                            auth()->id(),
-                            env('APP_URL')
-                        );
-
-                    } else {
-
-                        $this->FormLogicInterface->EjecutarReglaLogica(
-                            $reglas,
-                            $respuestasForm->values()->toArray(),
-                            'on_update',
-                            auth()->id(),
-                            env('APP_URL')
-                        );
-                    }
-
-                }
-            }
 
             DB::commit();
             DB::disconnect();
