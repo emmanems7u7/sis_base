@@ -29,5 +29,4 @@ interface FormularioInterface
 
     public function obtenerFormularios($form, $moduloModelo);
     public function obtenerFormulariosDelGrupo($formularioId, $moduloId);
-    public function EjecutarAcciones($agrupadas);
 }

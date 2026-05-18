@@ -15,16 +15,12 @@ use App\Interfaces\FormLogicInterface;
 use App\Interfaces\RespuestasFormInterface;
 use App\Interfaces\CamposFormInterface;
 
-use Illuminate\Support\Facades\Validator;
 use App\Models\FormLogicCondition;
 
 use Jenssegers\Agent\Agent;
 
-use App\Jobs\EjecutarLogicaFormulario;
 
-use App\Models\FormLogicRule;
 use App\Models\Modulo;
-use App\Models\ModuloFormularioParalelo;
 
 
 class RespuestasFormController extends Controller
@@ -452,7 +448,7 @@ class RespuestasFormController extends Controller
                     : ($item->form_id ?? null);
             });
 
-            $this->FormularioRepository->EjecutarAcciones($agrupadas);
+            $this->FormLogicInterface->EjecutarAcciones($agrupadas);
 
 
             DB::commit();
@@ -1261,7 +1257,7 @@ class RespuestasFormController extends Controller
 
             $agrupadas = collect($respuestasActualizadas)->unique('respuesta_id')->groupBy('form_id');
 
-            $this->FormularioRepository->EjecutarAcciones($agrupadas);
+            $this->FormLogicInterface->EjecutarAcciones($agrupadas);
 
 
             DB::commit();

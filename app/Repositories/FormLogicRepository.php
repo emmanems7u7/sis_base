@@ -18,7 +18,7 @@ use App\Models\FormLogicAction;
 use App\Models\Formulario;
 use App\Notifications\LogicaFormularioFinalizada;
 use App\Services\DynamicMailer;
-use PhpOffice\PhpSpreadsheet\Calculation\LookupRef\Formula;
+use App\Jobs\EjecutarLogicaFormulario;
 
 class FormLogicRepository implements FormLogicInterface
 {
@@ -1377,6 +1377,52 @@ class FormLogicRepository implements FormLogicInterface
 
     }
 
+    public function EjecutarAcciones($agrupadas)
+    {
 
+
+
+
+        foreach ($agrupadas as $formId => $respuestasForm) {
+
+            $reglas = FormLogicRule::where('form_id', $formId)
+                ->where('evento', 'on_create')
+                ->where('activo', true)
+                ->with([
+                    'actions' => function ($q) {
+                        $q->with('conditions');
+                    }
+                ])
+                ->get();
+
+            $reglasSync = $reglas->where('segundo_plano', false);
+
+            $reglasQueue = $reglas->where('segundo_plano', true);
+
+            if ($reglasSync->isNotEmpty()) {
+
+                $this->EjecutarReglaLogica(
+                    $reglasSync,
+                    $respuestasForm->toArray(),
+                    'on_create',
+                    auth()->id(),
+                    env('APP_URL')
+                );
+            }
+
+            // Ejecutar cola
+            if ($reglasQueue->isNotEmpty()) {
+
+                EjecutarLogicaFormulario::dispatch(
+                    $reglasQueue,
+                    $respuestasForm->toArray(),
+                    'on_create',
+                    auth()->id(),
+                    env('APP_URL')
+                );
+            }
+        }
+
+    }
 
 }

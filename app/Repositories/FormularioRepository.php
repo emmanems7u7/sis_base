@@ -4,7 +4,6 @@ namespace App\Repositories;
 
 use App\Interfaces\FormularioInterface;
 use App\Interfaces\CatalogoInterface;
-use App\Jobs\EjecutarLogicaFormulario;
 use App\Models\CamposForm;
 use App\Models\FormLogicRule;
 use App\Models\Formulario;
@@ -18,20 +17,17 @@ use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Validator;
 
 use Carbon\Carbon;
-use App\Interfaces\FormLogicInterface;
 
 
 class FormularioRepository implements FormularioInterface
 {
     protected $model;
     protected $CatalogoRepository;
-    protected $FormLogicInterface;
 
-    public function __construct(Formulario $model, CatalogoInterface $catalogoInterface, FormLogicInterface $formLogicInterface, )
+    public function __construct(Formulario $model, CatalogoInterface $catalogoInterface, )
     {
         $this->model = $model;
         $this->CatalogoRepository = $catalogoInterface;
-        $this->FormLogicInterface = $formLogicInterface;
 
     }
 
@@ -595,51 +591,5 @@ class FormularioRepository implements FormularioInterface
         return $registroLimpio;
     }
 
-    public function EjecutarAcciones($agrupadas)
-    {
 
-
-
-
-        foreach ($agrupadas as $formId => $respuestasForm) {
-
-            $reglas = FormLogicRule::where('form_id', $formId)
-                ->where('evento', 'on_create')
-                ->where('activo', true)
-                ->with([
-                    'actions' => function ($q) {
-                        $q->with('conditions');
-                    }
-                ])
-                ->get();
-
-            $reglasSync = $reglas->where('segundo_plano', false);
-
-            $reglasQueue = $reglas->where('segundo_plano', true);
-
-            if ($reglasSync->isNotEmpty()) {
-
-                $this->FormLogicInterface->EjecutarReglaLogica(
-                    $reglasSync,
-                    $respuestasForm->toArray(),
-                    'on_create',
-                    auth()->id(),
-                    env('APP_URL')
-                );
-            }
-
-            // Ejecutar cola
-            if ($reglasQueue->isNotEmpty()) {
-
-                EjecutarLogicaFormulario::dispatch(
-                    $reglasQueue,
-                    $respuestasForm->toArray(),
-                    'on_create',
-                    auth()->id(),
-                    env('APP_URL')
-                );
-            }
-        }
-
-    }
 }

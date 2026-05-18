@@ -21,4 +21,6 @@ interface FormLogicInterface
     );
 
     public function ValidarLogica(RespuestasForm $respuesta, $filasSeleccionadas, $evento);
+    public function EjecutarAcciones($agrupadas);
+
 }

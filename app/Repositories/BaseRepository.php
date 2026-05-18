@@ -12,12 +12,30 @@ class BaseRepository
     protected $configuracion;
     public function __construct()
     {
-        // Configuración de HTMLPurifier
-        $config = HTMLPurifier_Config::createDefault();
-        $this->purifier = new HTMLPurifier($config);
-        $this->configuracion = ConfiguracionCredenciales::first();
+
     }
 
+    protected function configuracion()
+    {
+        static $config = null;
+
+        if (!$config) {
+            $config = ConfiguracionCredenciales::first();
+        }
+
+        return $config;
+    }
+    protected function purifier()
+    {
+        static $purifier = null;
+
+        if (!$purifier) {
+            $config = HTMLPurifier_Config::createDefault();
+            $purifier = new HTMLPurifier($config);
+        }
+
+        return $purifier;
+    }
     /**
      * Limpiar el contenido HTML
      *
@@ -29,7 +47,7 @@ class BaseRepository
         if (empty($content)) {
             return null;
         }
-        return $this->purifier->purify($content);
+        return $this->purifier()->purify($content);
     }
 
     protected function agregarSeederADatabaseSeeder(string $nombreClase, string $stage, string $tipo): void
