@@ -6,6 +6,8 @@ use App\Interfaces\RespuestasFormInterface;
 use App\Models\RespuestasForm;
 use App\Interfaces\CatalogoInterface;
 use App\Models\Formulario;
+use App\Models\ModuloFormularioParalelo;
+use App\Models\RespuestasCampo;
 
 class RespuestasFormRepository implements RespuestasFormInterface
 {
@@ -125,91 +127,91 @@ class RespuestasFormRepository implements RespuestasFormInterface
     public function filaDesdeArray($respuesta, array $registroData, $campos)
     {
         $filasSeleccionadas = [];
+        $relations = [];
 
-        // Mapear campos por nombre para acceso rápido
+        // Mapear campos por nombre para acceso rápido (como en la versión anterior)
         $mapCampos = collect($campos)->keyBy('nombre');
 
-        foreach ($registroData as $nombreCampo => $valor) {
+        $filasSeleccionadas['formulario_id'] = $respuesta->form_id;
+        $filasSeleccionadas['respuesta_id'] = $respuesta->id;
 
+        foreach ($registroData as $nombreCampo => $valor) {
             preg_match('/\[(.*?)\]/', $nombreCampo, $match);
             $nombreLimpio = $match[1] ?? $nombreCampo;
 
             $campo = $mapCampos[$nombreLimpio] ?? null;
 
-            if (!$campo)
+            if (!$campo) {
                 continue;
+            }
 
-            // ============================================
-            // ✅ SOLO SI ES REFERENCIA (TIENE form_ref_id)
-            // ============================================
             $esReferencia = !empty($campo->form_ref_id);
 
-            // ============================================
-            // 1️⃣ REFERENCIA SIMPLE (select)
-            // ============================================
+            if ($esReferencia) {
+                // Usar resolverRelacionCompleta existente
+                $relacion = $this->resolverRelacionCompleta($valor, $campo, $respuesta);
 
+                $textoLiteral = $valor;
 
-            if ($esReferencia && is_numeric($valor)) {
-
-                $fila = RespuestasForm::with('camposRespuestas.campo')
-                    ->find($valor);
-
-                if ($fila) {
-                    $datos = [];
-                    $datos['respuesta_id'] = $fila->id;
-                    foreach ($fila->camposRespuestas as $cr) {
-                        $datos[$cr->campo->nombre] =
-                            $cr->valor . ' - ' . $cr->id;
-                    }
-
-                    $filasSeleccionadas[$nombreLimpio] = $datos;
-                }
-
-            }
-
-            // ============================================
-            // 2️⃣ REFERENCIA MÚLTIPLE (checkbox)
-            // ============================================
-            elseif ($esReferencia && is_array($valor)) {
-
-                foreach ($valor as $id) {
-
-                    if (!is_numeric($id))
-                        continue;
-
-                    $fila = RespuestasForm::with('camposRespuestas.campo')
-                        ->find($id);
-
-                    if ($fila) {
-                        $datos = [];
-                        $datos['respuesta_id'] = $fila->id;
-                        foreach ($fila->camposRespuestas as $cr) {
-                            $datos[$cr->campo->nombre] =
-                                $cr->valor . ' - ' . $cr->id;
+                if ($relacion) {
+                    // buscar primer valor humano dentro del array
+                    if (is_array($relacion) && !isset($relacion['formulario_id'])) {
+                        // Es un array de múltiples relaciones
+                        foreach ($relacion as $rel) {
+                            foreach ($rel as $k => $v) {
+                                if (
+                                    $k !== 'formulario_id' &&
+                                    $k !== 'respuesta_id' &&
+                                    !is_array($v)
+                                ) {
+                                    $textoLiteral = (is_array($valor) ? implode(',', $valor) : $valor) . ' | ' . $v;
+                                    break 2;
+                                }
+                            }
                         }
+                    } else {
+                        // Es una relación simple
+                        foreach ($relacion as $k => $v) {
+                            if (
+                                $k !== 'formulario_id' &&
+                                $k !== 'respuesta_id' &&
+                                !is_array($v)
+                            ) {
+                                $textoLiteral = $valor . ' | ' . $v;
+                                break;
+                            }
+                        }
+                    }
 
-                        $filasSeleccionadas[$nombreLimpio][] = $datos;
+                    if (is_array($valor)) {
+                        $relations[$campo->form_ref_id][] = $relacion;
+                    } else {
+                        $relations[$campo->form_ref_id] = $relacion;
                     }
                 }
 
+                // Usar ID del campo como clave (como en filaDesdeRespuesta)
+                $filasSeleccionadas[$campo->id] = $this->limpiarDuplicado($textoLiteral);
+                continue;
             }
 
-            // ============================================
-            // 🔹 VALOR NORMAL (NO REFERENCIA)
-            // ============================================
-            else {
-                $filasSeleccionadas['respuesta_id'] = $respuesta->id;
+            // Valor normal (no referencia) - usar ID como clave
+            $filasSeleccionadas[$campo->id] = $valor;
+        }
 
-                $filasSeleccionadas[$nombreLimpio] = $valor;
-            }
+        if (!empty($relations)) {
+            $filasSeleccionadas['relations'] = $relations;
         }
 
         return $filasSeleccionadas;
     }
-
     public function filaDesdeRespuesta($respuesta, $campos)
     {
         $filasSeleccionadas = [];
+        $relations = [];
+
+        $filasSeleccionadas['formulario_id'] = $respuesta->form_id;
+        $filasSeleccionadas['respuesta_id'] = $respuesta->id;
 
         foreach ($campos as $campo) {
 
@@ -220,82 +222,190 @@ class RespuestasFormRepository implements RespuestasFormInterface
                 continue;
 
             $valor = $respuestaCampo->valor;
+            $nombre = $campo->id;
 
-            $nombreLimpio = $campo->nombre;
-
-            // ============================================
-            // ✅ SOLO SI ES REFERENCIA
-            // ============================================
             $esReferencia = !empty($campo->form_ref_id);
 
-            // ============================================
-            // 1️⃣ REFERENCIA SIMPLE
-            // ============================================
-            if ($esReferencia && is_numeric($valor)) {
+            if ($esReferencia) {
 
-                $fila = RespuestasForm::with('camposRespuestas.campo')
-                    ->find($valor);
+                $relacion = $this->resolverRelacionCompleta($valor, $campo, $respuesta);
 
-                if ($fila) {
+                // 🔥 obtener fila real de la relación (esto es lo clave)
+                $textoLiteral = $valor;
 
-                    $datos = [];
-                    $datos['respuesta_id'] = $fila->id;
+                if ($relacion) {
 
-                    foreach ($fila->camposRespuestas as $cr) {
+                    // buscar primer valor humano dentro del array (ANTES lo tenías así)
+                    foreach ($relacion as $k => $v) {
 
-                        $datos[$cr->campo->nombre] =
-                            $cr->valor . ' - ' . $cr->id;
-                    }
-
-                    $filasSeleccionadas[$nombreLimpio] = $datos;
-                }
-
-            }
-
-            // ============================================
-            // 2️⃣ REFERENCIA MÚLTIPLE
-            // ============================================
-            elseif ($esReferencia && is_array($valor)) {
-
-                foreach ($valor as $id) {
-
-                    if (!is_numeric($id))
-                        continue;
-
-                    $fila = RespuestasForm::with('camposRespuestas.campo')
-                        ->find($id);
-
-                    if ($fila) {
-
-                        $datos = [];
-                        $datos['respuesta_id'] = $fila->id;
-
-                        foreach ($fila->camposRespuestas as $cr) {
-
-                            $datos[$cr->campo->nombre] =
-                                $cr->valor . ' - ' . $cr->id;
+                        if (
+                            $k !== 'formulario_id' &&
+                            $k !== 'respuesta_id' &&
+                            !is_array($v)
+                        ) {
+                            $textoLiteral = $valor . ' | ' . $v;
+                            break;
                         }
+                    }
 
-                        $filasSeleccionadas[$nombreLimpio][] = $datos;
+                    if (is_array($valor)) {
+                        $relations[$campo->form_ref_id][] = $relacion;
+                    } else {
+                        $relations[$campo->form_ref_id] = $relacion;
                     }
                 }
 
+                $filasSeleccionadas[$nombre] = $this->limpiarDuplicado($textoLiteral);
+
+                continue;
             }
 
-            // ============================================
-            // 🔹 VALOR NORMAL
-            // ============================================
-            else {
+            $filasSeleccionadas[$nombre] = $valor;
+        }
 
-                $filasSeleccionadas['respuesta_id'] = $respuesta->id;
-
-                $filasSeleccionadas[$nombreLimpio] = "[" . $campo->id . "] " . $valor;
-            }
+        if (!empty($relations)) {
+            $filasSeleccionadas['relations'] = $relations;
         }
 
         return $filasSeleccionadas;
     }
+    private function limpiarDuplicado($texto)
+    {
+        if (!is_string($texto)) {
+            return $texto;
+        }
 
+        $partes = explode(' | ', $texto);
+
+        if (count($partes) < 2) {
+            return $texto;
+        }
+
+        $izquierda = trim($partes[0]);
+        $derecha = trim($partes[1]);
+
+        // 🔥 eliminar lo que está entre corchetes
+        $derechaSinCorchetes = preg_replace('/\s*\[.*?\]/', '', $derecha);
+        $derechaSinCorchetes = trim($derechaSinCorchetes);
+
+        // 🔥 comparar limpio vs limpio
+        if ($izquierda === $derechaSinCorchetes) {
+            return $izquierda;
+        }
+
+        return $texto;
+    }
+    private function resolverRelacionCompleta($valor, $campo, $respuesta)
+    {
+        $resolver = function ($id) use ($campo, $respuesta) {
+
+            $fila = RespuestasForm::with('camposRespuestas.campo')->find($id);
+
+            if ($fila)
+                return $this->mapearFila($fila);
+
+            $res = $this->obtenerRelacionMultiple(
+                $respuesta->form_id,
+                $campo->form_ref_id
+            );
+
+            $campoOrigen = collect($res['formula'] ?? [])
+                ->first(fn($item) => ($item['tipo'] ?? null) === 'campo');
+
+            $campoIdOrigen = $campoOrigen['campo_id'] ?? null;
+
+            if (!$campoIdOrigen)
+                return null;
+
+            $newId = RespuestasCampo::where('cf_id', $campoIdOrigen)
+                ->where('valor', $id)
+                ->pluck('respuesta_id')
+                ->first();
+
+            $fila = RespuestasForm::with('camposRespuestas.campo')->find($newId);
+
+            return $fila ? $this->mapearFila($fila) : null;
+        };
+
+        // múltiple
+        if (is_array($valor)) {
+
+            $data = [];
+
+            foreach ($valor as $id) {
+                if (!is_numeric($id))
+                    continue;
+
+                $rel = $resolver($id);
+
+                if ($rel)
+                    $data[] = $rel;
+            }
+
+            return $data;
+        }
+
+        // simple
+        return $resolver($valor);
+    }
+
+    private function mapearFila($fila)
+    {
+        $data = [];
+
+        $data['formulario_id'] = $fila->form_id;
+        $data['respuesta_id'] = $fila->id;
+
+        foreach ($fila->camposRespuestas as $cr) {
+            $data[$cr->campo->id] = $cr->valor . ' [' . $cr->id . ']';
+        }
+
+
+        return $data;
+    }
+    public function obtenerRelacionMultiple($form_id, $form_id2)
+    {
+        $form_id = (string) $form_id;
+        $form_id2 = (string) $form_id2;
+
+        $paralelo = ModuloFormularioParalelo::whereJsonContains('formularios', ['id' => $form_id])
+            ->whereJsonContains('formularios', ['id' => $form_id2])
+            ->first();
+
+
+        foreach ($paralelo->config ?? [] as $config) {
+
+            if (($config['relacion_multiple'] ?? 0) != 1) {
+                continue;
+            }
+
+            $destinoForm = $config['destino']['form'] ?? null;
+
+            $campoRelacion = collect($config['formula'] ?? [])
+                ->first(fn($x) => ($x['tipo'] ?? null) === 'campo');
+
+            $origenForm = $campoRelacion['form'] ?? null;
+
+            if (!$destinoForm || !$origenForm) {
+                continue;
+            }
+
+            $formsRelacionados = [
+                (string) $destinoForm,
+                (string) $origenForm
+            ];
+
+            // Validación final
+            if (
+                in_array($form_id, $formsRelacionados, true) &&
+                in_array($form_id2, $formsRelacionados, true)
+            ) {
+                return $config;
+            }
+        }
+
+        return null;
+    }
     public function validacion($formulario, $campos, $respuestaId = null, $modo = 'store', $prefix = null)
     {
 

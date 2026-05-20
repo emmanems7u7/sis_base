@@ -246,7 +246,7 @@ class FormularioRepository implements FormularioInterface
         $camposPorNombre = $formulario->campos->keyBy('nombre');
 
         $query = RespuestasForm::where('form_id', $formulario->id)
-            ->with('camposRespuestas.campo', 'actor');
+            ->with('camposRespuestas.campo', 'actor', 'grupos');
 
         // FILTROS DINÁMICOS POR NOMBRE DE CAMPO
         $inputs = collect($request->all())
@@ -309,6 +309,7 @@ class FormularioRepository implements FormularioInterface
         ])->findOrFail($formulario->id);
 
         foreach ($respuestas as $respuesta) {
+            $respuesta->grupo = $respuesta->grupos->isNotEmpty() ? 1 : 0;
             foreach ($respuesta->camposRespuestas as $campoResp) {
                 $campoResp->valor = $this->resolverValor($campoResp);
             }
@@ -500,34 +501,45 @@ class FormularioRepository implements FormularioInterface
         return $resultado;
     }
 
-    public function GetData($request, $formPrefix, $rules)
+    public function GetData($request, $formPrefix, $rules, $registro = null)
     {
+        // Caso múltiple
+        if ($registro) {
 
-        $inputs = $request->input($formPrefix, []);
+            $datosFormulario = collect($registro)
+                ->filter(fn($value, $key) => str_starts_with($key, $formPrefix))
+                ->toArray();
+
+        } else {
+
+            // Caso normal
+            $inputs = $request->input($formPrefix, []);
+
+            $datosFormulario = collect($inputs)
+                ->mapWithKeys(function ($value, $key) use ($formPrefix) {
+                    return ["{$formPrefix}[$key]" => $value];
+                })
+                ->toArray();
+        }
+
+        // Files
         $files = $request->file($formPrefix, []);
-
-        $datosFormulario = collect($inputs)
-            ->mapWithKeys(function ($value, $key) use ($formPrefix) {
-                return ["{$formPrefix}[$key]" => $value];
-            })
-            ->toArray();
 
         foreach ($files as $key => $file) {
             $datosFormulario["{$formPrefix}[$key]"] = $file;
         }
 
+        $data = [
+            $formPrefix => $this->limpiarRegistro($datosFormulario)
+        ];
 
-
-        $data = [$formPrefix => $this->limpiarRegistro($datosFormulario)];
-
-        foreach ($request->file($formPrefix, []) as $key => $file) {
+        foreach ($files as $key => $file) {
             $data[$formPrefix][$key] = $file;
         }
 
         $validator = Validator::make($data, $rules);
 
         return compact('datosFormulario', 'validator');
-
     }
 
     public function obtenerFormularios($form, $moduloModelo)

@@ -13,8 +13,18 @@
 @endcan
 
 @can($formulario->id . '.eliminar')
+
     <a href="#" class="btn btn-xs btn-danger" data-bs-toggle="tooltip" data-bs-placement="top" title="Eliminar registro"
-        onclick="confirmarEliminacion('eliminarRespuesta_{{ $respuesta->id }}', '¿Estás seguro de que deseas eliminar esta respuesta?')">
+        onclick="confirmarEliminacion(
+                'eliminarRespuesta_{{ $respuesta->id }}',
+                '{{ $respuesta->grupo
+            ? 'Este registro forma parte de un grupo. Es mejor ir al registro principal. ¿Deseas continuar?'
+            : '¿Estás seguro de que deseas eliminar esta respuesta?' }}',
+                {{ $respuesta->grupo
+            ? "function(){ window.location.href='" . route('respuestas.edit', ['respuesta' => $respuesta, 'modulo' => $modulo]) . "'; }"
+            : 'null' }}
+            )">
+
         <i class="fas fa-trash-alt"></i>
     </a>
 

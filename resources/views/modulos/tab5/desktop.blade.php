@@ -36,6 +36,21 @@
                     </button>
                     <a href="{{ route('grupos.edit', ['grupo' => $grupo->id, 'modulo' => $modulo->id]) }}"
                         class="btn btn-sm btn-warning">Editar</a>
+                    <a href="#" class="btn btn-danger btn-sm btn-accion"
+                        onclick="confirmarEliminacion('eliminarGrupo_{{$grupo->id }}', '¿Estás seguro?')">
+
+                        <i class="fas fa-trash-alt me-1"></i>
+                        Eliminar
+                    </a>
+
+                    <form id="eliminarGrupo_{{ $grupo->id }}" method="POST"
+                        action="{{ route('grupos.destroy', ["modulo" => $modulo, "grupo" => $grupo->id]) }}"
+                        style="display:none;">
+
+                        @csrf
+                        @method('DELETE')
+
+                    </form>
 
                 </td>
             </tr>

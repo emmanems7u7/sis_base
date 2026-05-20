@@ -135,8 +135,6 @@ class HomeController extends Controller
                 ];
 
             case 'WID-004':
-                $agent = new Agent();
-                $isMobile = $agent->isMobile();
                 $request = new Request();
                 $resultado = $this->FormularioRepository->procesarFormularioConFiltros(Formulario::with('campos')->findOrFail($widget->formulario_id), $request);
 
@@ -145,7 +143,6 @@ class HomeController extends Controller
                 return [
                     'tipo' => 'WID-004',
                     'data' => [
-                        'isMobile' => $isMobile,
                         'campos' => $campos,
                         'resultado' => $resultado,
 

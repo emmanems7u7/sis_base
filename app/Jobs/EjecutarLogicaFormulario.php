@@ -38,7 +38,7 @@ class EjecutarLogicaFormulario implements ShouldQueue
     }
     public function handle(FormLogicInterface $formLogic)
     {
-        $formLogic->EjecutarReglaLogica($this->reglas, $this->respuestas, 'on_create', auth()->id(), env('APP_URL'));
+        $formLogic->EjecutarReglaLogica($this->reglas, $this->respuestas, $this->evento, auth()->id(), env('APP_URL'));
 
     }
 

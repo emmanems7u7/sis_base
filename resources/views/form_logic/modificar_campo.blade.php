@@ -1,6 +1,18 @@
 <div id="modal-modificar-campo" class="d-none">
     <div class="row g-3">
-        <div class="col-md-6">
+        <div class="col-md-4">
+            <label class="form-label small text-muted">Formulario origen</label>
+            <select class="form-select select-formulario" id="formulario_id" name="formulario_id" required>
+                <option value="">Seleccione un formulario...</option>
+
+                @foreach ($formularios as $form)
+                    <option value="{{ $form->id }}" {{ (old('formulario_id', $rule->formulario_id ?? '') == $form->id) ? 'selected' : '' }}>
+                        {{ $form->nombre }}
+                    </option>
+                @endforeach
+            </select>
+        </div>
+        <div class="col-md-4">
             <label>Formulario Destino</label>
             <select id="modal-form-ref" class="form-select">
                 <option value="">-- Seleccionar Formulario --</option>
@@ -9,7 +21,7 @@
                 @endforeach
             </select>
         </div>
-        <div class="col-md-6">
+        <div class="col-md-4">
             <label>Campo a Modificar</label>
             <select id="modal-campo-ref" class="form-select">
                 <option value="">-- Ninguno --</option>

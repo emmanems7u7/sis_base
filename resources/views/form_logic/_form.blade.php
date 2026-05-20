@@ -43,18 +43,18 @@
                            required>
                 </div>
 
-                <!-- Formulario -->
+                <!-- Formulario disparador -->
                 <div class="col-12">
-                    <label class="form-label small text-muted">Formulario de origen</label>
-                    <select class="form-select shadow-sm select-formulario" 
-                            id="formulario_id" 
-                            name="formulario_id" 
+                    <label class="form-label small text-muted">Formulario disparador</label>
+                    <select class="form-select shadow-sm" 
+                            id="formulario_id_disparador" 
+                            name="formulario_id_disparador" 
                             required>
                         <option value="">Seleccione un formulario...</option>
 
                         @foreach ($formularios as $form)
                             <option value="{{ $form->id }}" 
-                                {{ (old('formulario_id', $rule->formulario_id ?? '') == $form->id) ? 'selected' : '' }}>
+                                {{ (old('formulario_id_disparador', $rule->formulario_id ?? '') == $form->id) ? 'selected' : '' }}>
                                 {{ $form->nombre }}
                             </option>
                         @endforeach

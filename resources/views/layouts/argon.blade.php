@@ -571,18 +571,27 @@
         alertify.defaults.glossary.title = "Confirmar acción";
         alertify.defaults.transition = "zoom";
 
-
-        function confirmarEliminacion(formId, mensaje = '¿Estás seguro de que deseas eliminar este elemento?') {
+        function confirmarEliminacion(
+            formId,
+            mensaje = '¿Estás seguro de que deseas eliminar este elemento?',
+            callback = null
+        ) {
             alertify.confirm(
-                'Confirmar eliminación',
+                'Confirmar acción',
                 mensaje,
                 function () {
+
+                    if (callback) {
+                        callback();
+                        return;
+                    }
+
                     document.getElementById(formId).submit();
                 },
                 function () {
-                    alertify.error('Eliminación cancelada');
+                    alertify.error('Acción cancelada');
                 }
-            ).set('labels', { ok: 'Eliminar', cancel: 'Cancelar' });
+            ).set('labels', { ok: 'Aceptar', cancel: 'Cancelar' });
         }
 
         var win = navigator.platform.indexOf('Win') > -1;

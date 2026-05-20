@@ -118,13 +118,15 @@ class ModuloFormularioParaleloController extends Controller
                 ];
             }
 
-            ModuloFormularioParalelo::create([
-                'modulo_id' => $modulo,
-                'grupo' => $request->grupo,
-                'formularios' => $formulariosData,
-                'config' => $config ?? null
-            ]);
+
         }
+
+        ModuloFormularioParalelo::create([
+            'modulo_id' => $modulo,
+            'grupo' => $request->grupo,
+            'formularios' => $formulariosData,
+            'config' => $config ?? null
+        ]);
         return redirect()->route('modulo.administrar', $modulo)->with('status', 'Grupo creado');
     }
 
@@ -232,11 +234,12 @@ class ModuloFormularioParaleloController extends Controller
     }
     public function destroy($modulo, $grupo)
     {
-        ModuloFormularioParalelo::where('modulo_id', $modulo)
-            ->where('grupo', $grupo)
-            ->delete();
 
-        return redirect()->back()->with('success', 'Grupo eliminado');
+        ModuloFormularioParalelo::where('modulo_id', $modulo)
+            ->where('id', $grupo)->delete();
+
+
+        return redirect()->back()->with('status', 'Grupo eliminado');
     }
 
     public function camposMultiples(Request $request)

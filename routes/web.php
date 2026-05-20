@@ -453,7 +453,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('grupos.update');
 
     // 🔹 Eliminar grupo completo
-    Route::delete('grupos/{grupo}', [ModuloFormularioParaleloController::class, 'destroy'])
+    Route::delete('grupos/{modulo}/{grupo}', [ModuloFormularioParaleloController::class, 'destroy'])
         ->name('grupos.destroy');
 
     Route::post('/formularios/campos-multiples', [ModuloFormularioParaleloController::class, 'camposMultiples'])

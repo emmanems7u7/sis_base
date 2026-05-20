@@ -20,7 +20,8 @@ interface FormLogicInterface
         $action
     );
 
-    public function ValidarLogica(RespuestasForm $respuesta, $filasSeleccionadas, $evento);
-    public function EjecutarAcciones($agrupadas);
+    public function ValidarLogica($respuesta, $filasSeleccionadas, $evento);
+    public function EjecutarAcciones($agrupadas, $evento);
 
+    public function obtenerRelacionMultiple($form_id, $form_id2);
 }

@@ -37,3 +37,4 @@ function mostrarAlerta(tipo, mensaje, opciones = {}) {
             console.warn('Tipo de alerta no soportado');
     }
 }
+

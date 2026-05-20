@@ -135,7 +135,7 @@
 
         let editingIndex = null; // Variable global para saber si estamos editando
         let accionIndex = 0;
-        const formularioPrincipal = document.getElementById('formulario_id');
+        const formularioDisparador = document.getElementById('formulario_id_disparador');
         const accionesList = document.getElementById('acciones-list');
         const accionesJSONInput = document.getElementById('acciones-json');
         const contenedor_botones = document.getElementById('contenedor_botones');
@@ -294,7 +294,7 @@
 
 
 
-            const formOrigenId = formularioPrincipal.value;
+            const formOrigenId = formularioDisparador.value;
             const formDestinoId = editData?.formulario_destino_id || document.getElementById('modal-form-ref').value;
 
             const promesas = [];
@@ -588,6 +588,8 @@
             if (tipoAccion_id === 'TAC-001') {
                 const tipoAccion = document.getElementById('modal-tipo-accion');
                 const formRef = document.getElementById('modal-form-ref');
+                const form_origen_id = document.getElementById('formulario_id');
+
                 const campoRef = document.getElementById('modal-campo-ref');
                 const operacion = document.getElementById('modal-operacion');
                 const tipoValor = document.getElementById('modal-tipo-valor').value;
@@ -604,6 +606,7 @@
                     valor_text = select.options[select.selectedIndex]?.text || '';
                 }
 
+                accionObj.form_origen_id = form_origen_id.value;
 
                 accionObj.form_ref_id = formRef.value;
                 accionObj.campo_ref_id = campoRef.value;
@@ -1450,15 +1453,15 @@
 
         async function abrirContenedor() {
             const nombreRegla = document.querySelector('input[name="nombre"]').value.trim();
-            const formularioOrigen = formularioPrincipal.value;
+            const FormularioDisparador = formularioDisparador.value;
             const evento = document.querySelector('select[name="evento"]').value;
             if (!nombreRegla) {
 
                 mostrarAlerta('error', 'Ingrese el nombre de la regla');
                 return;
             }
-            if (!formularioOrigen) {
-                mostrarAlerta('error', 'Seleccione el formulario de origen');
+            if (!FormularioDisparador) {
+                mostrarAlerta('error', 'Seleccione el formulario disparador');
                 return;
             }
             if (!evento) {
@@ -1870,7 +1873,7 @@
                 };
 
                 // Obtener ID del formulario de origen
-                const formOrigenSelect = document.querySelector('select[name="formulario_id"]');
+                const formOrigenSelect = document.querySelector('select[name="formulario_id_disparador"]');
                 const formOrigenId = formOrigenSelect ? formOrigenSelect.value : null;
 
                 // Llamada a la función que construye los campos con soporte para checkbox + selector de origen
@@ -1885,7 +1888,7 @@
         /*  TAC-003*/
 
         async function cargarCamposOrigenParaEmail() {
-            const formOrigenId = formularioPrincipal.value;
+            const formOrigenId = formularioDisparador.value;
             const contenedor = document.getElementById('email-campos-origen');
             const textarea = document.getElementById('modal-email-body');
 

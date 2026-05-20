@@ -25,7 +25,8 @@ interface FormularioInterface
 
     public function generar_informacion_export($respuestas, $formulario);
     public function procesarCamposRespuesta($respuesta, $formulario);
-    public function GetData($request, $formPrefix, $rules);
+    public function GetData($request, $formPrefix, $rules, $registro = null);
+
 
     public function obtenerFormularios($form, $moduloModelo);
     public function obtenerFormulariosDelGrupo($formularioId, $moduloId);

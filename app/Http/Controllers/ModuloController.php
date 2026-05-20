@@ -189,8 +189,6 @@ class ModuloController extends Controller
     public function ModulosIndex(Request $request, $modulo_id)
     {
 
-        $agent = new Agent();
-        $isMobile = $agent->isMobile();
 
         $modulo = Modulo::with([
             'formularios' => fn($q) => $q->wherePivot('activo', true)->with('campos')
@@ -210,7 +208,6 @@ class ModuloController extends Controller
                 'page_' . $formulario->id // paginación independiente
             );
         }
-
         $formularios_asociados = Modulo::with('formularios')->findOrFail($modulo_id);
 
 
@@ -220,7 +217,7 @@ class ModuloController extends Controller
 
         return view(
             'modulosDinamicos.index',
-            compact('isMobile', 'formulariosConRespuestas', 'modulo', 'breadcrumb', 'formularios_asociados', 'modo')
+            compact('formulariosConRespuestas', 'modulo', 'breadcrumb', 'formularios_asociados', 'modo')
         );
     }
 
