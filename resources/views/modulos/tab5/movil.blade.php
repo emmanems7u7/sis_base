@@ -164,7 +164,8 @@
                     Eliminar
                 </a>
 
-                <form id="eliminarGrupo_{{ $gid }}" method="POST" action="{{ route('grupos.destroy', $gid) }}"
+                <form id="eliminarGrupo_{{ $gid }}" method="POST"
+                    action="{{ route('grupos.destroy', ['grupo' => $gid, 'modulo' => $modulo->id]) }}"
                     style="display:none;">
 
                     @csrf

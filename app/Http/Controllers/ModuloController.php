@@ -216,7 +216,6 @@ class ModuloController extends Controller
 
     public function ModuloAdmin($modulo)
     {
-
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
             ['name' => 'Módulos', 'url' => route('modulos.index')],
@@ -249,7 +248,6 @@ class ModuloController extends Controller
             'formularios' => [],
             'relaciones' => [],
         ];
-
         foreach ($modulo->formularios as $formulario) {
 
             // Nodo formulario + sus campos

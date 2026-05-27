@@ -82,8 +82,6 @@
 
 
                  
-
-
                     @include('formularios.partials.Botones_RA_footer', 
                     ['texto' => 'Registrar', 
                     'icono' => 'fas fa-plus',
