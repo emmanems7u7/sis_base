@@ -240,7 +240,6 @@ class ModuloController extends Controller
             ->whereIn('form_id', $formIds)
             ->get();
 
-        $isMobile = $this->isMobile;
 
         $rules->operacion = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Operaciones de Campo', true);
 
@@ -286,7 +285,6 @@ class ModuloController extends Controller
 
 
         return view('modulos.administrar', compact(
-            'isMobile',
             'rules',
             'modulo',
             'breadcrumb',
