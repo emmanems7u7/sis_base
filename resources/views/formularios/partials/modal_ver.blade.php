@@ -1,7 +1,11 @@
 <div class="modal fade" id="modalVerRespuesta" tabindex="-1">
     <div class="modal-dialog modal-lg modal-dialog-centered">
         <div
-            class="modal-content {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }}">
+            class="modal-content {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }} ">
+            <div class=" contenido-ajustado">
+
+           
+            
             <div class="modal-header">
                 <h5 class="modal-title">Detalle del Registro</h5>
 
@@ -19,6 +23,7 @@
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn bg-gradient-secondary" data-bs-dismiss="modal">Cerrar</button>
+            </div>
             </div>
         </div>
     </div>

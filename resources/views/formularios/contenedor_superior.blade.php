@@ -10,19 +10,31 @@
                     <a href="{{ route('formularios.index') }}" class="btn btn-secondary btn-xs"><i
                             class="fas fa-arrow-left me-1"></i>Volver a Formularios</a>
                 @else
-                    <a href="{{ route('modulo.index', $moduloModelo->id) }}" class="btn btn-secondary mt-3"><i
-                            class="fas fa-arrow-left me-1"></i>Volver a {{ $formulario->nombre }}</a>
+                    <a href="{{ route('modulo.index', $moduloModelo->id) }}"
+                        class="btn btn-secondary btn-xs mt-3">{!! configForm($formulario->id, 'titles.return_modulo') !!}</a>
                 @endif
 
             </div>
         </div>
     </div>
 
-    <div class="col-md-6 ">
-        <div class="card shadow-lg ">
-            <div class="card-body">
-                <p class="text-muted">{!! $formulario->descripcion !!}</p>
+    <div class=" col-md-6">
+
+        <div class="card shadow-lg">
+
+            <div class="card-body ">
+
+                <div>
+
+
+
+                    {!! $formulario->descripcion !!}
+
+                </div>
+
             </div>
+
         </div>
+
     </div>
 </div>

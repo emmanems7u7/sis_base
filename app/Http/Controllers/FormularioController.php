@@ -55,20 +55,21 @@ class FormularioController extends Controller
             ['name' => 'Formularios', 'url' => route('formularios.index')],
         ];
 
-        $formularios = Formulario::orderBy('created_at', 'desc')->paginate(10);
+        $formularios = Formulario::with('estadoCatalogo')->orderBy('created_at', 'desc')->paginate(10);
         return view('formularios.index', compact('formularios', 'breadcrumb'));
     }
 
     public function create()
     {
         $estado_formularios = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Estado Formulario', true);
+        $conf_formularios = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Configuracion Columnas', true);
 
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
             ['name' => 'Formularios', 'url' => route('formularios.index')],
             ['name' => 'Crear', 'url' => route('formularios.create')],
         ];
-        return view('formularios.create', compact('estado_formularios', 'breadcrumb'));
+        return view('formularios.create', compact('estado_formularios', 'conf_formularios', 'breadcrumb'));
     }
 
     public function store(Request $request)
@@ -99,8 +100,9 @@ class FormularioController extends Controller
             ['name' => 'Editar', 'url' => route('formularios.edit', $formulario)],
         ];
         $estado_formularios = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Estado Formulario', true);
+        $conf_formularios = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Configuracion Columnas', true);
 
-        return view('formularios.edit', compact('estado_formularios', 'formulario', 'breadcrumb'));
+        return view('formularios.edit', compact('estado_formularios', 'conf_formularios', 'formulario', 'breadcrumb'));
     }
 
     public function update(Request $request, Formulario $formulario)

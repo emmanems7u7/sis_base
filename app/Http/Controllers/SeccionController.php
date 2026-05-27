@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Log;
 use App\Interfaces\PermisoInterface;
 use Spatie\Permission\Models\Permission;
 use App\Interfaces\IAInterface;
-
+use Illuminate\Support\Facades\Cache;
 
 class SeccionController extends Controller
 {
@@ -47,7 +47,7 @@ class SeccionController extends Controller
         ]);
 
         $this->menuRepository->CrearSeccion($request);
-
+        Cache::forget('sidebar_secciones');
         return redirect()->back()->with('status', 'Sección creada exitosamente.');
     }
     function cambiarSeccion(Request $request)
@@ -60,6 +60,9 @@ class SeccionController extends Controller
 
         $menus = $this->menuRepository->ObtenerMenuPorSeccion($seccionId);
         $sugerido = $menus->max('orden') + 1;
+
+        Cache::forget('sidebar_secciones');
+
         return response()->json([
             'status' => 'success',
             'sugerido' => $sugerido
@@ -81,6 +84,8 @@ class SeccionController extends Controller
 
         $seccion = Seccion::findOrFail($id);
         $seccion->update($request->all());  // Actualizar la sección
+        Cache::forget('sidebar_secciones');
+
         return redirect()->route('secciones.index')->with('success', 'Sección actualizada exitosamente.');
     }
 
@@ -101,6 +106,8 @@ class SeccionController extends Controller
         }
 
         $seccion->delete();
+        Cache::forget('sidebar_secciones');
+
         return redirect()->back()->with('success', 'Sección eliminada exitosamente.');
     }
 
@@ -149,10 +156,13 @@ class SeccionController extends Controller
     public function ordenar(Request $request)
     {
         $configuracion = Configuracion::first();
+
         if ($configuracion->mantenimiento == 1) {
             foreach ($request->orden as $item) {
                 Seccion::where('id', $item['id'])->update(['posicion' => $item['posicion']]);
             }
+
+            Cache::forget('sidebar_secciones');
 
             return response()->json(['status' => 'success', 'message' => 'Secciones reordenadas correctamente.']);
         } else {

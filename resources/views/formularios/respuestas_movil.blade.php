@@ -37,3 +37,16 @@
 
 
 </div>
+
+<x-offcanvas-acciones id="offcanvasAcciones" titulo="Acciones Disponibles" icono="fas fa-bolt"
+    contenidoId="accionesContenido" templateId="acciones-template">
+
+    <div id="acciones-template">
+
+        @include('formularios.partials.Botones_offcanvas', [
+            'modulo' => 0
+        ])
+
+    </div>
+</x-offcanvas-acciones>
+

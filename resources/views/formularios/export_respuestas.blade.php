@@ -100,7 +100,7 @@
             </tbody>
         </table>
     @else
-        <p class="no-data">No hay respuestas registradas para este formulario.</p>
+        <p class="no-data">{!! configForm($formulario->id, 'titles.no_results') !!}</p>
     @endif
 
 

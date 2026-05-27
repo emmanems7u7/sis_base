@@ -14,5 +14,13 @@ interface RespuestasFormInterface
     function validacion_modulo_form($formularioModelo, $moduloModelo, $modulo);
     public function EliminarArchivos($respuesta);
 
+    public function normalizarRegistros(array $registros): array;
+    public function procesarFormularioNormalDesdeArray($datosFormulario, $form, $campos, $prefix, $evento);
+    public function procesarFormularioMultipleDesdeArray($datosFormulario, $form, $campos, $prefix, $grupo, $evento);
 
+    public function cargarFormularioCompleto($formularioId);
+    public function obtenerReglasHumanas($campos);
+    public function ProcesarArchivo($archivo);
+    public function procesarChunk($form);
+    public function LogicaActualizacion($formId, $formPrefix, $respuestaTarget, $formularioModelo, $request, $evento);
 }

@@ -37,7 +37,7 @@ class CatalogoController extends Controller
 
 
 
-        $catalogos = Catalogo::with('categoria')
+        $catalogos = Catalogo::with(['categoria', 'parent'])
             ->when($search, function ($query, $search) {
                 return $query->where('catalogo_codigo', 'like', "%{$search}%")
                     ->orWhere('catalogo_descripcion', 'like', "%{$search}%")

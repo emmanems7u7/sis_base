@@ -413,7 +413,7 @@ fetch("{{ route('campos.guardarAsociacion') }}", {
     @include('formularios.campos.modal_busqueda')
     <script>
     window.routes = {
-        reordenarCampos: @json(route('formularios.campos.reordenar', $formulario))
+        reordenarCampos: @json(route('formularios.campos.reordenar'))
     };
 </script>
     <script>

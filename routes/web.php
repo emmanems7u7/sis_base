@@ -37,6 +37,7 @@ use App\Http\Controllers\SeederController;
 use App\Http\Controllers\ContenedorGridController;
 use App\Http\Controllers\FilaController;
 use App\Http\Controllers\ColumnaController;
+use App\Http\Controllers\FormConfigurationController;
 use App\Http\Controllers\ModuloFormularioParaleloController;
 use App\Http\Controllers\WidgetController;
 
@@ -324,7 +325,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('campos.destroy');
 
     // Reordenar campos
-    Route::put('/formularios/{formulario}/campos/reordenar', [CamposFormController::class, 'reordenar'])
+    Route::put('/formularios/campos/reordenar', [CamposFormController::class, 'reordenar'])
         ->name('formularios.campos.reordenar');
 
 
@@ -538,6 +539,15 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/formulario/{formulario}/campos', [FormularioController::class, 'GetCampos'])
         ->name('formulario.camposJ');
+
+
+
+    // CONFIGURACION DE FORMULARIOS 
+
+
+    Route::get('formularios/{id}/configuracion', [FormConfigurationController::class, 'edit'])->name('formularios.config.edit');
+    Route::put('formularios/{id}/configuracion', [FormConfigurationController::class, 'update'])->name('formularios.config.update');
+
 });
 
 

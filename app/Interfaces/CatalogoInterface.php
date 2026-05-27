@@ -28,5 +28,6 @@ interface CatalogoInterface
     public function generarPrefijoUnico(string $nombreCategoria);
 
     public function buscarPorCodigo($categoriaId, $codigo);
+    public function validarOpcionesCatalogo($campos, $request, $prefix = null);
 
 }

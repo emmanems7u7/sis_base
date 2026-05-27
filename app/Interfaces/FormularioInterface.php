@@ -14,7 +14,6 @@ interface FormularioInterface
     public function CrearRespuestaGrupo();
 
     public function guardarArchivoGenerico($campo, $respuestaId, $form, $ruta);
-    public function validarOpcionesCatalogo($campos, $request, $prefix = null);
 
     public function convertirValorParaFiltro($campo, $valorUsuario);
 
@@ -27,7 +26,10 @@ interface FormularioInterface
     public function procesarCamposRespuesta($respuesta, $formulario);
     public function GetData($request, $formPrefix, $rules, $registro = null);
 
-
     public function obtenerFormularios($form, $moduloModelo);
     public function obtenerFormulariosDelGrupo($formularioId, $moduloId);
+    public function GetFormRelacion($form, $relacion);
+    public function GetFormById($form);
+    public function GetFormAll();
+
 }

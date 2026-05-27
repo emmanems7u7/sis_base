@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Model;
 
 class Formulario extends Model
 {
-    protected $fillable = ['nombre', 'descripcion', 'slug', 'estado', 'config'];
+    protected $fillable = ['nombre', 'descripcion', 'slug', 'estado', 'campos_columnas', 'config'];
     protected $casts = [
         'config' => 'array',
     ];
@@ -21,17 +21,46 @@ class Formulario extends Model
     }
     public function getEstadoNombreAttribute()
     {
-        $descripcion = Catalogo::where('catalogo_codigo', $this->estado)
-            ->value('catalogo_descripcion') ?? 'No encontrado';
-
-        return $descripcion;
+        return $this->estadoCatalogo?->catalogo_descripcion
+            ?? 'No encontrado';
     }
 
+    public function estadoCatalogo()
+    {
+        return $this->belongsTo(
+            Catalogo::class,
+            'estado',
+            'catalogo_codigo'
+        );
+    }
+
+    public function ColumnasCatalogo()
+    {
+        return $this->belongsTo(
+            Catalogo::class,
+            'campos_columnas',
+            'catalogo_codigo'
+        );
+    }
     public function modulos()
     {
         return $this->belongsToMany(Modulo::class, 'formulario_modulo')
             ->withPivot(['configuracion', 'activo'])
             ->withTimestamps();
     }
+    public function getGridAttribute()
+    {
+        $config = $this->ColumnasCatalogo?->catalogo_descripcion
+            ?? 'movil-1|desktop-1';
 
+        list($movil, $desktop) = explode('|', $config);
+
+        $movilCols = (int) str_replace('movil-', '', $movil);
+        $desktopCols = (int) str_replace('desktop-', '', $desktop);
+
+        $colMovilSize = intval(12 / max(1, $movilCols));
+        $colDesktopSize = intval(12 / max(1, $desktopCols));
+
+        return "col-{$colMovilSize} col-md-{$colDesktopSize}";
+    }
 }

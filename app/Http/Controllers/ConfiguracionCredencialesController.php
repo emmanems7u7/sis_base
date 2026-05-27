@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
 use App\Models\ConfiguracionCredenciales;
+use Illuminate\Support\Facades\Cache;
+
 class ConfiguracionCredencialesController extends Controller
 {
     function index()
@@ -43,6 +45,8 @@ class ConfiguracionCredencialesController extends Controller
             'conf_defecto' => $request->conf_defecto,
 
         ]);
+
+        Cache::forget('config_credenciales');
 
         return redirect()->route('configuracion.credenciales.index')->with('status', 'Configuración actualizada correctamente.');
     }

@@ -12,7 +12,7 @@ use App\Interfaces\PermisoInterface;
 use App\Models\Modulo;
 use Spatie\Permission\Models\Permission;
 use App\Interfaces\IAInterface;
-
+use Illuminate\Support\Facades\Cache;
 class MenuController extends Controller
 {
     protected $menuRepository;
@@ -73,6 +73,7 @@ class MenuController extends Controller
 
 
         $this->menuRepository->CrearMenu($request);
+        Cache::forget('sidebar_secciones');
 
         return redirect()->route('menus.index')->with('status', 'Menú creado exitosamente.');
     }
@@ -97,7 +98,7 @@ class MenuController extends Controller
 
         $menu = Menu::findOrFail($id);
         $menu->update($request->all());
-
+        Cache::forget('sidebar_secciones');
         return redirect()->route('menus.index')->with('status', 'Menú actualizado exitosamente.');
     }
 
@@ -120,6 +121,9 @@ class MenuController extends Controller
             $this->menuRepository->eliminarDeSeederMenu($menu);
             $menu->delete();
         }
+
+        Cache::forget('sidebar_secciones');
+
         return redirect()->route('menus.index')->with('status', 'Menú eliminado exitosamente.');
     }
 

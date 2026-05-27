@@ -90,7 +90,7 @@
     @empty
         <tr>
             <td colspan="{{ $totalCols }}" class="text-center">
-                No hay respuestas registradas para este formulario.
+                {!! configForm($formulario->id, 'titles.no_results') !!}
             </td>
         </tr>
     @endforelse

@@ -34,12 +34,19 @@ class CamposForm extends Model
     }
     public function getCampoNombreAttribute()
     {
-        $descripcion = Catalogo::where('catalogo_codigo', $this->tipo)
-            ->value('catalogo_descripcion') ?? 'No encontrado';
-
-        return strtolower($descripcion);
+        return strtolower(
+            $this->tipoCatalogo?->catalogo_descripcion ?? 'no encontrado'
+        );
     }
 
+    public function tipoCatalogo()
+    {
+        return $this->belongsTo(
+            Catalogo::class,
+            'tipo',
+            'catalogo_codigo'
+        );
+    }
     public function opciones_catalogo()
     {
         return $this->hasMany(Catalogo::class, 'categoria_id', 'categoria_id');

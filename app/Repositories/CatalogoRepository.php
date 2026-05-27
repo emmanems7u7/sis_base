@@ -251,4 +251,59 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
         return 'CAT';
     }
 
+
+    public function validarOpcionesCatalogo($campos, $request, $prefix = null)
+    {
+        $errores = [];
+
+
+        foreach ($campos as $campo) {
+            $tipo = strtolower($campo->campo_nombre);
+            $name = $campo->nombre;
+
+            $inputName = $prefix
+                ? "{$prefix}.{$name}"
+                : $name;
+
+            // Solo validar si el request tiene datos para ese campo
+            $data = $request instanceof \Illuminate\Http\Request
+                ? $request->all()
+                : $request;
+
+            if (in_array($tipo, ['checkbox', 'radio', 'selector']) && array_key_exists($inputName, $data)) {
+
+                $valores = is_array($request->input($inputName))
+                    ? $request->input($inputName)
+                    : [$request->input($inputName)];
+
+                //Caso 1: campo con categoria_id
+                if ($campo->categoria_id) {
+                    $opcionesValidas = $campo->opciones_catalogo->pluck('catalogo_codigo')->toArray();
+
+                    foreach ($valores as $v) {
+                        if (!in_array($v, $opcionesValidas)) {
+                            $errores[] = "El valor '$v' no es válido para el campo '{$campo->etiqueta}'.";
+                        }
+                    }
+                }
+
+                //Caso 2: campo que referencia otro formulario
+                elseif ($campo->form_ref_id) {
+                    // Obtener los ids de respuestas del formulario referenciado
+                    $respuestasValidas = $campo->formularioReferencia
+                        ? $campo->formularioReferencia->respuestas->pluck('id')->toArray()
+                        : [];
+
+                    foreach ($valores as $v) {
+                        if (!in_array($v, $respuestasValidas)) {
+                            $errores[] = "El valor '$v' no es válido para el campo '{$campo->etiqueta}' (formulario referenciado).";
+                        }
+                    }
+                }
+            }
+        }
+
+        return $errores;
+    }
+
 }

@@ -14,6 +14,14 @@ document.addEventListener('DOMContentLoaded', function () {
 
         document.addEventListener('click', function (e) {
 
+  // evitar abrir si se hace click en checkbox o label
+  if (
+    e.target.closest('.form-check-input') ||
+    e.target.closest('.form-check-label')
+) {
+    return;
+}
+
             const trigger = e.target.closest('[data-open-offcanvas]');
 
             if (!trigger) return;

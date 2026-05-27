@@ -32,6 +32,21 @@
 </div>
 
 
+<div class="mb-3">
+    <label for="campos_columnas" class="form-label">configuración de columnas para Formulario</label>
+    <select name="campos_columnas" id="campos_columnas" class="form-select @error('campos_columnas') is-invalid @enderror">
+        <option value="" selected>Seleccione una configuracion</option>
+        @foreach ($conf_formularios as $campos_columnas)
+            <option value="{{ $campos_columnas->catalogo_codigo }}" {{ old('campos_columnas', $formulario?->campos_columnas ?? '') == $campos_columnas->catalogo_codigo ? 'selected' : '' }}>
+                {{ $campos_columnas->catalogo_descripcion }}
+            </option>
+        @endforeach
+    </select>
+    @error('campos_columnas')
+        <div class="invalid-feedback">{{ $message }}</div>
+    @enderror
+</div>
+
 @php
     // Determinar si los permisos ya fueron creados
     $permisosCreados = $formulario->config['crear_permisos'] ?? false;

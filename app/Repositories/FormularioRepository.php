@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Interfaces\FormularioInterface;
 use App\Interfaces\CatalogoInterface;
 use App\Models\CamposForm;
+use App\Models\Catalogo;
 use App\Models\FormLogicRule;
 use App\Models\Formulario;
 use App\Models\ModuloFormularioParalelo;
@@ -39,6 +40,7 @@ class FormularioRepository implements FormularioInterface
             'descripcion' => $request->descripcion,
             'slug' => Str::slug($request->nombre),
             'estado' => $request->estado,
+            'campos_columnas' => $request->campos_columnas
         ]);
 
         $this->ActualizarConfig($formulario, $request);
@@ -74,6 +76,7 @@ class FormularioRepository implements FormularioInterface
             'descripcion' => $request->descripcion,
             'slug' => Str::slug($request->nombre),
             'estado' => $request->estado,
+            'campos_columnas' => $request->campos_columnas
         ]);
         $this->ActualizarConfig($formulario, $request);
 
@@ -111,59 +114,6 @@ class FormularioRepository implements FormularioInterface
     }
 
 
-    public function validarOpcionesCatalogo($campos, $request, $prefix = null)
-    {
-        $errores = [];
-
-
-        foreach ($campos as $campo) {
-            $tipo = strtolower($campo->campo_nombre);
-            $name = $campo->nombre;
-
-            $inputName = $prefix
-                ? "{$prefix}.{$name}"
-                : $name;
-
-            // Solo validar si el request tiene datos para ese campo
-            $data = $request instanceof \Illuminate\Http\Request
-                ? $request->all()
-                : $request;
-
-            if (in_array($tipo, ['checkbox', 'radio', 'selector']) && array_key_exists($inputName, $data)) {
-
-                $valores = is_array($request->input($inputName))
-                    ? $request->input($inputName)
-                    : [$request->input($inputName)];
-
-                //Caso 1: campo con categoria_id
-                if ($campo->categoria_id) {
-                    $opcionesValidas = $campo->opciones_catalogo->pluck('catalogo_codigo')->toArray();
-
-                    foreach ($valores as $v) {
-                        if (!in_array($v, $opcionesValidas)) {
-                            $errores[] = "El valor '$v' no es válido para el campo '{$campo->etiqueta}'.";
-                        }
-                    }
-                }
-
-                //Caso 2: campo que referencia otro formulario
-                elseif ($campo->form_ref_id) {
-                    // Obtener los ids de respuestas del formulario referenciado
-                    $respuestasValidas = $campo->formularioReferencia
-                        ? $campo->formularioReferencia->respuestas->pluck('id')->toArray()
-                        : [];
-
-                    foreach ($valores as $v) {
-                        if (!in_array($v, $respuestasValidas)) {
-                            $errores[] = "El valor '$v' no es válido para el campo '{$campo->etiqueta}' (formulario referenciado).";
-                        }
-                    }
-                }
-            }
-        }
-
-        return $errores;
-    }
 
     public function convertirValorParaFiltro($campo, $valorUsuario)
     {
@@ -296,9 +246,7 @@ class FormularioRepository implements FormularioInterface
         }
 
         // PAGINACIÓN
-        $respuestas = $query->orderBy('created_at', 'desc')
-            ->paginate(20, ['*'], $pageName ?? 'page')
-            ->withQueryString();
+        $respuestas = $query->orderBy('created_at', 'desc')->paginate(20, ['*'], $pageName ?? 'page')->withQueryString();
 
         // Cargar solo campos visibles en listado
         $formulario = Formulario::with([
@@ -307,11 +255,69 @@ class FormularioRepository implements FormularioInterface
                     ->orderBy('posicion');
             }
         ])->findOrFail($formulario->id);
+        $formIds = [];
+        $respuestaIds = [];
+        $catalogosNecesarios = [];
 
         foreach ($respuestas as $respuesta) {
-            $respuesta->grupo = $respuesta->grupos->isNotEmpty() ? 1 : 0;
+
             foreach ($respuesta->camposRespuestas as $campoResp) {
-                $campoResp->valor = $this->resolverValor($campoResp);
+
+                if ($campoResp->campo?->form_ref_id) {
+
+                    $formIds[] = $campoResp->campo->form_ref_id;
+                    $respuestaIds[] = $campoResp->valor;
+                }
+
+                if ($campoResp->campo?->categoria_id) {
+
+                    $catalogosNecesarios[] = [
+                        'categoria_id' => $campoResp->campo->categoria_id,
+                        'codigo' => $campoResp->valor,
+                    ];
+                }
+            }
+        }
+
+        $formulariosMap = Formulario::whereIn('id', array_unique($formIds))->get()->keyBy('id');
+
+        $respuestasMap = RespuestasForm::with('camposRespuestas')
+            ->whereIn('id', array_unique($respuestaIds))
+            ->get()
+            ->keyBy('id');
+
+
+        $catalogosMap = Catalogo::query()
+            ->where(function ($q) use ($catalogosNecesarios) {
+
+                foreach ($catalogosNecesarios as $item) {
+
+                    $q->orWhere(function ($sub) use ($item) {
+
+                        $sub->where('categoria_id', $item['categoria_id'])
+                            ->where('catalogo_codigo', $item['codigo']);
+                    });
+                }
+            })
+            ->get()
+            ->keyBy(function ($item) {
+
+                return $item->categoria_id . '_' . $item->catalogo_codigo;
+            });
+
+        foreach ($respuestas as $respuesta) {
+
+            $respuesta->grupo = $respuesta->grupos->isNotEmpty() ? 1 : 0;
+
+            foreach ($respuesta->camposRespuestas as $campoResp) {
+
+                $campoResp->valor = $this->resolverValor(
+                    $campoResp,
+                    null,
+                    $formulariosMap,
+                    $respuestasMap,
+                    $catalogosMap
+                );
             }
         }
         /*
@@ -338,8 +344,13 @@ class FormularioRepository implements FormularioInterface
             'respuestas' => $respuestas,
         ];
     }
-    public function resolverValor($campoRespOrCampo, $valor = null)
-    {
+    public function resolverValor(
+        $campoRespOrCampo,
+        $valor = null,
+        $formulariosMap = [],
+        $respuestasMap = [],
+        $catalogosMap = []
+    ) {
 
         if ($valor === null) {
             $campoResp = $campoRespOrCampo;
@@ -352,9 +363,9 @@ class FormularioRepository implements FormularioInterface
 
         if ($campo && $campo->form_ref_id) {
 
-            $formulario = Formulario::find($campo->form_ref_id);
+            $formulario = $formulariosMap[$campo->form_ref_id] ?? null;
+            $respuestaReferencia = $respuestasMap[$valor] ?? null;
 
-            $respuestaReferencia = RespuestasForm::with('camposRespuestas')->find($valor);
             $camposRespuesta = $respuestaReferencia?->camposRespuestas;
 
             $configConcatenado = $formulario->config['configuracion_concatenado'] ?? null;
@@ -384,8 +395,11 @@ class FormularioRepository implements FormularioInterface
 
 
         if ($campo && $campo->categoria_id) {
-            $catalogo = $this->CatalogoRepository
-                ->obtenerCatalogoPorCategoriaID($campo->categoria_id, $valor);
+
+            $key = $campo->categoria_id . '_' . $valor;
+
+            $catalogo = $catalogosMap[$key] ?? null;
+
             return $catalogo?->catalogo_descripcion ?? $valor;
         }
 
@@ -603,5 +617,18 @@ class FormularioRepository implements FormularioInterface
         return $registroLimpio;
     }
 
+    public function GetFormRelacion($form, $relacion)
+    {
+        return Formulario::with($relacion)->findOrFail($form);
+    }
+
+    public function GetFormById($form)
+    {
+        return Formulario::find($form);
+    }
+    public function GetFormAll()
+    {
+        return Formulario::all();
+    }
 
 }

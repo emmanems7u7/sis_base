@@ -1,36 +1,45 @@
 @php
     $rid = '__RESPUESTAID__';
     $fid = '__FORMID__';
-
+    $rg = '__RESPUESTAGRUPO__';
 @endphp
-
 <div class="row w-100 g-2 justify-content-center">
 
     @can($formulario->id . '.ver')
         <div class="col-4">
-            <a href="#" class="btn btn-xs btn-outline-info  w-100 btn-ver-respuesta" data-form-id="{{ $fid }}"
-                data-respuesta-id="{{ $rid }}" data-bs-toggle="tooltip" data-bs-placement="top" title="Ver registro">
-                <i class="fas fa-eye"></i> <br> Ver
+            <a href="#" class="btn btn-xs btn-outline-info w-100 btn-ver-respuesta btn-mobile-small"
+                data-form-id="{{ $fid }}" data-respuesta-id="{{ $rid }}" data-bs-toggle="tooltip" data-bs-placement="top"
+                title="{{configForm($formulario->id, 'buttons.view', null, 'text') }}">
+
+                {!! configForm($formulario->id, 'buttons.view', null, 'mobile') !!}
             </a>
         </div>
     @endcan
-
 
     @can($formulario->id . '.editar')
         <div class="col-4">
             <a href="{{ route('respuestas.edit', ['respuesta' => $rid, 'modulo' => $modulo]) }}"
-                class="btn btn-outline-warning btn-xs w-100 btn-accion">
-                <i class="fas fa-pencil-alt me-1"></i> <br> Editar
+                class="btn btn-outline-warning btn-xs w-100 btn-accion btn-mobile-small">
+
+                {!! configForm($formulario->id, 'buttons.edit', null, 'mobile') !!}
             </a>
         </div>
     @endcan
 
-
     @can($formulario->id . '.eliminar')
         <div class="col-4">
-            <a href="#" class="btn btn-outline-danger btn-xs w-100 btn-accion"
-                onclick="confirmarEliminacion('eliminarRespuesta_{{ $rid }}', '¿Estás seguro?')">
-                <i class="fas fa-trash-alt me-1"></i> <br>Eliminar
+            <a href="#" class="btn btn-xs btn-outline-danger w-100  btn-mobile-small" data-bs-toggle="tooltip"
+                data-bs-placement="top" title="{{   configForm($formulario->id, 'buttons.delete', null, 'text') }}" onclick="confirmarEliminacion(
+                                                                'eliminarRespuesta_{{ $rid }}',
+                                                                '{{ $rg
+            ? 'Este registro forma parte de un grupo. Es mejor ir al registro principal. ¿Deseas continuar?'
+            : '¿Estás seguro de que deseas eliminar esta respuesta?' }}',
+                                                                {{ $rg
+            ? "function(){ window.location.href='" . route('respuestas.edit', ['respuesta' => $rid, 'modulo' => $modulo]) . "'; }"
+            : 'null' }}
+                                                            )">
+
+                {!! configForm($formulario->id, 'buttons.delete', null, 'mobile') !!}
             </a>
         </div>
 

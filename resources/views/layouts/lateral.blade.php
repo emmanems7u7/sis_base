@@ -22,13 +22,13 @@
         
             <li class="nav-item  text-black">
                 <a class="nav-link active" href="{{ route('home') }}">
-                    <span class="ps-3 ms-3 nav-link-text ms-1 text-black">Inicio</span>
+                    <span class="ps-2   nav-link-text ms-1 text-black">Inicio</span>
                 </a>
             </li>
                 
             <li class="nav-item">
                  <a class="nav-link" href="{{ route('user.actualizar.contraseña') }}">
-                    <span class="ps-3 ms-3 nav-link-text ms-1  text-black">Actualizar contraseña</span>
+                    <span class="ps-2  nav-link-text ms-1  text-black">Actualizar contraseña</span>
                  </a>
             </li>
 
@@ -36,30 +36,19 @@
      
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('perfil') }}">
-                        <span class="ps-3 ms-3 nav-link-text ms-1  text-black">Perfil</span>
+                        <span class="ps-2  nav-link-text ms-1  text-black">Perfil</span>
                     </a>
                 </li>
                 @role('admin')
                 <li class="nav-item">
                     <a class="nav-link" href="{{ route('menus.index') }}">
 
-                        <span class="ps-3 ms-3 nav-link-text ms-1  text-black">Gestión de menus</span>
+                        <span class="ps-2  nav-link-text ms-1  text-black">Gestión de menus</span>
                     </a>
                 </li>
                 @endrole
 
-                @php
-
-                     $color = 'primary'; // valor por defecto
-                 
-                    if (Schema::hasTable('user_personalizacions') && Auth::check()) {
-                        $user = Auth::user();
-
-                        if (method_exists($user, 'preferences') && $user->preferences) {
-                            $color = $user->preferences->sidebar_color ?? 'primary';
-                        }
-                    }
-                @endphp
+             
 
                 <ul id="secciones-list" class="list-unstyled" {{ $configuracion->mantenimiento ? 'data-draggable="false"' : 'data-draggable="true"' }}>
                     @foreach ($secciones as $seccion)
@@ -70,7 +59,7 @@
                                     <h6 class=" text-black m-0 text-uppercase text-xs font-weight-bolder  {{ $configuracion->mantenimiento ? 'text-warning' : '' }}">{{ $seccion->titulo }}</h6>
                                 </div>
 
-                                <ul class="list-unstyled ms-4">
+                                <ul class="list-unstyled ms-2">
                                 @foreach ($seccion->menus as $menu)
                                     @can($menu->nombre)
                                         <li class="nav-item text-black">

@@ -1,3 +1,4 @@
+
 @if($respuestas->count() > 0)
     <div class="row g-3">
         @foreach($respuestas as $respuesta)
@@ -8,24 +9,29 @@
         @endphp
 
             <div class="col-12 col-md-6 col-lg-4">
-            <div class="card shadow-sm h-100 animacion_card"
+            <div class="card shadow-sm h-100 animacion_card border-0 overflow-hidden position-relative"
                     data-open-offcanvas="offcanvasAcciones"
                     data-respuesta-id="{{ $respuesta->id }}"
-                    data-form-id="{{ $formulario->id }}">
+                    data-form-id="{{ $formulario->id }}"
+                    data-grupo-id="{{ $respuesta->grupo_id ?? '' }}">
+                    <div class="bg-info lateral_card"></div>
+                    @if((isset($formulario->config['mostrar_usuario']) && $formulario->config['mostrar_fecha'] ?? false) || (isset($formulario->config['mostrar_usuario']) && $formulario->config['mostrar_fecha'] ?? false))
                     <div class="card-header p-2">
                     @if($formulario->config['mostrar_usuario'] ?? false)
 
                         <strong>{{ $respuesta->actor->name ?? 'Anónimo' }}</strong>
                     @endif
+
                     @if($formulario->config['mostrar_fecha'] ?? false)
                         <span class="text-muted small">({{ $respuesta->created_at->format('d/m/Y H:i') }})</span>
                     @endif
-                    </div>
 
+                    </div>
+                    @endif
 
                     
 
-                    <div class="card-body" style="max-height:400px; overflow-y:auto;">
+                    <div class="card-body contenido-ajustado" style="max-height:400px; overflow-y:auto; padding: 0.85rem !important;">
 
                         <div class="check-col_{{ $formulario->id }} d-none">
 
@@ -50,22 +56,20 @@
                 </div>
             </div>
 
-       
+          
 
         @endforeach
 
-       
-                
-            </div>
+
+
+        <div class="d-flex justify-content-center mt-3">
+        {{ $respuestas->links('pagination::bootstrap-4') }}
         </div>
     </div>
-
-    <div class="d-flex justify-content-center mt-3">
-        {{ $respuestas->links('pagination::bootstrap-4') }}
-    </div>
+       
 
 @else
-    <p class="text-muted">No hay respuestas registradas para este formulario.</p>
+    <p class="text-muted">{!! configForm($formulario->id, 'titles.no_results') !!}</p>
 @endif
 
 

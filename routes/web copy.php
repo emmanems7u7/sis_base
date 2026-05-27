@@ -341,7 +341,7 @@ Route::delete('/campos/{campo}', [CamposFormController::class, 'destroy'])
     ->name('campos.destroy');
 
 // Reordenar campos
-Route::put('/formularios/{formulario}/campos/reordenar', [CamposFormController::class, 'reordenar'])
+Route::put('/formularios/campos/reordenar', [CamposFormController::class, 'reordenar'])
     ->name('formularios.campos.reordenar');
 
 

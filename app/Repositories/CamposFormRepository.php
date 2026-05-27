@@ -377,4 +377,24 @@ class CamposFormRepository implements CamposFormInterface
             }
         }
     }
+
+    public function GetCamposByForm($form_id)
+    {
+
+        return CamposForm::where('form_id', $form_id)->get();
+    }
+    public function GetCampo($campo_id)
+    {
+        return CamposForm::find($campo_id);
+    }
+
+    public function GetCampoOrderByPosicion($form_id)
+    {
+        return CamposForm::where('form_id', $form_id)->orderBy('posicion')->get();
+    }
+    public function GetCampoOrderByPosicionId($campo_id)
+    {
+        return CamposForm::where('id', $campo_id)->orderBy('posicion')->get();
+    }
+
 }

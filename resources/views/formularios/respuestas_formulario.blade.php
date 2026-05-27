@@ -10,13 +10,15 @@
         <div class="col-md-6 mt-2 order-2 order-md-1">
             <div class="card shadow-lg">
                 <div class="card-body">
-                    <h5>Respuestas del Formulario: {{ $formulario->nombre }}</h5>
-                    <a href="{{ route('formularios.index') }}" class="btn btn-xs btn-secondary "><i
-                            class="fas fa-arrow-left me-1"></i>Volver</a>
+
+                    <h5> {!!   configForm($formulario->id, 'titles.index')!!}</h5>
+
+                    <a href="{{ route('formularios.index') }}" class="btn btn-xs btn-secondary me-1">
+                        {!! configForm($formulario->id, 'titles.back', null) !!}</a>
 
                     <a href="{{ route('formularios.respuestas.formulario', $formulario) }}"
-                        class="btn btn-xs btn-secondary "><i class="fas fa-times"></i>
-                        Quitar filtros</a>
+                        class="btn btn-xs btn-secondary ">
+                        {!! configForm($formulario->id, 'titles.remove_filters', null) !!}</a>
 
                     @include('formularios.partials.botones_accion', ['formulario' => $formulario, 'modulo' => 0])
 
@@ -27,8 +29,8 @@
         <div class="col-md-6 mt-2 order-1 order-md-2">
             <div class="card shadow-lg">
                 <div class="card-body">
-                    <h5>Información sobre el formulario</h5>
-                    <p class="text-muted">{{ $formulario->descripcion }}</p>
+                    <h5>{!! configForm($formulario->id, 'titles.info', null) !!}</h5>
+                    <p class="text-muted">{!!   $formulario->descripcion !!}</p>
                 </div>
             </div>
         </div>

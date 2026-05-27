@@ -3,8 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Models\ContenedorGrid;
+use App\Models\Role;
 use App\Models\Widget;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class ContenedorGridController extends Controller
 {
@@ -37,6 +39,11 @@ class ContenedorGridController extends Controller
     public function store(Request $r)
     {
         $c = ContenedorGrid::create($r->only('nombre', 'role_id'));
+
+        $rolNombre = Role::find($r->role_id)?->name;
+
+        Cache::forget('contenedor_grid_' . $rolNombre);
+
         return redirect()->route('contenedor.edit', $c->id);
     }
 

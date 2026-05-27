@@ -8,27 +8,29 @@ use App\Models\CamposForm;
 use App\Interfaces\CatalogoInterface;
 use App\Interfaces\FormularioInterface;
 use App\Interfaces\CamposFormInterface;
+use App\Interfaces\CategoriaInterface;
 use Illuminate\Support\Facades\DB;
-
-use App\Models\Categoria;
 use App\Models\RespuestasCampo;
 use Illuminate\Validation\Rule;
-use Illuminate\Support\Str;
+
 class CamposFormController extends Controller
 {
     protected $CatalogoRepository;
     protected $FormularioRepository;
     protected $CamposFormRepository;
-
+    protected $CategoriaRepository;
     public function __construct(
         CatalogoInterface $catalogoInterface,
         FormularioInterface $formularioInterface,
         CamposFormInterface $CamposFormInterface,
+        CategoriaInterface $categoriaInterface,
 
     ) {
         $this->CatalogoRepository = $catalogoInterface;
         $this->FormularioRepository = $formularioInterface;
         $this->CamposFormRepository = $CamposFormInterface;
+        $this->CategoriaRepository = $categoriaInterface;
+
 
 
     }
@@ -43,11 +45,9 @@ class CamposFormController extends Controller
         ];
 
         // Cargar todos los campos del formulario, pero sin procesar todas las opciones
-        $campos = CamposForm::where('form_id', $formulario->id)
-            ->orderBy('posicion')
-            ->get();
+        $campos = $this->CamposFormRepository->GetCampoOrderByPosicion($formulario->id);
 
-        $categorias = Categoria::all();
+        $categorias = $this->CategoriaRepository->GetAll();
 
         $campos_formulario = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Campos Formulario', true);
 
@@ -69,6 +69,7 @@ class CamposFormController extends Controller
         /*TEMPORAL TRAER TODOS LOS FORMULARIOS PARA ASIGNAR, POSTERIORMENTE EL MODULO DE FORMULARIOS
         SERA COMPLEMENTO DEL MODULO DE MODULOS DINAMICOS Y SE EXTRAERAN LOS FORMULARIOS ASOCIADOS
         A UN MODULO DINAMICO*/
+
         $formsRefIds = Formulario::all()
             ->pluck('id')
             ->unique()
@@ -200,7 +201,7 @@ class CamposFormController extends Controller
 
     }
 
-    public function reordenar(Request $request, Formulario $formulario)
+    public function reordenar(Request $request)
     {
         $orden = $request->orden;
         foreach ($orden as $pos => $id) {
@@ -226,7 +227,7 @@ class CamposFormController extends Controller
 
     public function checkRespuestas($campoId)
     {
-        $campo = CamposForm::findOrFail($campoId);
+        $campo = $this->CamposFormRepository->GetCampo($campoId);
 
         $tieneRespuestas = $campo->formulario()->first()->respuestas()->exists();
 
@@ -237,7 +238,7 @@ class CamposFormController extends Controller
 
     public function toggleVisible(Request $request)
     {
-        $campo = CamposForm::findOrFail($request->campo_id);
+        $campo = $this->CamposFormRepository->GetCampo($request->campo_id);
 
         $config = $campo->config ?? [];
 
@@ -254,7 +255,7 @@ class CamposFormController extends Controller
 
     public function GuardarAutocompletado(Request $request)
     {
-        $campo = CamposForm::find($request->campo_id);
+        $campo = $this->CamposFormRepository->GetCampo($request->campo_id);
 
         $campo->config = array_merge(
             $campo->config ?? [],
@@ -279,7 +280,7 @@ class CamposFormController extends Controller
             'campo_ref_id' => 'required|exists:campos_forms,id',
         ]);
 
-        $campo = CamposForm::findOrFail($request->campo_principal_id);
+        $campo = $this->CamposFormRepository->GetCampo($request->campo_principal_id);
 
         // Si tienes cast a array en el modelo
         $config = $campo->config ?? [];
@@ -314,7 +315,7 @@ class CamposFormController extends Controller
             'campo_ref_id' => 'required|exists:campos_forms,id',
         ]);
 
-        $campo = CamposForm::findOrFail($request->campo_principal_id);
+        $campo = $this->CamposFormRepository->GetCampo($request->campo_principal_id);
 
         // Si tienes cast a array en el modelo
         $config = $campo->config ?? [];
@@ -348,7 +349,7 @@ class CamposFormController extends Controller
         ]);
 
 
-        $campo = CamposForm::findOrFail($request->campo_id);
+        $campo = $this->CamposFormRepository->GetCampo($request->campo_id);
 
 
         $respuesta = $this->BuscaRespuesta($campo, $request->valor);
@@ -394,7 +395,7 @@ class CamposFormController extends Controller
             'valor' => 'required|string|max:255',
         ]);
 
-        $campo = CamposForm::findOrFail($request->campo_id);
+        $campo = $this->CamposFormRepository->GetCampo($request->campo_id);
 
         $config = $campo->config ?? [];
 
@@ -420,7 +421,7 @@ class CamposFormController extends Controller
             'config_value' => 'required'
         ]);
 
-        $campo = CamposForm::findOrFail($request->campo_id);
+        $campo = $this->CamposFormRepository->GetCampo($request->campo_id);
 
         $config = $campo->config ?? [];
 
@@ -441,7 +442,7 @@ class CamposFormController extends Controller
 
         foreach ($request->campos as $item) {
 
-            $campo = CamposForm::find($item['campo_id']);
+            $campo = $this->CamposFormRepository->GetCampo($item['campo_id']);
             if (!$campo)
                 continue;
 
@@ -495,9 +496,7 @@ class CamposFormController extends Controller
     {
         $limitOpciones = 10;
 
-        $campos = CamposForm::where('id', $campo_id)
-            ->orderBy('posicion')
-            ->get();
+        $campos = $this->CamposFormRepository->GetCampoOrderByPosicionId($campo_id);
 
         $campos = $this->CamposFormRepository->CamposFormCat($campos, $limitOpciones);
 

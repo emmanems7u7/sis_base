@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\UserPersonalizacion;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class UserPersonalizacionController extends Controller
 {
@@ -20,7 +21,7 @@ class UserPersonalizacionController extends Controller
             ['sidebar_color' => $request->color]
         );
 
-
+        Cache::forget('user_preferencias_' . auth()->id());
         return response()->json(['success' => true]);
     }
 
@@ -36,7 +37,7 @@ class UserPersonalizacionController extends Controller
         $user->preferences()->updateOrCreate([], [
             'sidebar_type' => $request->sidebar_type,
         ]);
-
+        Cache::forget('user_preferencias_' . auth()->id());
         return response()->json(['message' => 'Sidebar type actualizado']);
     }
 
@@ -48,6 +49,7 @@ class UserPersonalizacionController extends Controller
         $personalizacion = UserPersonalizacion::where('user_id', $user->id)->first();
         $personalizacion->dark_mode = $request->dark_mode ? 1 : 0;
         $personalizacion->save();
+        Cache::forget('user_preferencias_' . auth()->id());
         return response()->json(['success' => true]);
     }
 }

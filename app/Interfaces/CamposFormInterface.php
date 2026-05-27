@@ -15,4 +15,10 @@ interface CamposFormInterface
     public function guardarCampo($campo, $respuesta_id, $datosFormulario, $form, $prefix = null);
     public function guardarValorSimple($campo, $respuestaId, $valor);
     public function actualizarCampo($campo, $respuesta_id, $datosFormulario, $form, $prefix = null);
+
+    public function GetCamposByForm($form_id);
+    public function GetCampo($campo_id);
+    public function GetCampoOrderByPosicion($form_id);
+    public function GetCampoOrderByPosicionId($campo_id);
+
 }

@@ -9,6 +9,8 @@ use Illuminate\Validation\ValidationException;
 use Carbon\Carbon;
 use App\Services\CredencialesService;
 use App\Models\ConfiguracionCredenciales;
+use Illuminate\Support\Facades\Cache;
+
 class PasswordController extends Controller
 {
 
@@ -60,10 +62,12 @@ class PasswordController extends Controller
         }
 
         // Actualizar contraseña y fecha
-        Auth::user()->update([
+        $user = Auth::user()->update([
             'password' => Hash::make($request->new_password),
             'usuario_fecha_ultimo_password' => Carbon::now(),
         ]);
+
+        Cache::forget('password_status_' . $user->id);
 
         return redirect()->back()->with('status', 'Contraseña actualizada correctamente.');
     }

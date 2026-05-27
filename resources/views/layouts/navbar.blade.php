@@ -27,84 +27,112 @@
                             <div class="ms-md-auto pe-md-3 d-flex align-items-center">
 
                             </div>
-                            <ul class="navbar-nav  justify-content-end">
+                            <ul class="navbar-nav justify-content-end align-items-center">
 
-                                <li class="nav-item d-xl-none ps-3 d-flex align-items-center">
-                                    <a href="javascript:;" class="nav-link text-white p-0" id="iconNavbarSidenav">
-                                        <div class="sidenav-toggler-inner">
-                                            <i class="sidenav-toggler-line bg-white"></i>
-                                            <i class="sidenav-toggler-line bg-white"></i>
-                                            <i class="sidenav-toggler-line bg-white"></i>
-                                        </div>
-                                    </a>
-                                </li>
+<li class="nav-item d-xl-none d-flex align-items-center me-3">
+    <a href="javascript:;" class="nav-link text-white p-0" id="iconNavbarSidenav">
+        <div class="sidenav-toggler-inner">
+            <i class="sidenav-toggler-line bg-white"></i>
+            <i class="sidenav-toggler-line bg-white"></i>
+            <i class="sidenav-toggler-line bg-white"></i>
+        </div>
+    </a>
+</li>
 
-                                <li class="nav-item px-3 d-flex align-items-center">
-                                    <a href="javascript:;" class="nav-link text-white p-0">
-                                        <i class="fa fa-cog fixed-plugin-button-nav cursor-pointer"></i>
-                                    </a>
-                                </li>
-                                <li class="nav-item px-3 d-flex align-items-center">
+{{-- Configuración --}}
+<li class="nav-item d-flex align-items-center me-3">
+    <a href="javascript:;" class="nav-link text-white p-0">
+        <i class="fa fa-cog fixed-plugin-button-nav cursor-pointer"
+            style=""></i>
+    </a>
+</li>
 
-                                    <div class="notification-wrapper">
-                                        @php
+{{-- Notificaciones --}}
+<li class="nav-item d-flex align-items-center">
 
-                                            $tieneNotificaciones = false;
-                                            $cantidadNotificaciones = 0;
+    @php
+        $tieneNotificaciones = false;
+        $cantidadNotificaciones = 0;
+        $notificaciones = collect();
 
-                                            if (Schema::hasTable('notifications') && Auth::check()) {
-                                                $cantidadNotificaciones = Auth::user()->unreadNotifications->count();
-                                                $tieneNotificaciones = $cantidadNotificaciones > 0;
+        if (Auth::check()) {
+            $cantidadNotificaciones = Auth::user()->unreadNotifications->count();
+            $tieneNotificaciones = $cantidadNotificaciones > 0;
+            $notificaciones = Auth::user()->unreadNotifications;
+        }
+    @endphp
 
-                                            }
-                                        @endphp
+    <div class="notification-wrapper position-relative">
 
-                                        <div id="notificationTrigger"
-                                            class="notification-icon {{ $tieneNotificaciones ? 'has-notifications' : '' }}">
-                                            <i class="fas fa-bell text-warning"></i>
-                                            @if($tieneNotificaciones)
-                                                <span class="badge">{{ $cantidadNotificaciones }}</span>
-                                            @endif
-                                        </div>
+        <a href="javascript:;" 
+           class="nav-link text-white p-0 notification-icon {{ $tieneNotificaciones ? 'has-notifications' : '' }}"
+           id="notificationTrigger">
 
+            <i class="fas fa-bell text-white cursor-pointer"
+                style=""></i>
 
-                                        <div id="notificationBox"
-                                            class="notification-box {{ isset($preferencias) && $preferencias->dark_mode ? 'dark-version' : '' }}">
+            @if($tieneNotificaciones)
+                <span class="badge">
+                    {{ $cantidadNotificaciones }}
+                </span>
+            @endif
+        </a>
 
-                                            <ul>
-                                                @php
+        <div id="notificationBox"
+            class="notification-box {{ isset($preferencias) && $preferencias->dark_mode ? 'dark-version' : '' }}">
 
+            <ul>
 
-                                                    $notificaciones = collect();
-                                                    if (Schema::hasTable('notifications') && Auth::check()) {
-                                                        $notificaciones = Auth::user()->unreadNotifications;
-                                                    }
-                                                @endphp
+                @forelse($notificaciones as $notification)
 
-                                                @forelse($notificaciones as $notification)
-                                                    @php
-                                                        $data = $notification->data ?? [];
-                                                        $message = $data['message'] ?? 'Sin mensaje';
-                                                        $actionUrl = $data['url'] ?? '#'; 
-                                                    @endphp
-                                                    <li class="list-group-item">
-                                                        <a href="{{ $actionUrl }}"
-                                                            onclick="NotificacionLeida(event,'{{ $notification->id }}')"
-                                                            style="text-decoration: none;" class="text-black float-right">
-                                                            <strong>{{ $notification->created_at->diffForHumans() }}</strong>
-                                                            - {{ $message }}
-                                                        </a>
-                                                    </li>
-                                                @empty
-                                                    <li class="list-group-item">No hay notificaciones nuevas</li>
-                                                @endforelse
+                    @php
+                        $data = $notification->data ?? [];
+                        $message = $data['message'] ?? 'Sin mensaje';
+                        $actionUrl = $data['url'] ?? '#';
+                    @endphp
 
-                                            </ul>
-                                        </div>
-                                    </div>
-                                </li>
+                    <li class="list-group-item">
 
-                            </ul>
+                        <a href="{{ $actionUrl }}"
+                            onclick="NotificacionLeida(event,'{{ $notification->id }}')"
+                            style="text-decoration: none;"
+                            class="text-black">
+
+                            <strong>
+                                {{ $notification->created_at->diffForHumans() }}
+                            </strong>
+
+                            - {{ $message }}
+
+                        </a>
+
+                    </li>
+
+                @empty
+
+                    <li class="list-group-item">
+                        No hay notificaciones nuevas
+                    </li>
+
+                @endforelse
+
+            </ul>
+
+        </div>
+
+    </div>
+
+</li>
+
+</ul>
+
+        </div>
+
+    </div>
+
+</li>
+
+</ul>
                         </div>
                     </div>
                 </div>

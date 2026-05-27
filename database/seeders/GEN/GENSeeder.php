@@ -40,6 +40,7 @@ class GENSeeder extends Seeder
 
         $this->call(class: WidgetsSeeder::class);
 
+        $this->call(class: ConfiguracionColumnas::class);
 
     }
 }

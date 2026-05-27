@@ -3,14 +3,14 @@
     {{-- Registrar --}}
     <a href="{{ route('formularios.registrar', ['form' => $formulario, 'modulo' => $modulo]) }}"
         class="btn btn-xs btn-success">
-        <i class="fas fa-plus me-1"></i> Registrar
+        {!! configForm($formulario->id, 'buttons.add') !!}
     </a>
 
     {{-- Exportar --}}
     <div class="btn-group" role="group">
         <button id="btnGroupExport" type="button" class="btn btn-xs btn-info dropdown-toggle" data-bs-toggle="dropdown"
             aria-expanded="false">
-            <i class="fas fa-file-export me-1"></i> Exportar
+            {!! configForm($formulario->id, 'titles.export') !!}
         </button>
         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="btnGroupExport">
             <li>
@@ -28,22 +28,21 @@
 
     {{-- Carga Masiva --}}
     <a target="_blank" href="{{ route('formularios.carga_masiva', $formulario) }}" class="btn btn-xs btn-warning">
-        <i class="fas fa-upload me-1"></i> Carga Masiva
+        {!! configForm($formulario->id, 'titles.import') !!}
     </a>
+
     @can($formulario->id . '.eliminar')
         <button type="button" id="activar-seleccion-masiva_{{ $formulario->id }}" class="btn btn-outline-secondary btn-xs"
             data-form_id="{{ $formulario->id }}">
-            <i class="fas fa-tasks me-1"></i> Selección masiva
+            {!! configForm($formulario->id, 'titles.mass_selection') !!}
         </button>
-
-
 
         <button data-bs-toggle="tooltip" data-bs-placement="top" data-form_id="{{ $formulario->id }}"
             title="Eliminar registro" id="btn-eliminar-masivo_{{ $formulario->id }}"
             class="d-none btn btn-danger btn-xs text-white"
             onclick="confirmarEliminacion('form-eliminar-masivo_{{ $formulario->id }}', '¿Estás seguro de que deseas estas respuestas?, la acción no puede deshacerse.')"
             disabled>
-            <i class="fas fa-trash-alt"></i>
+            {!! configForm($formulario->id, 'buttons.delete', null, 'icon') !!}
         </button>
 
         <form id="form-eliminar-masivo_{{ $formulario->id }}" method="POST"
@@ -60,6 +59,6 @@
 <div>
     <button type="button" class="btn btn-xs btn-light " data-bs-toggle="modal"
         data-bs-target="#modal_busqueda_{{ $formulario->id }}">
-        <i class="fas fa-search me-1"></i> Buscar
+        {!! configForm($formulario->id, 'buttons.search') !!}
     </button>
 </div>

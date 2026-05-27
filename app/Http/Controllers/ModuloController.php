@@ -2,30 +2,26 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Modulo;
-use App\Models\Formulario;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
-use Jenssegers\Agent\Agent;
-use App\Interfaces\CatalogoInterface;
+use App\Models\Modulo;
 use App\Models\FormLogicRule;
-use App\Interfaces\FormularioInterface;
 use App\Models\ModuloFormularioParalelo;
-use App\Models\RespuestasForm;
+
+
+use App\Interfaces\FormularioInterface;
+use App\Interfaces\CatalogoInterface;
 
 class ModuloController extends Controller
 {
 
     protected $CatalogoRepository;
-    protected $isMobile;
-    protected $agent;
     protected $FormularioRepository;
 
     public function __construct(CatalogoInterface $catalogoInterface, FormularioInterface $formularioInterface)
     {
-        $this->agent = new Agent();
-        $this->isMobile = $this->agent->isMobile();
+
         $this->CatalogoRepository = $catalogoInterface;
         $this->FormularioRepository = $formularioInterface;
 
@@ -64,8 +60,7 @@ class ModuloController extends Controller
         ];
 
         $modulosPadre = Modulo::whereNull('modulo_padre_id')->get();
-        $formularios = Formulario::all();
-
+        $formularios = $this->FormularioRepository->GetFormAll();
         return view('modulos.create', compact('modulosPadre', 'formularios', 'breadcrumb'));
     }
 
@@ -120,7 +115,7 @@ class ModuloController extends Controller
             ->where('id', '!=', $modulo->id)
             ->get();
 
-        $formularios = Formulario::all();
+        $formularios = $this->FormularioRepository->GetFormAll();
         $formulariosSeleccionados = $modulo->formularios->pluck('id')->toArray();
 
         return view('modulos.edit', compact(
@@ -208,12 +203,10 @@ class ModuloController extends Controller
                 'page_' . $formulario->id // paginación independiente
             );
         }
-        $formularios_asociados = Modulo::with('formularios')->findOrFail($modulo_id);
-
+        $formularios_asociados = $modulo;
 
         $config = $modulo->configuracion ?? [];
         $modo = $config['modo'] ?? 'mostrar_todos';
-
 
         return view(
             'modulosDinamicos.index',

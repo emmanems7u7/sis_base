@@ -61,44 +61,7 @@
 
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.css" />
     <script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui/dist/fancybox.umd.js"></script>
-    @php
-        use App\Models\Seccion;
-        use Carbon\Carbon;
-        use App\Models\ConfiguracionCredenciales;
-        use App\Models\Configuracion;
-        use App\Models\UserPersonalizacion;
-        use Illuminate\Support\Facades\Auth;
-        use Illuminate\Support\Facades\Schema;
 
-        // Secciones y configuraciones
-        $secciones = Seccion::with('menus')->orderBy('posicion')->get();
-        $config = ConfiguracionCredenciales::first();
-        $configuracion = Configuracion::first();
-
-        // Usuario autenticado
-        $user = auth()->user();
-
-        // Preferencias del usuario (solo si existe usuario y tabla)
-        if ($user && Schema::hasTable('user_personalizacions')) {
-            $preferencias = UserPersonalizacion::where('user_id', $user->id)->first();
-        } else {
-            $preferencias = null;
-        }
-
-        // Control de cambio de contraseña
-        if (Auth::check() && Auth::user()->usuario_fecha_ultimo_password) {
-            $ultimoCambio = Carbon::parse(Auth::user()->usuario_fecha_ultimo_password);
-            $diferenciaDias = (int) $ultimoCambio->diffInDays(Carbon::now());
-
-            if ($config && $diferenciaDias >= $config->conf_duracion_max) {
-                $tiempo_cambio_contraseña = 1; // Debe cambiar contraseña
-            } else {
-                $tiempo_cambio_contraseña = 2; // Aún válida
-            }
-        } else {
-            $tiempo_cambio_contraseña = 1; // Forzar cambio si no hay fecha o usuario
-        }
-    @endphp
 </head>
 
 
@@ -272,31 +235,39 @@
             }
         });
 
-        // Sobrescribir fetch global
         (function () {
             const overlay = document.getElementById('overlay-spinner');
             const originalFetch = window.fetch;
             let activeFetches = 0;
 
-            window.fetch = async function (...args) {
-                activeFetches++;
-                overlay.style.display = 'flex';
+            window.fetch = async function (input, options = {}) {
+
+                const showOverlay = options?.showOverlay !== false;
+
+                if (showOverlay) {
+                    activeFetches++;
+                    overlay.style.display = 'flex';
+                }
 
                 try {
-                    const response = await originalFetch.apply(this, args);
+                    const response = await originalFetch(input, options);
                     return response;
                 } catch (err) {
                     console.error(err);
                     throw err;
                 } finally {
-                    activeFetches--;
-                    if (activeFetches <= 0) {
-                        overlay.style.display = 'none';
-                        activeFetches = 0;
+
+                    if (showOverlay) {
+                        activeFetches--;
+                        if (activeFetches <= 0) {
+                            overlay.style.display = 'none';
+                            activeFetches = 0;
+                        }
                     }
                 }
             };
         })();
+
         function sidebarColor(a) {
 
             var parent = document.querySelector(".nav-link.active");

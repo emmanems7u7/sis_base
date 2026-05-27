@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 use App\Models\Configuracion;
 use Illuminate\Http\Request;
 use App\Models\Token;
-
+use Illuminate\Support\Facades\Cache;
 
 class ConfiguracionController extends Controller
 {
@@ -47,7 +47,7 @@ class ConfiguracionController extends Controller
                 ['estado' => 1, 'tipo' => 'groq']
             );
         }
-
+        Cache::forget('configuracion_general');
 
         return redirect()->back()->with('status', 'Configuración actualizada.');
     }

@@ -20,8 +20,13 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
         ]);
 
+        // Middleware global web
+        $middleware->web(append: [
+            \App\Http\Middleware\ShareUserDataMiddleware::class,
+        ]);
 
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
-    })->create();
+    })
+    ->create();

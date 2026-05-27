@@ -1,6 +1,14 @@
 <?php
 
 namespace App\Providers;
+use App\Interfaces\CategoriaInterface;
+use App\Repositories\CategoriaRepository;
+use App\Interfaces\ModuloInterface;
+use App\Repositories\ModuloRepository;
+use App\Interfaces\RespuestasCampoInterface;
+use App\Repositories\RespuestasCampoRepository;
+use App\Interfaces\FormConfigInterface;
+use App\Repositories\FormConfigRepository;
 use App\Interfaces\RespuestasFormInterface;
 use App\Repositories\RespuestasFormRepository;
 use App\Interfaces\CamposFormInterface;
@@ -30,9 +38,17 @@ use App\Interfaces\CatalogoInterface;
 use App\Repositories\CatalogoRepository;
 use App\Interfaces\NotificationInterface;
 use App\Repositories\NotificationRepository;
+use Illuminate\Support\Facades\Auth;
 
 use Jenssegers\Agent\Agent;
 use Illuminate\Support\Facades\View;
+use Illuminate\Support\Facades\Cache;
+use App\Models\Seccion;
+use App\Models\Configuracion;
+use App\Models\ConfiguracionCredenciales;
+use App\Models\UserPersonalizacion;
+use Carbon\Carbon;
+
 class AppServiceProvider extends ServiceProvider
 {
     /**
@@ -53,12 +69,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(SeederInterface::class, SeederRepository::class);
         $this->app->bind(CamposFormInterface::class, CamposFormRepository::class);
         $this->app->bind(RespuestasFormInterface::class, RespuestasFormRepository::class);
-
-
-
-
-
-
+        $this->app->bind(FormConfigInterface::class, FormConfigRepository::class);
+        $this->app->bind(RespuestasCampoInterface::class, RespuestasCampoRepository::class);
+        $this->app->bind(ModuloInterface::class, ModuloRepository::class);
+        $this->app->bind(CategoriaInterface::class, CategoriaRepository::class);
 
     }
 
@@ -69,6 +83,35 @@ class AppServiceProvider extends ServiceProvider
     {
         $agent = new Agent();
 
+        // Mobile
         View::share('isMobile', $agent->isMobile());
+
+        // Secciones
+        $secciones = Cache::rememberForever('sidebar_secciones', function () {
+
+            return Seccion::with('menus')
+                ->orderBy('posicion')
+                ->get();
+        });
+
+        // Config credenciales
+        $config = Cache::rememberForever('config_credenciales', function () {
+
+            return ConfiguracionCredenciales::first();
+        });
+
+        // Config general
+        $configuracion = Cache::rememberForever('configuracion_general', function () {
+
+            return Configuracion::first();
+        });
+
+
+        // Globales
+        View::share([
+            'secciones' => $secciones,
+            'config' => $config,
+            'configuracion' => $configuracion,
+        ]);
     }
 }

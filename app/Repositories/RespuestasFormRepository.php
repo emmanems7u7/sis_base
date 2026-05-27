@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Repositories;
+use Illuminate\Support\Facades\Session;
 
 use App\Interfaces\RespuestasFormInterface;
 use App\Models\RespuestasForm;
@@ -8,15 +9,29 @@ use App\Interfaces\CatalogoInterface;
 use App\Models\Formulario;
 use App\Models\ModuloFormularioParalelo;
 use App\Models\RespuestasCampo;
+use App\Interfaces\FormularioInterface;
+use Illuminate\Support\Facades\DB;
+use App\Interfaces\FormLogicInterface;
+
+use App\Interfaces\CamposFormInterface;
+use App\Models\FormLogicCondition;
 
 class RespuestasFormRepository implements RespuestasFormInterface
 {
     protected $model;
     protected $CatalogoRepository;
-    public function __construct(CatalogoInterface $catalogoInterface, )
+    protected $FormularioRepository;
+    protected $FormLogicInterface;
+    protected $CamposFormRepository;
+
+    public function __construct(CatalogoInterface $catalogoInterface, FormularioInterface $formularioInterface, FormLogicInterface $formLogicInterface, CamposFormInterface $camposFormInterface)
     {
 
         $this->CatalogoRepository = $catalogoInterface;
+        $this->FormularioRepository = $formularioInterface;
+        $this->FormLogicInterface = $formLogicInterface;
+        $this->CamposFormRepository = $camposFormInterface;
+
     }
 
 
@@ -423,7 +438,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
             $valorExistente = null;
 
             if ($respuestaId) {
-                $valorExistente = \DB::table('respuestas_campos')
+                $valorExistente = DB::table('respuestas_campos')
                     ->where('respuesta_id', $respuestaId)
                     ->where('cf_id', $campo->id)
                     ->value('valor');
@@ -672,5 +687,350 @@ class RespuestasFormRepository implements RespuestasFormInterface
 
     }
 
+    public function normalizarRegistros(array $registros): array
+    {
+        return array_map(function ($reg) {
 
+            $nuevo = [];
+
+            foreach ($reg as $key => $value) {
+
+                if (is_array($value) && isset($value['preview'])) {
+                    $nuevo[$key] = $value['preview'];
+                } elseif (is_array($value) && array_is_list($value)) {
+                    $nuevo[$key] = array_map(function ($item) {
+                        return is_array($item) ? ($item['value'] ?? null) : $item;
+                    }, $value);
+                } elseif (is_array($value) && isset($value['value'])) {
+                    $nuevo[$key] = $value['value'];
+                } else {
+                    $nuevo[$key] = $value;
+                }
+            }
+
+            return $nuevo;
+        }, $registros);
+    }
+
+
+
+    public function procesarFormularioNormalDesdeArray($datosFormulario, $form, $campos, $prefix, $evento)
+    {
+
+        $respuesta = $this->FormularioRepository->crearRespuesta($form);
+
+        foreach ($campos as $campo) {
+
+            $this->CamposFormRepository->guardarCampo(
+                $campo,
+                $respuesta->id,
+                $datosFormulario,
+                $form,
+                $prefix
+            );
+        }
+
+        $filas = $this->filaDesdeArray($respuesta, $datosFormulario, $campos);
+
+        $errores = array_filter($this->FormLogicInterface->ValidarLogica($respuesta, $filas, $evento), fn($msg) => !empty(trim($msg)));
+
+        if (!empty($errores)) {
+            DB::rollBack();
+            throw new \Exception(implode('<br>', $errores));
+        }
+
+        return [
+            'respuesta_id' => $respuesta->id,
+            'filas' => $filas,
+            'form_id' => $form
+        ];
+
+
+    }
+
+
+    public function procesarFormularioMultipleDesdeArray($datosFormulario, $form, $campos, $prefix, $grupo, $evento)
+    {
+
+        $respuestas = [];
+
+        $respuesta = $this->FormularioRepository->crearRespuesta($form);
+
+        if ($grupo) {
+            $grupo->respuestas()->attach($respuesta->id);
+        }
+
+        foreach ($campos as $campo) {
+
+            $this->CamposFormRepository->guardarCampo(
+                $campo,
+                $respuesta->id,
+                $datosFormulario,
+                $form,
+                $prefix
+            );
+        }
+
+        $filas = $this->filaDesdeArray($respuesta, $datosFormulario, $campos);
+
+        $errores = array_filter($this->FormLogicInterface->ValidarLogica($respuesta, $filas, $evento), fn($msg) => !empty(trim($msg)));
+
+        if (!empty($errores)) {
+            DB::rollBack();
+            throw new \Exception(implode('<br>', $errores));
+        }
+
+        $respuestas[] = [
+            'respuesta_id' => $respuesta->id,
+            'filas' => $filas,
+            'form_id' => $form
+        ];
+
+
+        return $respuestas;
+
+
+    }
+
+
+    public function cargarFormularioCompleto($formularioId)
+    {
+        $formulario = Formulario::with([
+            'campos' => function ($q) {
+                $q->orderBy('posicion');
+            }
+        ])->findOrFail($formularioId);
+
+        $camposProcesados = $this->CamposFormRepository->CamposFormCat($formulario->campos);
+        $formulario->campos = $camposProcesados;
+
+        return $formulario;
+    }
+    public function obtenerReglasHumanas($campos)
+    {
+        $rules = collect();
+
+        foreach ($campos as $campo) {
+            $reglasCampo = FormLogicCondition::with([
+                'campoCondicion.formulario',
+                'campoValor.formulario',
+                'action.campoDestino.formulario'
+            ])->where('campo_condicion', $campo->id)->get();
+
+            $rules = $rules->merge($reglasCampo);
+        }
+
+        return $this->GetHumanRules($rules);
+    }
+
+
+    public function ProcesarArchivo($archivo)
+    {
+
+        if (!$archivo->isValid()) {
+            [
+                "error" => 1,
+                "message" => 'Archivo no válido.' . $e->getMessage(),
+
+            ];
+        }
+
+        $nombre = time() . '_' . $archivo->getClientOriginalName();
+        $destino = storage_path('app/import_temp');
+
+        // Asegurarse que la carpeta exista
+        if (!file_exists($destino)) {
+            mkdir($destino, 0777, true);
+        }
+
+        try {
+            // Mover el archivo al destino
+            $archivo->move($destino, $nombre);
+            $path = "import_temp/$nombre";
+
+            // Contar las líneas totales
+            $lineasTotales = count(file(storage_path("app/$path")));
+
+            // Guardamos info en sesión
+            Session::put('import_file_path', $path);
+            Session::put('import_total_lines', $lineasTotales);
+            Session::put('import_last_line', 1);
+
+            return [
+                "error" => 0,
+                "lineasTotales" => $lineasTotales,
+
+            ];
+
+        } catch (\Exception $e) {
+            [
+                "error" => 1,
+                "message" => 'No se pudo guardar el archivo: ' . $e->getMessage(),
+
+            ];
+        }
+    }
+
+    public function procesarChunk($form)
+    {
+        $chunkSize = 1000;
+
+        $path = Session::get('import_file_path');
+        $lastLine = Session::get('import_last_line', 1);
+
+        if (!$path) {
+
+            return [
+                'error' => 1,
+                'message' => 'No hay archivo cargado.',
+                'codigo' => 400
+
+            ];
+        }
+
+        $handle = fopen(storage_path("app/$path"), 'r');
+        if (!$handle) {
+            return [
+                'error' => 1,
+                'message' => 'No se pudo abrir el archivo.',
+                'codigo' => 500
+
+            ];
+        }
+
+        $campos = $this->CamposFormRepository->GetCamposByForm($form);
+        if ($campos->isEmpty()) {
+            fclose($handle);
+
+            return [
+                'error' => 1,
+                'message' => 'No se encontraron campos para este formulario.',
+                'codigo' => 400
+
+            ];
+        }
+
+        $contador = 0;
+        $errores = [];
+
+        for ($i = 0; $i < $lastLine; $i++) {
+            fgetcsv($handle);
+        }
+
+        DB::beginTransaction();
+        try {
+            while (($linea = fgetcsv($handle, 0, ',')) !== false && $contador < $chunkSize) {
+                $contador++;
+                $lastLine++;
+
+                if (count($linea) !== count($campos)) {
+                    $errores[] = "Línea {$lastLine}: columnas incorrectas.";
+                    continue;
+                }
+
+                $dataAsociativa = [];
+                foreach ($campos as $index => $campo) {
+                    $dataAsociativa[$campo->nombre] = $linea[$index] ?? null;
+                }
+
+                $respuesta = $this->FormularioRepository->crearRespuesta($form);
+
+                $this->validacion($form, $campos, $respuesta->ID, $modo = 'store');
+
+                foreach ($campos as $campo) {
+                    $valor = $dataAsociativa[$campo->nombre] ?? null;
+                    if ($valor === null)
+                        continue;
+
+                    $tipo = strtolower($campo->campo_nombre);
+
+                    if (in_array($tipo, ['imagen', 'video', 'archivo'])) {
+                        $this->FormularioRepository->guardarArchivoGenerico($campo, $respuesta->id, $form, $valor);
+                    } else {
+
+                        $this->CamposFormRepository->guardarValorSimple($campo, $respuesta->id, $valor);
+                    }
+                }
+            }
+
+            DB::commit();
+            DB::disconnect();
+        } catch (\Exception $e) {
+            DB::rollBack();
+            DB::disconnect();
+            fclose($handle);
+            return response()->json(['error' => $e->getMessage()], 500);
+        } finally {
+            fclose($handle);
+        }
+
+        Session::put('import_last_line', $lastLine);
+
+        $total = Session::get('import_total_lines');
+        $progreso = min(100, round(($lastLine / $total) * 100));
+
+        $finalizado = $lastLine >= $total;
+
+
+        return [
+            'error' => 0,
+            'progreso' => $progreso,
+            'finalizado' => $finalizado,
+            'errores' => $errores,
+
+        ];
+
+    }
+
+
+    public function LogicaActualizacion($formId, $formPrefix, $respuestaTarget, $formularioModelo, $request, $evento)
+    {
+
+        $campos = $this->CamposFormRepository->GetCamposByForm($formId);
+
+        $rules = $this->validacion($formularioModelo, $campos, null, 'update', $formPrefix);
+
+        $resultado = $this->FormularioRepository->GetData($request, $formPrefix, $rules);
+
+        $datosFormulario = $resultado['datosFormulario'];
+        $validator = $resultado['validator'];
+
+        if ($validator->fails()) {
+
+            return ["error" => 1, "content" => $validator];
+        }
+
+        $errores = $this->CatalogoRepository->validarOpcionesCatalogo($campos, $datosFormulario, $formPrefix);
+
+        if (!empty($errores)) {
+
+            return ["error" => 1, "content" => $errores];
+        }
+
+        $filasOriginales = $this->filaDesdeRespuesta($respuestaTarget, $campos);
+
+        $filas = $this->filaDesdeArray($respuestaTarget, $datosFormulario, $campos);
+
+        $errores = array_filter($this->FormLogicInterface->ValidarLogica($respuestaTarget, $filas, $evento), fn($msg) => !empty(trim($msg)));
+
+        if (!empty($errores)) {
+
+            return ["error" => 1, "content" => implode('<br>', $errores)];
+        }
+
+        foreach ($campos as $campo) {
+
+            $this->CamposFormRepository->actualizarCampo($campo, $respuestaTarget->id, $datosFormulario, $formId, $formPrefix);
+        }
+
+        return [
+            "error" => 0,
+            "content" => [
+                'respuesta_id' => $respuestaTarget->id,
+                'filas' => $filas,
+                'filas_originales' => $filasOriginales,
+                'form_id' => $formId
+            ]
+        ];
+    }
 }

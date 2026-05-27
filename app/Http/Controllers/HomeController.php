@@ -4,8 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\CamposForm;
 use Illuminate\Http\Request;
-use App\Models\Menu;
-use Illuminate\Support\Facades\Route;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\Auth;
 use App\Models\ConfiguracionCredenciales;
@@ -13,7 +11,8 @@ use App\Models\ContenedorGrid;
 use App\Models\Formulario;
 use App\Models\RespuestasCampo;
 use App\Interfaces\FormularioInterface;
-use Jenssegers\Agent\Agent;
+use Illuminate\Support\Facades\Cache;
+
 class HomeController extends Controller
 {
 
@@ -42,9 +41,14 @@ class HomeController extends Controller
         $user = Auth::user();
         $rolNombre = $user->roles->first()?->name;
 
-        $contenedor = ContenedorGrid::with('filas.columnas.widget')
-            ->whereHas('role', fn($q) => $q->where('name', $rolNombre))
-            ->first();
+        $contenedor = Cache::remember(
+            'contenedor_grid_' . $rolNombre,
+            now()->addHours(12),
+            function () use ($rolNombre) {
+
+                return ContenedorGrid::with('filas.columnas.widget')->whereHas('role', fn($q) => $q->where('name', $rolNombre))->first();
+            }
+        );
 
         $grid = [];
 
@@ -82,14 +86,12 @@ class HomeController extends Controller
     {
         $config = ConfiguracionCredenciales::first();
 
-        // Si no hay configuración, forzar cambio por seguridad
         if (!$config) {
             return 1;
         }
 
         $user = Auth::user();
 
-        // Si nunca cambió su contraseña → forzar
         if (!$user->usuario_fecha_ultimo_password) {
             return 1;
         }
@@ -285,12 +287,10 @@ class HomeController extends Controller
             $query = RespuestasCampo::query()
                 ->where('cf_id', $campoId);
 
-            // 📅 Filtro por fecha
             if (($filtros['fecha'] ?? null) === 'anio_actual') {
                 $query->whereYear('created_at', now()->year);
             }
 
-            // 🔎 Filtro por otro campo
             if (
                 !empty($filtros['campo']['cf_id']) &&
                 !empty($filtros['campo']['valor'])
@@ -301,7 +301,6 @@ class HomeController extends Controller
                 });
             }
 
-            // 📊 Tipo de estadística
             switch ($tipo) {
                 case 'conteo':
                     $resultado = $query->count();

@@ -6,6 +6,7 @@ use Spatie\Permission\Models\Permission as SpatiePermission;
 
 class Permission extends SpatiePermission
 {
+    protected static $formulariosCache = null;
 
     public function esDinamico(): bool
     {
@@ -17,42 +18,35 @@ class Permission extends SpatiePermission
         return explode('.', $this->name)[0];
     }
 
-
-    /**
-     * Devuelve el nombre para mostrar en la vista
-     */
     public function nombreParaVista(): string
     {
-        // Si no es dinámico, solo mostrar el name
+        // No dinámico
         if (!$this->esDinamico()) {
             return $this->name;
         }
 
-        // Es dinámico: name = "2.ver"
         [$form_id, $accion] = explode('.', $this->name);
 
-        // Buscar el formulario por id
-        $formulario = Formulario::find($form_id);
+        // Cache memoria
+        if (static::$formulariosCache === null) {
 
-        $nombreForm = $formulario ? $formulario->nombre : $form_id;
+            static::$formulariosCache = Formulario::pluck('nombre', 'id');
+        }
+
+        $nombreForm = static::$formulariosCache[$form_id] ?? $form_id;
 
         return "{$nombreForm}.{$accion}";
     }
 
-    /**
-     * Devuelve el id del formulario si es dinámico
-     */
     public function formularioId(): ?int
     {
         if ($this->esDinamico()) {
             return (int) explode('.', $this->name)[0];
         }
+
         return null;
     }
 
-    /**
-     * Devuelve la acción del permiso
-     */
     public function accion(): string
     {
         return explode('.', $this->name)[1] ?? $this->name;

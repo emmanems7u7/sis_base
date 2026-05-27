@@ -4,8 +4,9 @@
     <div class="container my-4">
 
         @include('formularios.contenedor_superior', ['formulario' => $formulario])
-        <div class="card mt-3 shadow-lg">
-            <div class="card-body">
+
+
+      
                 <form action="{{ route('respuestas.update', ['respuesta' => $respuesta, 'modulo' => $modulo]) }}"
                     method="POST" enctype="multipart/form-data">
                     @csrf
@@ -13,13 +14,15 @@
 
                     @foreach($formularios as $index => $formItem)
 
-                        <div class="mb-4 border rounded p-3">
+                    <div class="card mt-3 shadow-lg">
+            <div class="card-body">
 
-                            @if($formularios->count() > 1)
-                                <h5 class="mb-3">
-                                    {{ $formItem->nombre }}
-                                </h5>
-                            @endif
+            @if($formularios->count() > 1)
+                            <h6 class="">
+                                {{ $formItem->nombre }}
+                            </h6>
+                            <div class="w-100 mb-3" style="height:2px; background:#e9ecef; border-radius:2px;"></div>
+                        @endif
 
 
                             @php
@@ -48,11 +51,11 @@
                                 @if(isset($formPrincipal->config['registro_multiple']) && $formPrincipal->config['registro_multiple'])
 
                                     <button type="button" class="btn btn-success btn-xs w-100 mt-3" id="btn-agregar-registro">
-                                        Agregar
+                                    {!! configForm($formItem->id, 'titles.add_multiple') !!}
                                     </button>
 
                                     <div class="mt-1">
-                                        <h6>Registros agregados</h6>
+                                        <h6>{!! configForm($formItem->id, 'titles.registers_adds') !!}</h6>
 
                                         @if($isMobile)
                                             <div id="contenedor-cards"></div>
@@ -78,36 +81,23 @@
                                 @endif
                             @endif
 
-                        </div>
-
+                            </div>
+            </div>
                     @endforeach
 
 
-        <div class="d-flex justify-content-center gap-3 mt-4 flex-wrap">
-
-            @if(!$moduloModelo)
-                <a href="{{ route('formularios.index') }}" class="btn btn-secondary px-4 py-2">
-                    <i class="fas fa-arrow-left me-1"></i> Volver
-                </a>
-            @else
-                <a href="{{ route('modulo.index', $moduloModelo->id) }}" class="btn btn-secondary px-4 py-2">
-                    <i class="fas fa-arrow-left me-1"></i> Volver
-                </a>
-            @endif
-
-            <button type="submit" class="btn btn-primary px-4 py-2">
-                Actualizar
-            </button>
-
-        </div>
+           @include('formularios.partials.Botones_RA_footer', [
+            'texto' => 'Actualizar',
+            'icono'=> 'fas fa-save' ,
+            'moduloModelo' => $moduloModelo])
 
     </form>
-                </div>
-            </div>
+             
 
         </div>
 
 
         @include('formularios.scripts.LogicaRegistro')
+        @include('formularios.scripts.LogicaRegistro2')
 
 @endsection

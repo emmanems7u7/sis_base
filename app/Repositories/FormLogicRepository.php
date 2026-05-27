@@ -10,7 +10,6 @@ use App\Models\RespuestasCampo;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use App\Interfaces\CatalogoInterface;
-use App\Interfaces\RespuestasFormInterface;
 use App\Models\AuditoriaAccion;
 use App\Models\ConfCorreo;
 use App\Models\PlantillaCorreo;
@@ -26,17 +25,14 @@ class FormLogicRepository implements FormLogicInterface
 {
     protected $CatalogoRepository;
     protected $FormularioRepository;
-    protected $RespuestasFormInterface;
     public function __construct(
         CatalogoInterface $catalogoInterface,
         FormularioRepository $formularioRepository,
-        RespuestasFormInterface $respuestasFormInterface,
 
 
     ) {
         $this->FormularioRepository = $formularioRepository;
         $this->CatalogoRepository = $catalogoInterface;
-        $this->RespuestasFormInterface = $respuestasFormInterface;
 
 
     }
@@ -369,7 +365,6 @@ class FormLogicRepository implements FormLogicInterface
     }
     private function ObtenerMensajeValidador($mensaje, $respuestaOrigen, $respuestaIdsFiltrados)
     {
-        dump($respuestaOrigen);
         preg_match_all('/Cdestino_(\d+)/', $mensaje, $destinos);
         $valoresCdestino = $destinos[1] ?? [];
 
@@ -966,8 +961,7 @@ class FormLogicRepository implements FormLogicInterface
                         } else {
                             $valor = $action->valor;
                         }
-                        dump($parametros['operacion_text']);
-                        dump($valor);
+
 
 
                         // EJECUTAR
