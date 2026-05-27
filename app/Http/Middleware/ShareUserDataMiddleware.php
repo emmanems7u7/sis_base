@@ -20,7 +20,7 @@ class ShareUserDataMiddleware
         $preferencias = null;
         $sidebarColor = 'primary';
         $tiempo_cambio_contraseña = 1;
-
+        $color = 'primary';
         if ($user) {
 
             // Preferencias
@@ -70,7 +70,6 @@ class ShareUserDataMiddleware
                 }
             );
 
-            $color = 'primary'; // valor por defecto
 
             if (method_exists($user, 'preferences') && $user->preferences) {
                 $color = $user->preferences->sidebar_color ?? 'primary';
