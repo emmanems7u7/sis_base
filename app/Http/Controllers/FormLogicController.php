@@ -65,7 +65,7 @@ class FormLogicController extends Controller
 
         $request->validate([
             'nombre' => 'required|string|max:255',
-            'formulario_id' => 'required|exists:formularios,id',
+            'formulario_id_disparador' => 'required|exists:formularios,id',
             'evento' => 'required|string',
             'activo' => 'nullable',
             'acciones_json' => 'required|string',
@@ -267,7 +267,7 @@ class FormLogicController extends Controller
     {
         $request->validate([
             'nombre' => 'required|string|max:255',
-            'formulario_id' => 'required|exists:formularios,id',
+            'formulario_id_disparador' => 'required|exists:formularios,id',
             'evento' => 'required|string',
             'activo' => 'nullable',
             'acciones_json' => 'required|string',

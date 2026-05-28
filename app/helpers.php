@@ -61,11 +61,35 @@ if (!function_exists('configForm')) {
         $config = formConfigCache($formularioId);
 
 
+        $defaultItem = data_get(
+            config('forms'),
+            $key,
+            []
+        );
+
         $item = data_get(
             $config,
             $key,
-            data_get(config('forms'), $key)
+            []
         );
+
+
+
+        if (is_array($defaultItem) && is_array($item)) {
+
+            $item = array_merge(
+                $defaultItem,
+                array_filter(
+                    $item,
+                    fn($value) => !is_null($value)
+                )
+            );
+        }
+
+        if (empty($item)) {
+
+            $item = $defaultItem;
+        }
 
 
 
