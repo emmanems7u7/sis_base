@@ -35,16 +35,9 @@
                 });
 
             }
-
-            console.log(registros);
             actualizarRegistrosJson();
 
-
-
             render_informacion();
-
-
-
 
         });
 
@@ -78,7 +71,7 @@
             if (!campo) return null;
 
             // Construye la clave completa como viene en tus inputs
-            return `form_${FORM_ID}[${campo.nombre}]`;
+            return `form_${FORM_ID}[${campo.id}]`;
         }
         let registros = [];
         let editIndex = null;
@@ -260,7 +253,7 @@
             const camposCalculados = new Set();
 
             FORMULAS.forEach(f => {
-                const key = `form_${f.destino.form}[${f.destino.nombre}]`;
+                const key = `form_${f.destino.form}[${f.destino.campo_id}]`;
                 camposCalculados.add(key);
             });
 
@@ -268,7 +261,6 @@
 
             if (AGRUPACION_ACTIVA) {
                 const nombreCampoIncremento = obtenerNombreCampoIncremento();
-
 
 
                 if (nombreCampoIncremento && registro[nombreCampoIncremento]) {
@@ -328,10 +320,7 @@
 
         });
 
-        function validacion(registro) {
-
-            let contenedor = document.getElementById('formulario-dinamico');
-
+        function ObtenerInfo(registro) {
             let formData = new FormData();
 
             formData.append('_token', document
@@ -380,9 +369,19 @@
                 }
 
             });
+            return formData;
+        }
+
+        function validacion(registro) {
+
+            let contenedor = document.getElementById('formulario-dinamico');
+
+            let formData = new FormData();
+            formData = ObtenerInfo(registro);
+
             const formId = @json($formulario->id);
 
-            fetch(`/formularios/${formId}/validar-registro`, {
+            fetch(`/formularios/validar-registro`, {
                 method: 'POST',
                 body: formData,
             })
@@ -441,6 +440,8 @@
                 });
 
         }
+
+
 
 
         function crearHiddenArchivos(registro, index, isEdit = false) {
@@ -516,6 +517,7 @@
             const formKey = `form_${form}[${nombre}]`;
 
             let valor = registro?.[formKey]?.value;
+
 
             // FALLBACK DOM
             if (valor === undefined) {
@@ -615,7 +617,7 @@
                     let valorRaw = obtenerValor(
                         registro,
                         item.form,
-                        item.nombre
+                        item.campo_id
                     );
 
                     let valor;
@@ -675,15 +677,13 @@
             }
 
             const valores = [];
-
             registros.forEach(reg => {
 
                 const valor = obtenerValorNumerico(
                     reg,
                     campo.form,
-                    campo.nombre
+                    campo.campo_id
                 );
-
                 if (!isNaN(valor)) {
                     valores.push(valor);
                 }
@@ -768,7 +768,6 @@
         */
 
         function ejecutarFormulas(registros, formulas, index) {
-
             if (!Array.isArray(registros) || !Array.isArray(formulas)) {
                 return;
             }
@@ -776,7 +775,7 @@
             formulas.forEach(f => {
 
                 const destinoForm =
-                    `form_${f.destino.form}[${f.destino.nombre}]`;
+                    `form_${f.destino.form}[${f.destino.campo_id}]`;
 
                 let total = null;
 
@@ -805,7 +804,7 @@
                     total = obtenerValor(
                         registros[index],
                         campo.form,
-                        campo.nombre
+                        campo.campo_id
                     );
 
                 }
@@ -915,7 +914,7 @@
                 }
 
                 const destinoForm =
-                    `form_${f.destino.form}[${f.destino.nombre}]`;
+                    `form_${f.destino.form}[${f.destino.campo_id}]`;
 
                 let total = null;
 
@@ -927,13 +926,12 @@
                 if (f.modo === 'asignacion') {
 
                     const campo = f.formula.find(x => x.tipo === 'campo');
-
                     if (!campo) return;
 
                     total = obtenerValor(
                         registro,
                         campo.form,
-                        campo.nombre
+                        campo.campo_id
                     );
 
                 }
@@ -992,9 +990,9 @@
 
             if (!registros || registros.length === 0) {
                 thead.innerHTML = `
-                                                                                                                                                                                                                                                                                                        <th>#</th>
-                                                                                                                                                                                                                                                                                                        <th>Acciones</th>
-                                                                                                                                                                                                                                                                                                    `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <th>#</th>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <th>Acciones</th>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                `;
                 return;
             }
 
@@ -1008,17 +1006,14 @@
                 if (!input.name) return;
 
                 let key = input.name.replace('[]', '');
-                let key_visible = key.includes('[')
-                    ? key.split('[').pop().replace(']', '')
-                    : key;
+                let key_visible = input.dataset.etiqueta;
+
                 if (campos.some(c => c.key === key)) return;
 
                 let grupo = input.closest('.mb-3, .form-group, .col-md-6, .col-md-12');
                 let label = grupo ? grupo.querySelector('label') : null;
 
-                let textoLabel = label
-                    ? label.innerText.replace('*', '').trim()
-                    : key;
+                let textoLabel = input.dataset.etiqueta;
 
                 campos.push({
                     key,
@@ -1026,7 +1021,6 @@
                     label: textoLabel
                 });
             });
-
 
             // ENCABEZADOS
 
@@ -1058,6 +1052,8 @@
                 campos.forEach(campo => {
 
                     let value = registro[campo.key];
+
+
                     let td = document.createElement('td');
 
                     //  buscar input SOLO si existe
@@ -1078,18 +1074,18 @@
 
                 let tdAcciones = document.createElement('td');
                 tdAcciones.innerHTML = `
-                                                                                                                                                                                                                                                                                                        <button type="button" 
-                                                                                                                                                                                                                                                                                                                class="btn btn-sm btn-warning me-2"
-                                                                                                                                                                                                                                                                                                                onclick="editarRegistro(${index})">
-                                                                                                                                                                                                                                                                                                            <i class="fas fa-edit"></i>
-                                                                                                                                                                                                                                                                                                        </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <button type="button" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            class="btn btn-sm btn-warning me-2"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            onclick="editarRegistro(${index})">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <i class="fas fa-edit"></i>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </button>
 
-                                                                                                                                                                                                                                                                                                        <button type="button" 
-                                                                                                                                                                                                                                                                                                                class="btn btn-sm btn-danger"
-                                                                                                                                                                                                                                                                                                                onclick="confirmarEliminarRegistro(${index})">
-                                                                                                                                                                                                                                                                                                            <i class="fas fa-trash"></i>
-                                                                                                                                                                                                                                                                                                        </button>
-                                                                                                                                                                                                                                                                                                    `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <button type="button" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            class="btn btn-sm btn-danger"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            onclick="confirmarEliminarRegistro(${index})">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <i class="fas fa-trash"></i>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                `;
 
                 tr.appendChild(tdAcciones);
                 tbody.appendChild(tr);
@@ -1126,29 +1122,29 @@
                 }
 
                 return `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="d-flex align-items-center gap-1">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <div class="d-flex align-items-center gap-1">
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <span class="fw-bold d-flex align-items-center justify-content-center"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          style="min-width: 25px; height: 22px;">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ${val}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </span>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <span class="fw-bold d-flex align-items-center justify-content-center"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      style="min-width: 25px; height: 22px;">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ${val}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </span>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <button class="btn btn-sm btn-outline-success p-0 d-flex align-items-center justify-content-center"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        style="width:22px; height:22px;"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        onclick="cambiarValor(${index}, '${key}', 1)">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        +
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <button class="btn btn-sm btn-outline-success p-0 d-flex align-items-center justify-content-center"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    style="width:22px; height:22px;"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    onclick="cambiarValor(${index}, '${key}', 1)">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    +
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </button>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ${val > 1 ? `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <button class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            style="width:22px; height:22px;"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            onclick="cambiarValor(${index}, '${key}', -1)">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            -
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ` : ''}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ${val > 1 ? `
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <button class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        style="width:22px; height:22px;"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        onclick="cambiarValor(${index}, '${key}', -1)">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        -
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ` : ''}
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        `;
             }
 
             // ARCHIVOS (IMAGEN / VIDEO / OTROS)
@@ -1158,31 +1154,31 @@
                 if (value.file?.type?.startsWith('image')) {
 
                     return `
-                                                                                                                                                                                                                                                                                                                                                                        <a href="${value.preview}" 
-                                                                                                                                                                                                                                                                                                                                                           data-fancybox="gallery"
-                                                                                                                                                                                                                                                                                                                                                           class="ver-link">
-                                                                                                                                                                                                                                                                                                                                                           <i class="fas fa-image"></i> Ver imagen
-                                                                                                                                                                                                                                                                                                                                                        </a>
-                                                                                                                                                                                                                                                                                                                                                                                                    `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <a href="${value.preview}" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       data-fancybox="gallery"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       class="ver-link">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       <i class="fas fa-image"></i> Ver imagen
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </a>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                `;
 
                     // VIDEO
                 } else if (value.file?.type?.startsWith('video')) {
 
                     return `
-                                                                                                                                                                                                                                                                                                                                                                                <a href="${value.preview}" target="_blank">
-                                                                                                                                                                                                                                                                                                                                                                <i class="fas fa-video"></i> Ver video
-                                                                                                                                                                                                                                                                                                                                                            </a>
-                                                                                                                                                                                                                                                                                                                                                                                                    `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <a href="${value.preview}" target="_blank">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <i class="fas fa-video"></i> Ver video
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </a>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                `;
 
                     // OTROS ARCHIVOS
                 } else {
 
                     return `
-                                                                                                                                                                                                                                                                                                                                                                                                        <a href="${value.preview}" 
-                                                                                                                                                                                                                                                                                                                                                                                                           target="_blank">
-                                                                                                                                                                                                                                                                                                                                                                                                           <i class="fas fa-file"></i> Ver archivo
-                                                                                                                                                                                                                                                                                                                                                                                                        </a>
-                                                                                                                                                                                                                                                                                                                                                                                                    `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <a href="${value.preview}" 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       target="_blank">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       <i class="fas fa-file"></i> Ver archivo
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </a>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                `;
                 }
             }
 
@@ -1208,10 +1204,10 @@
 
             if (!registros || registros.length === 0) {
                 contenedor.innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="text-center text-muted py-2">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    No hay registros
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <div class="text-center text-muted py-2">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                No hay registros
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        `;
                 return;
             }
 
@@ -1264,51 +1260,51 @@
                     );
 
                     contenido += `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="col-6 mb-1">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <small class="text-muted d-block" style="font-size:11px;">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                          <strong>  ${campo.key_visible}</strong> 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </small>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div style="font-size:13px; line-height:1.2;">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            ${htmlCampo}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="col-6 mb-1">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <small class="text-muted d-block" style="font-size:11px;">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      <strong>  ${campo.key_visible}</strong> 
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </small>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div style="font-size:13px; line-height:1.2;">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ${htmlCampo}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            `;
                 });
 
                 let card = document.createElement('div');
                 card.className = 'card mb-2 shadow-sm border-0';
 
                 card.innerHTML = `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="card-body p-2">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <div class="card-body p-2">
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <!-- HEADER -->
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="d-flex justify-content-between align-items-center mb-1">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <span class="badge bg-secondary" style="font-size:11px;">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            #${index + 1}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </span>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <!-- HEADER -->
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="d-flex justify-content-between align-items-center mb-1">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <span class="badge bg-secondary" style="font-size:11px;">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        #${index + 1}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </span>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <div class="d-flex gap-1">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <button type='button' class="btn btn-xs btn-warning p-1 px-2"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            title="Editar"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            onclick="editarRegistro(${index})">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <i class="fas fa-edit"></i>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="d-flex gap-1">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <button type='button' class="btn btn-xs btn-warning p-1 px-2"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        title="Editar"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        onclick="editarRegistro(${index})">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <i class="fas fa-edit"></i>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </button>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <button type='button'  class="btn btn-xs btn-danger p-1 px-2"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            title="Eliminar"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            onclick="confirmarEliminarRegistro(${index})">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <i class="fas fa-trash"></i>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <button type='button'  class="btn btn-xs btn-danger p-1 px-2"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        title="Eliminar"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        onclick="confirmarEliminarRegistro(${index})">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <i class="fas fa-trash"></i>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <!-- CONTENIDO -->
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <div class="row gx-2">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                        ${contenido}
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <!-- CONTENIDO -->
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                <div class="row gx-2">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ${contenido}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
 
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                </div>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                            `;
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            </div>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        `;
                 let col = document.createElement('div');
                 col.className = 'col-12 col-sm-6 col-md-4 col-lg-3 mb-2';
 
@@ -1493,13 +1489,13 @@
                         if (value.file?.type?.startsWith('image')) {
 
                             preview.innerHTML = `
-                                                                                                                                                    <a href="${value.preview}" 
-                                                                                                                                                    data-fancybox="imagenes"
-                                                                                                                                                    data-caption="Imagen seleccionada"
-                                                                                                                                                    class="ver-link">
-                                                                                                                                                        <i class="fas fa-image"></i> Ver imagen
-                                                                                                                                                    </a>
-                                                                                                                                                `;
+                                                                                                                                                                                                                                                                                                                                                                                <a href="${value.preview}" 
+                                                                                                                                                                                                                                                                                                                                                                                data-fancybox="imagenes"
+                                                                                                                                                                                                                                                                                                                                                                                data-caption="Imagen seleccionada"
+                                                                                                                                                                                                                                                                                                                                                                                class="ver-link">
+                                                                                                                                                                                                                                                                                                                                                                                    <i class="fas fa-image"></i> Ver imagen
+                                                                                                                                                                                                                                                                                                                                                                                </a>
+                                                                                                                                                                                                                                                                                                                                                                            `;
                             if (typeof Fancybox !== 'undefined') {
                                 Fancybox.bind('[data-fancybox="imagenes"]');
                             }
@@ -1507,18 +1503,18 @@
                         } else if (value.file?.type?.startsWith('video')) {
 
                             preview.innerHTML = `
-                                                                                                                                    <a href="${value.preview}" target="_blank" class="text-primary">
-                                                                                                                                        <i class="fas fa-video"></i> Ver video
-                                                                                                                                    </a>
-                                                                                                                                `;
+                                                                                                                                                                                                                                                                                                                                                                <a href="${value.preview}" target="_blank" class="text-primary">
+                                                                                                                                                                                                                                                                                                                                                                    <i class="fas fa-video"></i> Ver video
+                                                                                                                                                                                                                                                                                                                                                                </a>
+                                                                                                                                                                                                                                                                                                                                                            `;
 
                         } else {
 
                             preview.innerHTML = `
-                                                                                                                                    <a href="${value.preview}" target="_blank" class="text-primary">
-                                                                                                                                        <i class="fas fa-file"></i> Ver archivo
-                                                                                                                                    </a>
-                                                                                                                                `;
+                                                                                                                                                                                                                                                                                                                                                                <a href="${value.preview}" target="_blank" class="text-primary">
+                                                                                                                                                                                                                                                                                                                                                                    <i class="fas fa-file"></i> Ver archivo
+                                                                                                                                                                                                                                                                                                                                                                </a>
+                                                                                                                                                                                                                                                                                                                                                            `;
                         }
                     }
 
@@ -1536,13 +1532,13 @@
                             url = `${baseUrl}/imagenes/${value}`;
 
                             preview.innerHTML = `
-                                                                                                                                            <a href="${url}" 
-                                                                                                                                            data-fancybox="imagenes_${key}" 
-                                                                                                                                            data-caption="Imagen"
-                                                                                                                                            class="text-primary">
-                                                                                                                                                <i class="fas fa-image"></i> Ver imagen
-                                                                                                                                            </a>
-                                                                                                                                        `;
+                                                                                                                                                                                                                                                                                                                                                                        <a href="${url}" 
+                                                                                                                                                                                                                                                                                                                                                                        data-fancybox="imagenes_${key}" 
+                                                                                                                                                                                                                                                                                                                                                                        data-caption="Imagen"
+                                                                                                                                                                                                                                                                                                                                                                        class="text-primary">
+                                                                                                                                                                                                                                                                                                                                                                            <i class="fas fa-image"></i> Ver imagen
+                                                                                                                                                                                                                                                                                                                                                                        </a>
+                                                                                                                                                                                                                                                                                                                                                                    `;
 
                             if (typeof Fancybox !== 'undefined') {
                                 Fancybox.bind(`[data-fancybox="imagenes_${key}"]`);
@@ -1551,18 +1547,18 @@
                         else if (tipo === 'video') {
                             url = `${baseUrl}/videos/${value}`;
                             preview.innerHTML = `
-                                                                                                                                    <a href="${url}" target="_blank" class="text-primary">
-                                                                                                                                        <i class="fas fa-video"></i> Ver video
-                                                                                                                                    </a>
-                                                                                                                                `;
+                                                                                                                                                                                                                                                                                                                                                                <a href="${url}" target="_blank" class="text-primary">
+                                                                                                                                                                                                                                                                                                                                                                    <i class="fas fa-video"></i> Ver video
+                                                                                                                                                                                                                                                                                                                                                                </a>
+                                                                                                                                                                                                                                                                                                                                                            `;
                         }
                         else {
                             url = `${baseUrl}/archivos/${value}`;
                             preview.innerHTML = `
-                                                                                                                                    <a href="${url}" target="_blank" class="text-primary">
-                                                                                                                                        <i class="fas fa-file"></i> Ver archivo
-                                                                                                                                    </a>
-                                                                                                                                `;
+                                                                                                                                                                                                                                                                                                                                                                <a href="${url}" target="_blank" class="text-primary">
+                                                                                                                                                                                                                                                                                                                                                                    <i class="fas fa-file"></i> Ver archivo
+                                                                                                                                                                                                                                                                                                                                                                </a>
+                                                                                                                                                                                                                                                                                                                                                            `;
                         }
                     }
                 }
@@ -1667,25 +1663,61 @@
 
         function eliminarRegistro(index) {
 
-            registros.splice(index, 1);
+            const registro = registros[index];
 
-            const thead = document.getElementById('thead-dinamico');
 
-            if (registros.length === 0 && thead) {
-                thead.innerHTML = `
-                                                                            <th>#</th>
-                                                                            <th>Acciones</th>
-                                                                        `;
-            }
+            let contenedor = document.getElementById('formulario-dinamico');
 
-            ejecutarFormulas(registros, FORMULAS, index);
-            render_informacion();
+            let formData = new FormData();
+            formData = ObtenerInfo(registro);
+
+            const formId = @json($formulario->id);
+
+            fetch(`/formularios/${formId}/eliminar-registro`, {
+                method: 'POST',
+                body: formData,
+            })
+                .then(async response => {
+
+                    if (!response.ok) {
+                        const err = await response.json();
+                        throw err;
+                    }
+
+                    return response.json();
+                })
+                .then(data => {
+                    if (data.success) {
+
+                        registros.splice(index, 1);
+
+                        const thead = document.getElementById('thead-dinamico');
+
+                        if (registros.length === 0 && thead) {
+                            thead.innerHTML = `<th>#</th><th>Acciones</th>`;
+                        }
+
+                        ejecutarFormulas(registros, FORMULAS, index);
+                        render_informacion();
+                    }
+                    else {
+
+                        if (data.message) {
+                            mostrarAlerta('error', data.message);
+
+                        }
+                    }
+
+                })
+                .catch((error) => {
+                    console.error(error);
+
+
+                });
+
         }
 
-
-
         // Limpiar formulario
-
 
         function limpiarFormulario() {
             /*

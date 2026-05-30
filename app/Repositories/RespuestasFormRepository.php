@@ -14,6 +14,7 @@ use Illuminate\Support\Facades\DB;
 use App\Interfaces\FormLogicInterface;
 
 use App\Interfaces\CamposFormInterface;
+use App\Interfaces\RespuestasCampoInterface;
 use App\Models\FormLogicCondition;
 
 class RespuestasFormRepository implements RespuestasFormInterface
@@ -23,14 +24,17 @@ class RespuestasFormRepository implements RespuestasFormInterface
     protected $FormularioRepository;
     protected $FormLogicInterface;
     protected $CamposFormRepository;
+    protected $RespuestaCampoRepository;
 
-    public function __construct(CatalogoInterface $catalogoInterface, FormularioInterface $formularioInterface, FormLogicInterface $formLogicInterface, CamposFormInterface $camposFormInterface)
+
+    public function __construct(RespuestasCampoInterface $respuestasCampoInterface, CatalogoInterface $catalogoInterface, FormularioInterface $formularioInterface, FormLogicInterface $formLogicInterface, CamposFormInterface $camposFormInterface)
     {
 
         $this->CatalogoRepository = $catalogoInterface;
         $this->FormularioRepository = $formularioInterface;
         $this->FormLogicInterface = $formLogicInterface;
         $this->CamposFormRepository = $camposFormInterface;
+        $this->RespuestaCampoRepository = $respuestasCampoInterface;
 
     }
 
@@ -84,343 +88,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
         return $humanRules;
     }
 
-    public function fila($request)
-    {
-        // Obtener todos los datos enviados
-        $datosFormulario = $request->all();
 
-        // Array para guardar filas completas seleccionadas
-        $filasSeleccionadas = [];
-
-        // Iterar sobre cada campo enviado
-        foreach ($datosFormulario as $nombreCampo => $valor) {
-
-
-            // Verificar si este campo es de tipo referencia a otro formulario
-            // Por ejemplo: si $valor es numérico y corresponde a un ID de RespuestasForm
-            if (is_numeric($valor)) {
-                $fila = RespuestasForm::with('camposRespuestas.campo')
-                    ->find($valor);
-
-
-
-                if ($fila) {
-
-                    $datos = [];
-                    foreach ($fila->camposRespuestas as $cr) {
-                        $datos[$cr->campo->nombre] = $cr->valor . ' - ' . $cr->id;
-                    }
-
-                    $filasSeleccionadas[$nombreCampo] = $datos;
-                }
-            }
-
-            // Si es checkbox múltiple
-            if (is_array($valor)) {
-                foreach ($valor as $id) {
-                    if (is_numeric($id)) {
-                        $fila = RespuestasForm::with('camposRespuestas.campo')
-                            ->find($id);
-
-                        if ($fila) {
-                            $datos = [];
-                            foreach ($fila->camposRespuestas as $cr) {
-                                $datos[$cr->campo->nombre] = $cr->valor . ' - ' . $cr->id;
-                            }
-
-                            $filasSeleccionadas[$nombreCampo][] = $datos;
-
-                        }
-                    }
-                }
-            }
-        }
-
-        return $filasSeleccionadas;
-    }
-
-    public function filaDesdeArray($respuesta, array $registroData, $campos)
-    {
-        $filasSeleccionadas = [];
-        $relations = [];
-
-        // Mapear campos por nombre para acceso rápido (como en la versión anterior)
-        $mapCampos = collect($campos)->keyBy('nombre');
-
-        $filasSeleccionadas['formulario_id'] = $respuesta->form_id;
-        $filasSeleccionadas['respuesta_id'] = $respuesta->id;
-
-        foreach ($registroData as $nombreCampo => $valor) {
-            preg_match('/\[(.*?)\]/', $nombreCampo, $match);
-            $nombreLimpio = $match[1] ?? $nombreCampo;
-
-            $campo = $mapCampos[$nombreLimpio] ?? null;
-
-            if (!$campo) {
-                continue;
-            }
-
-            $esReferencia = !empty($campo->form_ref_id);
-
-            if ($esReferencia) {
-                // Usar resolverRelacionCompleta existente
-                $relacion = $this->resolverRelacionCompleta($valor, $campo, $respuesta);
-
-                $textoLiteral = $valor;
-
-                if ($relacion) {
-                    // buscar primer valor humano dentro del array
-                    if (is_array($relacion) && !isset($relacion['formulario_id'])) {
-                        // Es un array de múltiples relaciones
-                        foreach ($relacion as $rel) {
-                            foreach ($rel as $k => $v) {
-                                if (
-                                    $k !== 'formulario_id' &&
-                                    $k !== 'respuesta_id' &&
-                                    !is_array($v)
-                                ) {
-                                    $textoLiteral = (is_array($valor) ? implode(',', $valor) : $valor) . ' | ' . $v;
-                                    break 2;
-                                }
-                            }
-                        }
-                    } else {
-                        // Es una relación simple
-                        foreach ($relacion as $k => $v) {
-                            if (
-                                $k !== 'formulario_id' &&
-                                $k !== 'respuesta_id' &&
-                                !is_array($v)
-                            ) {
-                                $textoLiteral = $valor . ' | ' . $v;
-                                break;
-                            }
-                        }
-                    }
-
-                    if (is_array($valor)) {
-                        $relations[$campo->form_ref_id][] = $relacion;
-                    } else {
-                        $relations[$campo->form_ref_id] = $relacion;
-                    }
-                }
-
-                // Usar ID del campo como clave (como en filaDesdeRespuesta)
-                $filasSeleccionadas[$campo->id] = $this->limpiarDuplicado($textoLiteral);
-                continue;
-            }
-
-            // Valor normal (no referencia) - usar ID como clave
-            $filasSeleccionadas[$campo->id] = $valor;
-        }
-
-        if (!empty($relations)) {
-            $filasSeleccionadas['relations'] = $relations;
-        }
-
-        return $filasSeleccionadas;
-    }
-    public function filaDesdeRespuesta($respuesta, $campos)
-    {
-        $filasSeleccionadas = [];
-        $relations = [];
-
-        $filasSeleccionadas['formulario_id'] = $respuesta->form_id;
-        $filasSeleccionadas['respuesta_id'] = $respuesta->id;
-
-        foreach ($campos as $campo) {
-
-            $respuestaCampo = $respuesta->camposRespuestas
-                ->firstWhere('cf_id', $campo->id);
-
-            if (!$respuestaCampo)
-                continue;
-
-            $valor = $respuestaCampo->valor;
-            $nombre = $campo->id;
-
-            $esReferencia = !empty($campo->form_ref_id);
-
-            if ($esReferencia) {
-
-                $relacion = $this->resolverRelacionCompleta($valor, $campo, $respuesta);
-
-                // 🔥 obtener fila real de la relación (esto es lo clave)
-                $textoLiteral = $valor;
-
-                if ($relacion) {
-
-                    // buscar primer valor humano dentro del array (ANTES lo tenías así)
-                    foreach ($relacion as $k => $v) {
-
-                        if (
-                            $k !== 'formulario_id' &&
-                            $k !== 'respuesta_id' &&
-                            !is_array($v)
-                        ) {
-                            $textoLiteral = $valor . ' | ' . $v;
-                            break;
-                        }
-                    }
-
-                    if (is_array($valor)) {
-                        $relations[$campo->form_ref_id][] = $relacion;
-                    } else {
-                        $relations[$campo->form_ref_id] = $relacion;
-                    }
-                }
-
-                $filasSeleccionadas[$nombre] = $this->limpiarDuplicado($textoLiteral);
-
-                continue;
-            }
-
-            $filasSeleccionadas[$nombre] = $valor;
-        }
-
-        if (!empty($relations)) {
-            $filasSeleccionadas['relations'] = $relations;
-        }
-
-        return $filasSeleccionadas;
-    }
-    private function limpiarDuplicado($texto)
-    {
-        if (!is_string($texto)) {
-            return $texto;
-        }
-
-        $partes = explode(' | ', $texto);
-
-        if (count($partes) < 2) {
-            return $texto;
-        }
-
-        $izquierda = trim($partes[0]);
-        $derecha = trim($partes[1]);
-
-        // 🔥 eliminar lo que está entre corchetes
-        $derechaSinCorchetes = preg_replace('/\s*\[.*?\]/', '', $derecha);
-        $derechaSinCorchetes = trim($derechaSinCorchetes);
-
-        // 🔥 comparar limpio vs limpio
-        if ($izquierda === $derechaSinCorchetes) {
-            return $izquierda;
-        }
-
-        return $texto;
-    }
-    private function resolverRelacionCompleta($valor, $campo, $respuesta)
-    {
-        $resolver = function ($id) use ($campo, $respuesta) {
-
-            $fila = RespuestasForm::with('camposRespuestas.campo')->find($id);
-
-            if ($fila)
-                return $this->mapearFila($fila);
-
-            $res = $this->obtenerRelacionMultiple(
-                $respuesta->form_id,
-                $campo->form_ref_id
-            );
-
-            $campoOrigen = collect($res['formula'] ?? [])
-                ->first(fn($item) => ($item['tipo'] ?? null) === 'campo');
-
-            $campoIdOrigen = $campoOrigen['campo_id'] ?? null;
-
-            if (!$campoIdOrigen)
-                return null;
-
-            $newId = RespuestasCampo::where('cf_id', $campoIdOrigen)
-                ->where('valor', $id)
-                ->pluck('respuesta_id')
-                ->first();
-
-            $fila = RespuestasForm::with('camposRespuestas.campo')->find($newId);
-
-            return $fila ? $this->mapearFila($fila) : null;
-        };
-
-        // múltiple
-        if (is_array($valor)) {
-
-            $data = [];
-
-            foreach ($valor as $id) {
-                if (!is_numeric($id))
-                    continue;
-
-                $rel = $resolver($id);
-
-                if ($rel)
-                    $data[] = $rel;
-            }
-
-            return $data;
-        }
-
-        // simple
-        return $resolver($valor);
-    }
-
-    private function mapearFila($fila)
-    {
-        $data = [];
-
-        $data['formulario_id'] = $fila->form_id;
-        $data['respuesta_id'] = $fila->id;
-
-        foreach ($fila->camposRespuestas as $cr) {
-            $data[$cr->campo->id] = $cr->valor . ' [' . $cr->id . ']';
-        }
-
-
-        return $data;
-    }
-    public function obtenerRelacionMultiple($form_id, $form_id2)
-    {
-        $form_id = (string) $form_id;
-        $form_id2 = (string) $form_id2;
-
-        $paralelo = ModuloFormularioParalelo::whereJsonContains('formularios', ['id' => $form_id])
-            ->whereJsonContains('formularios', ['id' => $form_id2])
-            ->first();
-
-
-        foreach ($paralelo->config ?? [] as $config) {
-
-            if (($config['relacion_multiple'] ?? 0) != 1) {
-                continue;
-            }
-
-            $destinoForm = $config['destino']['form'] ?? null;
-
-            $campoRelacion = collect($config['formula'] ?? [])
-                ->first(fn($x) => ($x['tipo'] ?? null) === 'campo');
-
-            $origenForm = $campoRelacion['form'] ?? null;
-
-            if (!$destinoForm || !$origenForm) {
-                continue;
-            }
-
-            $formsRelacionados = [
-                (string) $destinoForm,
-                (string) $origenForm
-            ];
-
-            // Validación final
-            if (
-                in_array($form_id, $formsRelacionados, true) &&
-                in_array($form_id2, $formsRelacionados, true)
-            ) {
-                return $config;
-            }
-        }
-
-        return null;
-    }
     public function validacion($formulario, $campos, $respuestaId = null, $modo = 'store', $prefix = null)
     {
 
@@ -452,8 +120,8 @@ class RespuestasFormRepository implements RespuestasFormInterface
             }
 
             $fieldName = $prefix
-                ? "{$prefix}.{$campo->nombre}"
-                : $campo->nombre;
+                ? "{$prefix}.{$campo->id}"
+                : $campo->id;
 
             switch ($tipo) {
 
@@ -665,28 +333,6 @@ class RespuestasFormRepository implements RespuestasFormInterface
         }
     }
 
-    public function EliminarArchivos($respuesta)
-    {
-        foreach ($respuesta->camposRespuestas as $campo) {
-            $tipo = strtolower($campo->campo->campo_nombre ?? ''); // Asegúrate de tener la relación campo
-            $valor = $campo->valor;
-
-            if (in_array($tipo, ['imagen', 'video', 'archivo']) && $valor) {
-                $path = match ($tipo) {
-                    'imagen' => public_path("archivos/formulario_{$respuesta->form_id}/imagenes/{$valor}"),
-                    'video' => public_path("archivos/formulario_{$respuesta->form_id}/videos/{$valor}"),
-                    'archivo' => public_path("archivos/formulario_{$respuesta->form_id}/archivos/{$valor}"),
-                    default => null,
-                };
-
-                if ($path && file_exists($path)) {
-                    unlink($path);
-                }
-            }
-        }
-
-    }
-
     public function normalizarRegistros(array $registros): array
     {
         return array_map(function ($reg) {
@@ -730,10 +376,9 @@ class RespuestasFormRepository implements RespuestasFormInterface
             );
         }
 
-        $filas = $this->filaDesdeArray($respuesta, $datosFormulario, $campos);
+        $filas = $this->RespuestaCampoRepository->filaDesdeArray($respuesta, $datosFormulario, $campos);
 
         $errores = array_filter($this->FormLogicInterface->ValidarLogica($respuesta, $filas, $evento), fn($msg) => !empty(trim($msg)));
-
         if (!empty($errores)) {
             DB::rollBack();
             throw new \Exception(implode('<br>', $errores));
@@ -771,15 +416,13 @@ class RespuestasFormRepository implements RespuestasFormInterface
             );
         }
 
-        $filas = $this->filaDesdeArray($respuesta, $datosFormulario, $campos);
-
+        $filas = $this->RespuestaCampoRepository->filaDesdeArray($respuesta, $datosFormulario, $campos);
         $errores = array_filter($this->FormLogicInterface->ValidarLogica($respuesta, $filas, $evento), fn($msg) => !empty(trim($msg)));
 
         if (!empty($errores)) {
             DB::rollBack();
             throw new \Exception(implode('<br>', $errores));
         }
-
         $respuestas[] = [
             'respuesta_id' => $respuesta->id,
             'filas' => $filas,
@@ -830,7 +473,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
         if (!$archivo->isValid()) {
             [
                 "error" => 1,
-                "message" => 'Archivo no válido.' . $e->getMessage(),
+                "message" => 'Archivo no válido.',
 
             ];
         }
@@ -1007,9 +650,9 @@ class RespuestasFormRepository implements RespuestasFormInterface
             return ["error" => 1, "content" => $errores];
         }
 
-        $filasOriginales = $this->filaDesdeRespuesta($respuestaTarget, $campos);
+        $filasOriginales = $this->RespuestaCampoRepository->filaDesdeRespuesta($respuestaTarget, $campos);
 
-        $filas = $this->filaDesdeArray($respuestaTarget, $datosFormulario, $campos);
+        $filas = $this->RespuestaCampoRepository->filaDesdeArray($respuestaTarget, $datosFormulario, $campos);
 
         $errores = array_filter($this->FormLogicInterface->ValidarLogica($respuestaTarget, $filas, $evento), fn($msg) => !empty(trim($msg)));
 
@@ -1022,7 +665,6 @@ class RespuestasFormRepository implements RespuestasFormInterface
 
             $this->CamposFormRepository->actualizarCampo($campo, $respuestaTarget->id, $datosFormulario, $formId, $formPrefix);
         }
-
         return [
             "error" => 0,
             "content" => [
@@ -1033,4 +675,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
             ]
         ];
     }
+
+
+
 }

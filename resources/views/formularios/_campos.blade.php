@@ -34,18 +34,19 @@
         ? (bool) $requerido
         : (bool) $campo->requerido;
 
-    $valoresCampo = $valores[$campo->nombre] ?? [];
+    $valoresCampo = $valores[$campo->id] ?? [];
     if (isset($formulario->config['registro_multiple']) && $formulario->config['registro_multiple']) 
     {
     $valor = '';
     } else {
-        $valor = old($campo->nombre, $valoresCampo[0] ?? '');
+        $valor = old($campo->id, $valoresCampo[0] ?? '');
     }
     $prefix = $prefix ?? '';
-    $inputName = $prefix ? "{$prefix}[{$campo->nombre}]" : $campo->nombre;
+    $inputName = $prefix ? "{$prefix}[{$campo->id}]" : $campo->id;
+    $etiqueta =$campo->etiqueta;
     $inputId = $prefix 
-        ? "{$prefix}_{$campo->nombre}" 
-        : $campo->nombre;
+        ? "{$prefix}_{$campo->id}" 
+        : $campo->id;
 @endphp
 
 @if(!$esHidden)

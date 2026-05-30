@@ -202,7 +202,9 @@ class RespuestasFormController extends Controller
                         $resultado = $this->FormularioRepository->GetData($request, $formPrefix, $rules, $registro);
 
                         $datosFormulario = $resultado['datosFormulario'];
+
                         $validator = $resultado['validator'];
+
 
                         if ($validator->fails()) {
                             DB::rollBack();
@@ -431,7 +433,7 @@ class RespuestasFormController extends Controller
                     continue;
 
                 $prefix = "form_{$formId}";
-                $key = "{$prefix}[{$campo->nombre}]";
+                $key = "{$prefix}[{$campo->id}]";
 
                 $item[$key] = [
                     'value' => $campoResp->valor,
@@ -463,7 +465,7 @@ class RespuestasFormController extends Controller
                     })
                     ->toArray();
 
-                $valoresGlobal[$formularioTarget->id][$campo->nombre] = $valores;
+                $valoresGlobal[$formularioTarget->id][$campo->id] = $valores;
             }
         }
 
@@ -516,7 +518,7 @@ class RespuestasFormController extends Controller
 
                                 foreach ($formularioTarget->campos as $campo) {
 
-                                    $valoresGlobal[$formularioTarget->id][$campo->nombre] =
+                                    $valoresGlobal[$formularioTarget->id][$campo->id] =
                                         $respuestaCompleta->camposRespuestas
                                             ->where('cf_id', $campo->id)
                                             ->pluck('valor')
@@ -559,7 +561,7 @@ class RespuestasFormController extends Controller
             $respuestasActualizadas = [];
             $grupo = $respuesta->grupos()->with('respuestas.camposRespuestas')->first();
 
-            // ACTUALIZAR MÚLTIPLES
+            // INICIO ACTUALIZAR MÚLTIPLES
             $registrosRaw = json_decode($request->registros_json, true) ?? [];
             $registros = $this->RespuestasFormInterface->normalizarRegistros($registrosRaw);
 
@@ -621,16 +623,17 @@ class RespuestasFormController extends Controller
                         if (!$respuestaTarget)
                             continue;
 
-                        $filasOriginales = $this->RespuestasFormInterface->filaDesdeRespuesta($respuestaTarget, $campos);
+                        $filasOriginales = $this->RespuestasCampoRepository->filaDesdeRespuesta($respuestaTarget, $campos);
+
                         foreach ($campos as $campo) {
 
                             $this->CamposFormRepository->actualizarCampo($campo, $respuestaTarget->id, $datosFormulario, $formId, $formPrefix);
                         }
 
 
-                        $filas = $this->RespuestasFormInterface->filaDesdeArray($respuestaTarget, $datosFormulario, $campos);
-
+                        $filas = $this->RespuestasCampoRepository->filaDesdeArray($respuestaTarget, $datosFormulario, $campos);
                         $errores = array_filter($this->FormLogicInterface->ValidarLogica($respuestaTarget, $filas, $evento), fn($msg) => !empty(trim($msg)));
+
 
                         if (!empty($errores)) {
                             DB::rollBack();
@@ -649,6 +652,7 @@ class RespuestasFormController extends Controller
 
             }
 
+            // FIN ACTUALIZAR MÚLTIPLES
 
             // ACTUALIZAR  (RELACION 1:N)
             $formulas = [];
@@ -684,8 +688,6 @@ class RespuestasFormController extends Controller
 
 
                     if (!$campoOrigen) {
-
-
                         $result = $this->RespuestasFormInterface->LogicaActualizacion($formId, $formPrefix, $respuesta, $formularioModelo, $request, $evento);
 
                         if ($result['error'] == 1) {
@@ -700,6 +702,7 @@ class RespuestasFormController extends Controller
                         continue;
                     }
 
+
                     // CASO CON RELACIÓN 
 
                     $campoDestinoModel = $this->CamposFormRepository->GetCampo($campoOrigen);
@@ -708,7 +711,7 @@ class RespuestasFormController extends Controller
                         continue;
 
                     $valorClave = $request->input(
-                        "form_{$campoDestinoModel->form_id}.{$campoDestinoModel->nombre}"
+                        "form_{$campoDestinoModel->form_id}.{$campoDestinoModel->id}"
                     );
 
                     if (!$valorClave)
@@ -750,7 +753,6 @@ class RespuestasFormController extends Controller
             DB::commit();
             DB::disconnect();
 
-
             // REDIRECCIÓN
             if ($moduloModelo) {
                 return redirect()->route('modulo.index', $moduloModelo->id)
@@ -774,16 +776,61 @@ class RespuestasFormController extends Controller
     }
     public function destroy(RespuestasForm $respuesta)
     {
-
         DB::beginTransaction();
 
         try {
-            $form = $respuesta->form_id;
-            $evento = 'on_delete';
+
+            $resultado = $this->FormLogicInterface->LogicaEliminarRespuesta($respuesta);
+
+            if (!$resultado['success']) {
+                DB::rollBack();
+                return redirect()->back()->with('error', implode('<br>', $resultado['errores']));
+            }
+            DB::commit();
+
+            return redirect()->back()->with('status', $resultado['mensaje']);
+
+        } catch (\Throwable $e) {
+
+            DB::rollBack();
+
+            return redirect()->back()->with('error', 'Error al eliminar la respuesta.');
+        }
+    }
+
+    public function EliminarRegistro(Request $request, $formId)
+    {
+        $formKey = 'form_' . $formId;
+
+        $formData = $request->input($formKey);
+
+
+        $query = DB::table('respuestas_campos')
+            ->select('respuesta_id');
+
+        foreach ($formData as $cf_id => $valor) {
+
+            $query->orWhere(function ($q) use ($cf_id, $valor) {
+                $q->where('cf_id', $cf_id)
+                    ->where('valor', $valor);
+            });
+
+        }
+
+        $respuesta_id = $query
+            ->groupBy('respuesta_id')
+            ->havingRaw('COUNT(DISTINCT cf_id) = ?', [count($formData)])
+            ->pluck('respuesta_id')
+            ->first();
+
+        if ($respuesta_id != null) {
+            $respuesta = RespuestasForm::find($respuesta_id);
+
+            $evento = 'on_delete_group';
 
             $campos = $this->CamposFormRepository->GetCamposByForm($respuesta->form_id);
 
-            $filas = $this->RespuestasFormInterface->filaDesdeRespuesta($respuesta, $campos);
+            $filas = $this->RespuestasCampoRepository->filaDesdeRespuesta($respuesta, $campos);
 
             $agrupadas = collect([
                 $respuesta->form_id => collect([
@@ -796,25 +843,21 @@ class RespuestasFormController extends Controller
             ]);
 
             $this->FormLogicInterface->EjecutarAcciones($agrupadas, $evento);
-            $this->RespuestasFormInterface->EliminarArchivos($respuesta);
 
-            $respuesta->camposRespuestas()->delete();
+            return response()->json([
+                'success' => true,
+                'message' => configForm($formId, 'messages.success_delete')
+            ]);
 
-            $respuesta->delete();
-
-            DB::commit();
-
-            return redirect()->back()
-                ->with('status', configForm($form, 'messages.success_delete'));
-
-        } catch (\Throwable $e) {
-
-            DB::rollBack();
-
-
-            return redirect()->back()
-                ->with('error', 'Error al eliminar la respuesta.');
+        } else {
+            return response()->json([
+                'success' => false,
+                'message' => 'El registro no puede ser eliminado porque sus datos fueron modificados.'
+            ]);
         }
+
+
+
     }
 
     public function eliminarMasivo(Request $request)
@@ -825,7 +868,7 @@ class RespuestasFormController extends Controller
 
         foreach ($respuestas as $respuesta) {
             // Eliminar archivos asociados
-            $this->RespuestasFormInterface->EliminarArchivos($respuesta);
+            $this->FormularioRepository->EliminarArchivos($respuesta);
 
             // Eliminar campos y respuesta
             $respuesta->camposRespuestas()->delete();
@@ -847,7 +890,7 @@ class RespuestasFormController extends Controller
         return view('formularios.carga_masiva', compact('breadcrumb', 'form'));
     }
 
-    public function validarRegistro(Request $request, $form)
+    public function validarRegistro(Request $request)
     {
         $data = $request->all();
 
@@ -881,10 +924,10 @@ class RespuestasFormController extends Controller
             foreach ($campos as $campo) {
 
                 $fieldName = $formKey
-                    ? "{$formKey}.{$campo->nombre}"
-                    : $campo->nombre;
+                    ? "{$formKey}.{$campo->id}"
+                    : $campo->id;
 
-                $atributos[$fieldName] = $campo->etiqueta ?? $campo->nombre;
+                $atributos[$fieldName] = $campo->etiqueta ?? $campo->id;
             }
 
             $validator->setAttributeNames($atributos);
@@ -988,5 +1031,7 @@ class RespuestasFormController extends Controller
             ->header('Content-Type', 'text/plain')
             ->header('Content-Disposition', "attachment; filename={$nombreArchivo}");
     }
+
+
 
 }

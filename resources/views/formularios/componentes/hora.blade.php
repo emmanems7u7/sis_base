@@ -1,5 +1,6 @@
-<input type="time" data-campo-id="{{ $campo->id }}" data-tipo="{{ $campo->campo_nombre }}" name="{{ $inputName }}"
-    data-caso="{{ $caso }}" class="form-control {{ $errors->has($inputName) ? 'is-invalid' : '' }}"
+<input type="time" data-etiqueta="{{ $etiqueta }}" data-campo-id="{{ $campo->id }}"
+    data-tipo="{{ $campo->campo_nombre }}" name="{{ $inputName }}" data-caso="{{ $caso }}"
+    class="form-control {{ $errors->has($inputName) ? 'is-invalid' : '' }}"
     value="{{ old($inputName, $valor ? \Carbon\Carbon::parse($valor)->format('H:i') : '') }}" {{ $esRequerido ? 'required' : '' }}>
 
 @if($errors->has($inputName))

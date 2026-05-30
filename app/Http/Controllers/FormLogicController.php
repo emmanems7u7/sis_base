@@ -62,7 +62,6 @@ class FormLogicController extends Controller
 
     public function store(Request $request, Modulo $modulo)
     {
-
         $request->validate([
             'nombre' => 'required|string|max:255',
             'formulario_id_disparador' => 'required|exists:formularios,id',

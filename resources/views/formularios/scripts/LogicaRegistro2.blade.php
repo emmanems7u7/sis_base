@@ -117,7 +117,6 @@
     });
 
     function inicializarCamposAutomaticos() {
-
         const inputs = document.querySelectorAll('[data-tipo="identificador"], [data-tipo="fecha"], [data-tipo="hora"]');
 
         let campos = [];
@@ -134,8 +133,8 @@
 
                 input.dataset.autogenerado = 'true';
             }
-        });
 
+        });
         if (campos.length === 0) return;
 
         fetch("{{ route('campo.generar') }}", {

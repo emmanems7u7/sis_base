@@ -18,8 +18,8 @@
 
             <div class="col-12 col-md-6 col-lg-4">
                 <div class="form-check">
-                    <input type="checkbox" data-tipo="{{ $campo->campo_nombre }}" name="{{ $inputNameArray }}"
-                        value="{{ $opcion->catalogo_codigo }}"
+                    <input type="checkbox" data-etiqueta="{{ $etiqueta }}" data-tipo="{{ $campo->campo_nombre }}"
+                        name="{{ $inputNameArray }}" value="{{ $opcion->catalogo_codigo }}"
                         class="form-check-input campo-formulario {{ $errors->has($inputName) ? 'is-invalid' : '' }}"
                         id="{{ $inputId }}" {{ in_array($opcion->catalogo_codigo, $checkedValues) ? 'checked' : '' }}>
 

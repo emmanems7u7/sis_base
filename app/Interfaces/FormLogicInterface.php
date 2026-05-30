@@ -7,21 +7,14 @@ use App\Models\RespuestasForm;
 
 interface FormLogicInterface
 {
-
     public function CrearRegla($request);
     public function EditarRegla($request, $form_logic);
-
     public function ejecutarLogica($reglas, $respuestas, $evento, $usuario): array;
     public function ejecutarAccion(RespuestasForm $respuestaOrigen, $filasSeleccionadas, $action, $usuario);
     public function EjecutarReglaLogica($reglas, array $respuestas, string $evento, $usuario, $url);
-    public function validarAccion(
-        RespuestasForm $respuestaOrigen,
-        $filasSeleccionadas,
-        $action
-    );
-
+    public function validarAccion(RespuestasForm $respuestaOrigen, $filasSeleccionadas, $action);
     public function ValidarLogica($respuesta, $filasSeleccionadas, $evento);
     public function EjecutarAcciones($agrupadas, $evento);
+    public function LogicaEliminarRespuesta($respuesta);
 
-    public function obtenerRelacionMultiple($form_id, $form_id2);
 }

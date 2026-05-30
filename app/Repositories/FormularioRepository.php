@@ -100,8 +100,6 @@ class FormularioRepository implements FormularioInterface
         ]);
     }
 
-
-
     public function guardarArchivoGenerico($campo, $respuestaId, $form, $ruta)
     {
         // Ruta genérica que se puede cambiar según tipo
@@ -112,8 +110,6 @@ class FormularioRepository implements FormularioInterface
             'valor' => $rutaGen,
         ]);
     }
-
-
 
     public function convertirValorParaFiltro($campo, $valorUsuario)
     {
@@ -193,7 +189,7 @@ class FormularioRepository implements FormularioInterface
 
     public function procesarFormularioConFiltros($formulario, Request $request, $pageName = null)
     {
-        $camposPorNombre = $formulario->campos->keyBy('nombre');
+        $camposPorNombre = $formulario->campos->keyBy('id');
 
         $query = RespuestasForm::where('form_id', $formulario->id)
             ->with('camposRespuestas.campo', 'actor', 'grupos');
@@ -206,7 +202,6 @@ class FormularioRepository implements FormularioInterface
         foreach ($inputs as $nombreCampo => $valorEnviado) {
             if (!$camposPorNombre->has($nombreCampo))
                 continue;
-
             $campo = $camposPorNombre->get($nombreCampo);
 
             $query->whereHas('camposRespuestas', function ($q) use ($campo, $valorEnviado) {
@@ -255,6 +250,7 @@ class FormularioRepository implements FormularioInterface
                     ->orderBy('posicion');
             }
         ])->findOrFail($formulario->id);
+
         $formIds = [];
         $respuestaIds = [];
         $catalogosNecesarios = [];
@@ -320,6 +316,7 @@ class FormularioRepository implements FormularioInterface
                 );
             }
         }
+
         /*
                 // DEBUG para verificar
                 foreach ($respuestas as $respuesta) {
@@ -629,6 +626,28 @@ class FormularioRepository implements FormularioInterface
     public function GetFormAll()
     {
         return Formulario::all();
+    }
+
+    public function EliminarArchivos($respuesta)
+    {
+        foreach ($respuesta->camposRespuestas as $campo) {
+            $tipo = strtolower($campo->campo->campo_nombre ?? ''); // Asegúrate de tener la relación campo
+            $valor = $campo->valor;
+
+            if (in_array($tipo, ['imagen', 'video', 'archivo']) && $valor) {
+                $path = match ($tipo) {
+                    'imagen' => public_path("archivos/formulario_{$respuesta->form_id}/imagenes/{$valor}"),
+                    'video' => public_path("archivos/formulario_{$respuesta->form_id}/videos/{$valor}"),
+                    'archivo' => public_path("archivos/formulario_{$respuesta->form_id}/archivos/{$valor}"),
+                    default => null,
+                };
+
+                if ($path && file_exists($path)) {
+                    unlink($path);
+                }
+            }
+        }
+
     }
 
 }

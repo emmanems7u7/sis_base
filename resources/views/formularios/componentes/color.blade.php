@@ -1,4 +1,5 @@
-<input type="color" data-tipo="{{ $campo->campo_nombre }}" name="{{ $inputName }}" value="{{ old($inputName, $valor) }}"
+<input type="color" data-etiqueta="{{ $etiqueta }}" data-tipo="{{ $campo->campo_nombre }}" name="{{ $inputName }}"
+    value="{{ old($inputName, $valor) }}"
     class="form-control form-control-color {{ $errors->has($inputName) ? 'is-invalid' : '' }}">
 
 @if($errors->has($inputName))

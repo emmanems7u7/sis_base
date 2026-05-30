@@ -97,7 +97,9 @@
         </div>
 
 
-        @include('formularios.scripts.LogicaRegistro')
-        @include('formularios.scripts.LogicaRegistro2')
+        @include('formularios.scripts.LogicaRegistro',['formulario'=> $formPrincipal])
+
+        @include('formularios.scripts.LogicaRegistro2',['formulario'=> $formPrincipal])
+
 
 @endsection

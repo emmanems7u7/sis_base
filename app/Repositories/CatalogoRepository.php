@@ -43,7 +43,7 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
             'categoria_id' => $this->cleanHtml($request->categoria),
             'catalogo_parent' => $this->cleanHtml($request->catalogo_parent),
             'catalogo_descripcion' => $this->cleanHtml($request->catalogo_descripcion),
-            'catalogo_estado' => $this->cleanHtml($request->catalogo_estado),
+            'catalogo_estado' => $request->catalogo_estado,
         ]);
     }
 
@@ -259,7 +259,7 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
 
         foreach ($campos as $campo) {
             $tipo = strtolower($campo->campo_nombre);
-            $name = $campo->nombre;
+            $name = $campo->id;
 
             $inputName = $prefix
                 ? "{$prefix}.{$name}"

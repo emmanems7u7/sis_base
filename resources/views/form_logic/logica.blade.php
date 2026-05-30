@@ -158,6 +158,9 @@
 
             restaurarInicio()
 
+            contenedor_mensaje.classList.add('d-none')
+            contenedor_condiciones.classList.remove('d-none')
+            contenedor_botones.classList.remove('d-none')
 
             switch (tipo) {
                 case 'TAC-001':
@@ -176,10 +179,13 @@
                     document.getElementById('modal-crear-registros').classList.remove('d-none');
 
                     break;
+                case 'TAC-006':
+                    document.getElementById('cont-eliminar-registro').classList.remove('d-none');
+                    contenedor_condiciones.classList.add('d-none')
+
+                    break;
             }
-            contenedor_mensaje.classList.add('d-none')
-            contenedor_condiciones.classList.remove('d-none')
-            contenedor_botones.classList.remove('d-none')
+
         }
 
         document.getElementById('cancelar-edicion-accion')
@@ -218,6 +224,7 @@
             document.getElementById('modal-modificar-campo')?.classList.add('d-none');
             document.getElementById('modal-email-block')?.classList.add('d-none');
             document.getElementById('modal-crear-registros')?.classList.add('d-none');
+            document.getElementById('cont-eliminar-registro')?.classList.add('d-none');
 
             document.getElementById('guardar-accion-modal').textContent = 'Agregar Acción';
             contenedor_botones.classList.add('d-none')
@@ -235,6 +242,7 @@
         }
 
         function cargarCamposCached(formId, selectElement, placeholder = '-- Seleccione --') {
+
             return new Promise(resolve => {
                 if (!formId || !selectElement) return resolve();
 
@@ -250,6 +258,7 @@
                 fetch(`/formularios/${formId}/obtiene/campos`)
                     .then(res => res.ok ? res.json() : [])
                     .then(campos => {
+
                         camposCache[formId] = campos;
                         let opciones = `<option value="">${placeholder}</option>`;
                         campos.forEach(c => {
@@ -606,6 +615,15 @@
                     valor_text = select.options[select.selectedIndex]?.text || '';
                 }
 
+                const checkbox = document.getElementById("invertir_operacion");
+                var operacion_rev;
+
+                if (checkbox.checked) {
+                    operacion_rev = 1;
+                } else {
+                    operacion_rev = 0;
+                }
+
                 accionObj.form_origen_id = form_origen_id.value;
 
                 accionObj.form_ref_id = formRef.value;
@@ -621,7 +639,7 @@
                 accionObj.form_ref_text = formRef.options[formRef.selectedIndex]?.text || '';
                 accionObj.campo_ref_text = campoRef.options[campoRef.selectedIndex]?.text || '';
                 accionObj.operacion_text = operacion.options[operacion.selectedIndex]?.text || '';
-
+                accionObj.operacion_rev = operacion_rev;
 
 
             }
@@ -741,25 +759,101 @@
                 };
             }
 
-            // Condiciones
-            document.querySelectorAll('#condiciones-modal-container .condicion-block').forEach(cond => {
-                const origen = cond.querySelector('.cond-form-origen');
-                const operador = cond.querySelector('.cond-operador');
-                const destino = cond.querySelector('.cond-form-destino');
-                const mensaje = cond.querySelector('.cond-mensaje');
 
-                accionObj.condiciones.push({
-                    campo_condicion_origen: origen.value,
-                    operador: operador.value,
-                    campo_condicion_destino: destino.value,
-                    campo_condicion_origen_text: origen.options[origen.selectedIndex]?.text || '',
-                    operador_text: operador.options[operador.selectedIndex]?.text || '',
-                    campo_condicion_destino_text: destino.options[destino.selectedIndex]?.text || '',
-                    mensaje: mensaje?.value || ''
+
+            if (tipoAccion_id === 'TAC-006') {
+
+                const tipoAccion = document.getElementById('modal-tipo-accion');
+
+                const form_origen_id = document.getElementById('delete-formulario-origen');
+
+                const deleteFormDestino = document.getElementById('delete-formulario-destino');
+
+                const condiciones = [];
+
+                document.querySelectorAll('.delete-condicion-item')
+                    .forEach(item => {
+
+                        const campoRef = item.querySelector('.delete-campo-ref');
+                        const operacion = item.querySelector('.delete-operacion');
+
+                        const tipoValor = item.querySelector('.delete-tipo-valor');
+
+                        const valorEstatico = item.querySelector('.delete-valor-estatico');
+
+                        const valorCampo = item.querySelector('.delete-valor-campo');
+
+                        const mensaje = item.querySelector('.cond-mensaje');
+
+                        const tipoValorValue = tipoValor.value;
+
+                        const valor = tipoValorValue === 'static'
+                            ? valorEstatico.value
+                            : valorCampo.value;
+
+                        let valor_text = '';
+
+                        if (tipoValorValue === 'static') {
+
+                            valor_text = valorEstatico.value.trim();
+
+                        } else {
+
+                            valor_text =
+                                valorCampo.options[valorCampo.selectedIndex]?.text || '';
+
+                        }
+
+                        condiciones.push({
+
+
+                            tipo_valor: tipoValorValue,
+                            // MANTENER ESTRUCTURA
+                            campo_condicion_origen: campoRef.value,
+                            operador: operacion.value,
+                            campo_condicion_destino: valor,
+                            campo_condicion_origen_text: campoRef.options[campoRef.selectedIndex]?.text || '',
+                            operador_text: operacion.options[operacion.selectedIndex]?.text || '',
+                            campo_condicion_destino_text: valor_text,
+                            mensaje: mensaje?.value || ''
+
+                        });
+
+                    });
+
+                accionObj.form_ref_id = form_origen_id.value;
+                accionObj.form_origen_id = deleteFormDestino.value;
+                accionObj.condiciones = condiciones;
+
+                accionObj.tipo_accion_text =
+                    tipoAccion.options[tipoAccion.selectedIndex]?.text || '';
+
+            }
+
+
+
+
+
+            if (tipoAccion_id != 'TAC-006') {
+                // Condiciones
+                document.querySelectorAll('#condiciones-modal-container .condicion-block').forEach(cond => {
+                    const origen = cond.querySelector('.cond-form-origen');
+                    const operador = cond.querySelector('.cond-operador');
+                    const destino = cond.querySelector('.cond-form-destino');
+                    const mensaje = cond.querySelector('.cond-mensaje');
+
+                    accionObj.condiciones.push({
+                        campo_condicion_origen: origen.value,
+                        operador: operador.value,
+                        campo_condicion_destino: destino.value,
+                        campo_condicion_origen_text: origen.options[origen.selectedIndex]?.text || '',
+                        operador_text: operador.options[operador.selectedIndex]?.text || '',
+                        campo_condicion_destino_text: destino.options[destino.selectedIndex]?.text || '',
+                        mensaje: mensaje?.value || ''
+                    });
+
                 });
-
-            });
-
+            }
             document.querySelectorAll('#condiciones-modal-container .condicion-form-valor-block')
                 .forEach(cond => {
 
@@ -925,6 +1019,52 @@
                 }
             }
 
+
+
+
+            if (tipoAccion === 'TAC-006') {
+
+                if (!accionObj.condiciones?.length) {
+                    mostrarAlerta('warning', 'Debe agregar al menos una condición.');
+                    return;
+                }
+
+                if (!accionObj.form_ref_id) {
+                    mostrarAlerta('warning', 'Seleccione un formulario destino.');
+                    return;
+                }
+
+                if (!accionObj.form_origen_id) {
+                    mostrarAlerta('warning', 'Seleccione un formulario origen.');
+                    return;
+                }
+
+                for (const condicion of accionObj.condiciones) {
+
+                    if (!condicion.campo_condicion_origen) {
+                        mostrarAlerta('warning', 'Seleccione un campo de referencia.');
+                        return;
+                    }
+                    if (!condicion.operador) {
+                        mostrarAlerta('warning', 'Seleccione una operación.');
+                        return;
+                    }
+                    if (!condicion.tipo_valor) {
+                        mostrarAlerta('warning', 'Seleccione el tipo de valor.');
+                        return;
+                    }
+                    if (!condicion.campo_condicion_destino) {
+                        mostrarAlerta('warning', 'Ingrese o seleccione un valor.');
+                        return;
+                    }
+                    if (!condicion.mensaje) {
+                        mostrarAlerta('warning', 'Ingrese un mensaje.');
+                        return;
+                    }
+                }
+            }
+
+
             // ===== TAC-003 / enviar_email =====
             if (tipoAccion === 'TAC-003' || tipoAccion === 'enviar_email') {
 
@@ -985,38 +1125,39 @@
             }
 
 
-            let condicionesInvalidas = accionObj.condiciones.some(c => {
 
-                // =====================================
-                // CONDICION FORMULARIO / VALOR
-                // =====================================
-                if (c.tipo_condicion === 'form_valor') {
+            if (tipoAccion != 'TAC-006') {
+
+                let condicionesInvalidas = accionObj.condiciones.some(c => {
+
+
+                    if (c.tipo_condicion === 'form_valor') {
+
+                        return (
+                            !c.formulario_tipo ||
+                            !c.campo_condicion ||
+                            !c.operador ||
+                            !c.valor
+                        );
+                    }
 
                     return (
-                        !c.formulario_tipo ||
-                        !c.campo_condicion ||
+                        !c.campo_condicion_origen ||
                         !c.operador ||
-                        !c.valor
+                        !c.campo_condicion_destino
                     );
+
+                });
+
+                if (condicionesInvalidas) {
+
+                    mostrarAlerta('warning', 'Complete todos los campos de las condiciones.');
+
+                    return;
                 }
-
-                // =====================================
-                // CONDICION NORMAL
-                // =====================================
-                return (
-                    !c.campo_condicion_origen ||
-                    !c.operador ||
-                    !c.campo_condicion_destino
-                );
-
-            });
-
-            if (condicionesInvalidas) {
-
-                mostrarAlerta('warning', 'Complete todos los campos de las condiciones.');
-
-                return;
             }
+
+
 
             if (editingIndex !== null) {
                 accionesArray[editingIndex] = accionObj;
@@ -1041,6 +1182,7 @@
 
         // Crear card visual
         function crearCardVisual(accionObj, index) {
+
             let cardWrapper;
             if (editingIndex !== null) {
                 // Si estamos editando, reemplazamos el card existente
@@ -1196,42 +1338,84 @@
                 const rolesText = (accionObj.email_detalle?.roles_text || []).join(', ') || 'Ninguno';
 
                 contenido += `
-        <p>
-        <strong>Usuarios:</strong> ${usuariosText}<br>
-        <strong>Roles:</strong> ${rolesText}<br>
-        <strong>Asunto:</strong> ${accionObj.email_subject || ''}<br>
-        <strong>Mensaje:</strong><br>
-        <div class="border rounded p-2 bg-light">
-            ${accionObj.email_body || ''}
-        </div>
-        </p>`;
+                                <p>
+                                <strong>Usuarios:</strong> ${usuariosText}<br>
+                                <strong>Roles:</strong> ${rolesText}<br>
+                                <strong>Asunto:</strong> ${accionObj.email_subject || ''}<br>
+                                <strong>Mensaje:</strong><br>
+                                <div class="border rounded p-2 bg-light">
+                                    ${accionObj.email_body || ''}
+                                </div>
+                                </p>`;
             }
 
-            if (accionObj.condiciones?.length) {
-                contenido += `<hr><strong>Condiciones:</strong><br>`;
+            if (accionObj.tipo_accion_id === 'TAC-006') {
 
-                accionObj.condiciones.forEach((c, i) => {
+                let condicionesHtml = '';
 
-                    const condicionTexto = `${c.campo_condicion_origen_text} ${c.operador_text || c.operador} ${c.campo_condicion_destino_text}`;
+                (accionObj.condiciones || []).forEach((condicion, index) => {
 
-                    if (c.mensaje && c.mensaje.trim() !== '') {
-                        contenido += `
-                <div class="mb-2">
-                    <div><strong>Condición ${i + 1}:</strong></div>
-                    <div class="text-danger">${c.mensaje}</div>
-                    <small class="text-muted">(${condicionTexto})</small>
-                </div>
-            `;
-                    } else {
-                        contenido += `
-                <div class="mb-2">
-                    <strong>Condición ${i + 1}:</strong>
-                    ${condicionTexto}
-                </div>
-            `;
-                    }
+                    condicionesHtml += `
+    
+                    <div class="border rounded p-2 mb-2 bg-light">
+
+                        <strong>Condición ${index + 1}</strong><br>
+
+                        <strong>Formulario:</strong>
+                        ${condicion.form_ref_text || ''}<br>
+
+                        <strong>Campo:</strong>
+                        ${condicion.campo_ref_text || ''}<br>
+
+                        <strong>Operación:</strong>
+                        ${condicion.operacion_text || condicion.operacion}<br>
+
+                        <strong>Tipo valor:</strong>
+                        ${condicion.tipo_valor}<br>
+
+                        <strong>Valor:</strong>
+                        ${condicion.valor_text || condicion.valor}
+
+                        <strong>Mensaje:</strong>
+                        ${condicion.mensaje}
+                        
+                    </div>
+
+                `;
 
                 });
+
+                contenido += `${condicionesHtml}`;
+            }
+
+            if (accionObj.tipo_accion_id != 'TAC-006') {
+                if (accionObj.condiciones?.length) {
+                    contenido += `<hr><strong>Condiciones:</strong><br>`;
+
+                    accionObj.condiciones.forEach((c, i) => {
+
+                        const condicionTexto = `${c.campo_condicion_origen_text} ${c.operador_text || c.operador} ${c.campo_condicion_destino_text}`;
+
+                        if (c.mensaje && c.mensaje.trim() !== '') {
+                            contenido += `
+                                        <div class="mb-2">
+                                            <div><strong>Condición ${i + 1}:</strong></div>
+                                            <div class="text-danger">${c.mensaje}</div>
+                                            <small class="text-muted">(${condicionTexto})</small>
+                                        </div>
+                                    `;
+                        } else {
+                            contenido += `
+                                        <div class="mb-2">
+                                            <strong>Condición ${i + 1}:</strong>
+                                            ${condicionTexto}
+                                        </div>
+                                    `;
+                        }
+
+                    });
+                }
+
             }
             return contenido;
         }
@@ -2008,6 +2192,175 @@
         }
 
         /*  TAC-003*/
+
+
+
+
+
+
+
+
+
+
+        // =========================================================
+        // CARGAR CAMPOS
+        // =========================================================
+
+        async function cargarCamposDelete() {
+
+            const deleteFormOrigenId =
+                document.getElementById('delete-formulario-origen')?.value;
+
+            const deleteFormDestinoId =
+                document.getElementById('delete-formulario-destino')?.value;
+
+            const promesasDelete = [];
+
+            // =====================================================
+            // CAMPOS ORIGEN
+            // =====================================================
+
+            if (deleteFormOrigenId) {
+
+                document.querySelectorAll('.delete-valor-campo')
+                    .forEach(select => {
+
+                        promesasDelete.push(
+
+                            cargarCamposConCache(
+                                deleteFormOrigenId,
+                                select,
+                                'origen',
+                                '-- Seleccione campo origen --'
+                            )
+
+                        );
+
+                    });
+
+            }
+
+            // =====================================================
+            // CAMPOS DESTINO
+            // =====================================================
+
+            if (deleteFormDestinoId) {
+
+                document.querySelectorAll('.delete-campo-ref')
+                    .forEach(select => {
+
+                        promesasDelete.push(
+
+                            cargarCamposConCache(
+                                deleteFormDestinoId,
+                                select,
+                                'destino',
+                                '-- Seleccione campo destino --'
+                            )
+
+                        );
+
+                    });
+
+            }
+
+            await Promise.all(promesasDelete);
+
+        }
+
+        // =========================================================
+        // EVENTOS INICIALES
+        // =========================================================
+
+        document.getElementById('btn-add-delete-condicion')
+            ?.addEventListener('click', agregarCondicionDelete);
+
+        document.getElementById('delete-formulario-origen')
+            ?.addEventListener('change', cargarCamposDelete);
+
+        document.getElementById('delete-formulario-destino')
+            ?.addEventListener('change', cargarCamposDelete);
+
+        // =========================================================
+        // AGREGAR CONDICION
+        // =========================================================
+
+        function agregarCondicionDelete() {
+
+            const container = document.getElementById('delete-condiciones-container');
+
+            const template = document.getElementById('template-delete-condicion');
+
+            const clon = template.content.cloneNode(true);
+
+            container.appendChild(clon);
+
+            cargarCamposDelete();
+
+        }
+        // =========================================================
+        // EVENTOS DINAMICOS
+        // =========================================================
+
+        document.addEventListener('change', async function (e) {
+
+            // =====================================================
+            // TIPO VALOR
+            // =====================================================
+
+            if (e.target.classList.contains('delete-tipo-valor')) {
+
+                const item = e.target.closest('.delete-condicion-item');
+
+                const tipo = e.target.value;
+
+                const input = item.querySelector('.delete-valor-estatico');
+
+                const select = item.querySelector('.delete-valor-campo');
+
+                if (tipo === 'campo') {
+
+                    input.classList.add('d-none');
+
+                    select.classList.remove('d-none');
+
+                } else {
+
+                    input.classList.remove('d-none');
+
+                    select.classList.add('d-none');
+
+                }
+
+            }
+
+
+
+        });
+
+        // =========================================================
+        // CLICK EVENTS
+        // =========================================================
+
+        document.addEventListener('click', function (e) {
+
+            // =====================================================
+            // ELIMINAR CONDICION
+            // =====================================================
+
+            if (e.target.closest('.btn-remove-delete-condicion')) {
+
+                e.target.closest('.delete-condicion-item').remove();
+
+            }
+
+        });
+
+
+
+
+
+
     });
 
 

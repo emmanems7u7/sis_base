@@ -28,12 +28,12 @@ class TipoAccionSeeder extends Seeder
             'enviar_email',
             'crear_registro',
             'crear_registros',
+            'eliminar_registro',
+            'eliminar_registros',
             'notificacion',
             'actualizar_estado',
             'duplicar_registro',
             'asignar_usuario',
-            'enviar_sms',
-            'ejecutar_webhook',
             'generar_reporte',
         ];
 

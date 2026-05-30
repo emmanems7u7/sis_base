@@ -10,8 +10,8 @@
         @endphp
 
         <div class="form-check">
-            <input type="radio" data-tipo="{{ $campo->campo_nombre }}" name="{{ $inputName }}"
-                value="{{ $opcion->catalogo_codigo }}"
+            <input type="radio" data-etiqueta="{{ $etiqueta }}" data-tipo="{{ $campo->campo_nombre }}"
+                name="{{ $inputName }}" value="{{ $opcion->catalogo_codigo }}"
                 class="form-check-input campo-formulario {{ $errors->has($inputName) ? 'is-invalid' : '' }}"
                 id="{{ $inputId }}" {{ old($inputName, $valor) == $opcion->catalogo_codigo ? 'checked' : '' }}>
 

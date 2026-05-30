@@ -65,7 +65,6 @@ class CatalogoController extends Controller
 
     public function store(Request $request)
     {
-
         $request->validate([
             'categoria' => 'required|exists:categorias,id',
             'catalogo_parent' => 'nullable|string|max:5',
@@ -105,6 +104,7 @@ class CatalogoController extends Controller
 
     public function update(Request $request, $id)
     {
+
         $catalogo = Catalogo::findOrFail($id);
 
         $request->validate([

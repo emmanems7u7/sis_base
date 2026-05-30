@@ -409,9 +409,11 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/import/subir', [RespuestasFormController::class, 'subirArchivo'])->name('import.subir');
     Route::post('/import/procesar', [RespuestasFormController::class, 'procesarChunk'])->name('import.procesar');
 
-    Route::post('/formularios/{form}/validar-registro', [RespuestasFormController::class, 'validarRegistro'])
+    Route::post('/formularios/validar-registro', [RespuestasFormController::class, 'validarRegistro'])
         ->name('formularios.validarRegistro');
 
+    Route::post('/formularios/{formId}/eliminar-registro', [RespuestasFormController::class, 'EliminarRegistro'])
+        ->name('formularios.EliminarRegistro');
 
     Route::delete('/formularios/respuestas/eliminar/masivo', [RespuestasFormController::class, 'eliminarMasivo'])
         ->name('respuestas.eliminarMasivo');

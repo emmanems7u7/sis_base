@@ -6,7 +6,7 @@
     @endif
 </div>
 
-<input type="file" data-tipo="{{ $campo->campo_nombre }}" name="{{ $inputName }}"
+<input type="file" data-tipo="{{ $campo->campo_nombre }}" name="{{ $inputName }}" data-etiqueta="{{ $etiqueta }}"
     class="form-control {{ $errors->has($inputName) ? 'is-invalid' : '' }}" {{ $esRequerido ? 'required' : '' }}>
 
 @if($errors->has($inputName))

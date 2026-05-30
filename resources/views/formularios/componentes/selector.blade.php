@@ -2,7 +2,7 @@
 
     <select name="{{ $inputName }}" id="{{ $inputId }}"
         class="form-select tom-select campo-dinamico {{ $errors->has($inputName) ? 'is-invalid' : '' }}"
-        data-tipo="{{ $campo->campo_nombre }}" data-campo-id="{{ $campo->id }}" {{ $esRequerido ? 'required' : '' }}>
+        data-etiqueta="{{ $etiqueta }}" data-tipo="{{ $campo->campo_nombre }}" data-campo-id="{{ $campo->id }}" {{ $esRequerido ? 'required' : '' }}>
 
         <option value="">Seleccione...</option>
 

@@ -198,7 +198,7 @@ class CamposFormRepository implements CamposFormInterface
     public function guardarCampo($campo, $respuesta_id, $datosFormulario, $form, $prefix = null)
     {
         $tipo = strtolower($campo->campo_nombre);
-        $name = $campo->nombre;
+        $name = $campo->id;
 
         $inputKey = $prefix
             ? "{$prefix}[{$name}]"
@@ -278,11 +278,13 @@ class CamposFormRepository implements CamposFormInterface
 
     public function actualizarCampo($campo, $respuesta_id, $datosFormulario, $form, $prefix = null)
     {
+
+
         $tipo = strtolower($campo->campo_nombre);
 
         $inputKey = $prefix
-            ? "{$prefix}[{$campo->nombre}]"
-            : $campo->nombre;
+            ? "{$prefix}[{$campo->id}]"
+            : $campo->id;
 
         $valor = $datosFormulario[$inputKey] ?? null;
 

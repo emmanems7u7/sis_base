@@ -31,5 +31,6 @@ interface FormularioInterface
     public function GetFormRelacion($form, $relacion);
     public function GetFormById($form);
     public function GetFormAll();
+    public function EliminarArchivos($respuesta);
 
 }

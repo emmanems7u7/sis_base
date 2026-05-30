@@ -1,6 +1,7 @@
 <?php
 
 namespace App\Providers;
+
 use App\Interfaces\CategoriaInterface;
 use App\Repositories\CategoriaRepository;
 use App\Interfaces\ModuloInterface;
@@ -73,6 +74,7 @@ class AppServiceProvider extends ServiceProvider
         $this->app->bind(RespuestasCampoInterface::class, RespuestasCampoRepository::class);
         $this->app->bind(ModuloInterface::class, ModuloRepository::class);
         $this->app->bind(CategoriaInterface::class, CategoriaRepository::class);
+
 
     }
 

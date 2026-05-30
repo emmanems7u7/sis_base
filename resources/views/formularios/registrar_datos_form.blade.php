@@ -17,66 +17,66 @@
                   
                     @foreach($formularios as $index => $formItem)
 
-                  <div class="card mt-2 shadow-lg">
-                      <div class="card-body">
-                          
-                   
-                        @if($formularios->count() > 1)
-                            <h6 class="">
-                                {{ $formItem->nombre }}
-                            </h6>
-                            <div class="w-100 mb-3" style="height:2px; background:#e9ecef; border-radius:2px;"></div>
-                        @endif
-
-                        @include('formularios._campos', [
-                            'campos' => $formItem->campos->sortBy('posicion'),
-                            'valores' => [],
-                            'formulario' => $formItem,
-                            'prefix' => "form_{$formItem->id}" ,
-                            'caso' => 'store'
-                        ])
-
-                        @php
-                        $formPrincipal = $formularios->first();
-                        @endphp
+                        <div class="card mt-2 shadow-lg">
+                            <div class="card-body">
+                                
                         
-                        @if($formPrincipal->id == $formItem->id)
-                        @if(isset($formPrincipal->config['registro_multiple']) && $formPrincipal->config['registro_multiple'])
+                                        @if($formularios->count() > 1)
+                                            <h6 class="">
+                                                {{ $formItem->nombre }}
+                                            </h6>
+                                            <div class="w-100 mb-3" style="height:2px; background:#e9ecef; border-radius:2px;"></div>
+                                        @endif
 
-                        <button type="button" class="btn btn-outline-success btm-xs w-100 mt-3" id="btn-agregar-registro">
-                            {!! configForm($formItem->id, 'titles.add_multiple') !!}
-                        </button>
+                                        @include('formularios._campos', [
+                                            'campos' => $formItem->campos->sortBy('posicion'),
+                                            'valores' => [],
+                                            'formulario' => $formItem,
+                                            'prefix' => "form_{$formItem->id}" ,
+                                            'caso' => 'store'
+                                        ])
 
-                                <div class="mt-1">
-                                    <h6>  {!! configForm($formItem->id, 'titles.registers_adds') !!}</h6>
+                                        @php
+                                        $formPrincipal = $formularios->first();
+                                        @endphp
+                                        
+                                        @if($formPrincipal->id == $formItem->id)
+                                            @if(isset($formPrincipal->config['registro_multiple']) && $formPrincipal->config['registro_multiple'])
 
-                                    @if($isMobile)
-                                        <div id="contenedor-cards"></div>
-                                    @else
-                                        <div id="contenedor-tabla" class="table-responsive">
-                                            <table class="table table-bordered table-striped" id="tabla-registros">
-                                                <thead>
-                                                    <tr id="thead-dinamico">
-                                                        <th>#</th>
-                                                        <th>Acciones</th>
-                                                    </tr>
-                                                </thead>
-                                                <tbody></tbody>
-                                            </table>
-                                        </div>
-                                    @endif
+                                            <button type="button" class="btn btn-outline-success btm-xs w-100 mt-3" id="btn-agregar-registro">
+                                                {!! configForm($formItem->id, 'titles.add_multiple') !!}
+                                            </button>
+
+                                            <div class="mt-1">
+                                                <h6>  {!! configForm($formItem->id, 'titles.registers_adds') !!}</h6>
+
+                                                @if($isMobile)
+                                                    <div id="contenedor-cards"></div>
+                                                @else
+                                                    <div id="contenedor-tabla" class="table-responsive">
+                                                        <table class="table table-bordered table-striped" id="tabla-registros">
+                                                            <thead>
+                                                                <tr id="thead-dinamico">
+                                                                    <th>#</th>
+                                                                    <th>Acciones</th>
+                                                                </tr>
+                                                            </thead>
+                                                            <tbody></tbody>
+                                                        </table>
+                                                    </div>
+                                                @endif
+                                            </div>
+
+                                            <input type="hidden" name="registros_json" id="registros_json"
+                                            
+                                                value="{{ old('registros_json') }}">
+                                            
+                                            <div id="hidden_files_container"></div>
+
+                                            @endif
+                                        @endif
                                 </div>
-
-                                <input type="hidden" name="registros_json" id="registros_json"
-                                
-                                    value="{{ old('registros_json') }}">
-                                
-                                <div id="hidden_files_container"></div>
-
-                        @endif
-                        @endif
                         </div>
-                  </div>
 
                     @endforeach
 
@@ -93,8 +93,8 @@
     </div>
 
 
+    @include('formularios.scripts.LogicaRegistro',['formulario'=> $formPrincipal])
+    @include('formularios.scripts.LogicaRegistro2',['formulario'=> $formPrincipal])
 
-@include('formularios.scripts.LogicaRegistro')
-@include('formularios.scripts.LogicaRegistro2')
 
 @endsection
