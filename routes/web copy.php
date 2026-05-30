@@ -381,8 +381,7 @@ Route::put('/respuestas/{respuesta}', [RespuestasFormController::class, 'update'
 Route::delete('/respuestas/{respuesta}', [RespuestasFormController::class, 'destroy'])
     ->name('respuestas.destroy');
 
-Route::get('/formularios/{form}/export-pdf', [FormularioController::class, 'exportPdf'])
-    ->name('formularios.exportPdf');
+Route::get('/formularios/{form}/export-pdf', [FormularioController::class, 'exportPdf'])->name('formularios.exportPdf');
 Route::get('/formularios/{form}/export/excel', [FormularioController::class, 'exportExcel'])->name('formularios.exportExcel');
 
 

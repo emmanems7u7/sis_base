@@ -170,7 +170,7 @@
                     <small>
                         Presione el botón para crear una nueva acción
                     </small>
-                    <button type="button" class="btn btn-primary mb-3" id="open-modal-accion">+ Agregar Acción</button>
+                    <button type="button" class="btn btn-primary mb-3" id="open-accion">+ Agregar Acción</button>
 
                 </div>
 
@@ -191,7 +191,7 @@
                     <button 
                         type="button" 
                         class="btn btn-primary" 
-                        id="guardar-accion-modal">
+                        id="guardar-accion-logica">
                         Agregar Acción
                     </button>
                 </div>

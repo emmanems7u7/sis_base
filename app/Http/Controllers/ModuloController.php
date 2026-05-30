@@ -185,9 +185,8 @@ class ModuloController extends Controller
     {
 
 
-        $modulo = Modulo::with([
-            'formularios' => fn($q) => $q->wherePivot('activo', true)->with('campos')
-        ])->findOrFail($modulo_id);
+
+        $modulo = Modulo::with(['formularios' => fn($q) => $q->wherePivot('activo', true)->with('campos')])->findOrFail($modulo_id);
 
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
@@ -208,6 +207,14 @@ class ModuloController extends Controller
         $config = $modulo->configuracion ?? [];
         $modo = $config['modo'] ?? 'mostrar_todos';
 
+
+        if ($request->filled('id')) {
+            session(['formulario_id' => $request->id]);
+        } else {
+            $formularioId = $modulo->formularios->first()?->id;
+            session(['formulario_id' => $formularioId]);
+
+        }
         return view(
             'modulosDinamicos.index',
             compact('formulariosConRespuestas', 'modulo', 'breadcrumb', 'formularios_asociados', 'modo')
@@ -235,7 +242,7 @@ class ModuloController extends Controller
 
 
         // Ahora filtramos las reglas solo de esos formularios
-        $rules = FormLogicRule::with(['formulario', 'actions.formularioDestino'])
+        $rules = FormLogicRule::with(['formulario'])
             ->whereIn('form_id', $formIds)
             ->get();
 

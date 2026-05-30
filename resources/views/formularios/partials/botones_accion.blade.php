@@ -14,12 +14,17 @@
         </button>
         <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="btnGroupExport">
             <li>
-                <a class="dropdown-item" target="_blank" href="{{ route('formularios.exportPdf', $formulario) }}">
+                <a class="dropdown-item btn-exportar" data-tipo="pdf"
+                    data-url="{{ route('formularios.exportPdf', $formulario) }}" data-form-id="{{ $formulario->id }}"
+                    data-form-activo="{{ $formularioActivo ?? null }}">
                     <i class="fas fa-file-pdf text-danger me-1"></i> PDF
                 </a>
             </li>
+
             <li>
-                <a class="dropdown-item" target="_blank" href="{{ route('formularios.exportExcel', $formulario) }}">
+                <a class="dropdown-item btn-exportar" data-tipo="excel"
+                    data-url="{{ route('formularios.exportExcel', $formulario) }}" data-form-id="{{ $formulario->id }} "
+                    data-form-activo="{{ $formularioActivo ?? null }}">
                     <i class="fas fa-file-excel text-success me-1"></i> Excel
                 </a>
             </li>

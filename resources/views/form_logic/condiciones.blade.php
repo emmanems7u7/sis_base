@@ -17,7 +17,7 @@
 </div>
 
 
-<div id="condiciones-modal-container"></div>
+<div id="condiciones-container"></div>
 
 <template id="condicion-modal-template">
     <div class="condicion-block mb-2 p-2 border rounded">Condición <strong id="num_condicion"></strong>

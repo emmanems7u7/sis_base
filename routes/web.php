@@ -390,8 +390,7 @@ Route::middleware(['auth'])->group(function () {
     Route::delete('/respuestas/{respuesta}', [RespuestasFormController::class, 'destroy'])
         ->name('respuestas.destroy');
 
-    Route::get('/formularios/{form}/export-pdf', [FormularioController::class, 'exportPdf'])
-        ->name('formularios.exportPdf');
+    Route::get('/formularios/{form}/export-pdf', [FormularioController::class, 'exportPdf'])->name('formularios.exportPdf');
     Route::get('/formularios/{form}/export/excel', [FormularioController::class, 'exportExcel'])->name('formularios.exportExcel');
 
     Route::post('/form/filtros', [FormularioController::class, 'Cambiarfiltros'])->name('form.filtros');

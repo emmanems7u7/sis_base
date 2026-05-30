@@ -108,7 +108,7 @@
             </select>
             <button type="button" class="btn btn-outline-secondary btn-xs btn-buscar-opcion" 
                 data-bs-toggle="modal" 
-                data-bs-target="#modalBuscarOpcion"
+                data-bs-target="#modalBusqueda"
                 data-campo-id="{{ $campo->id }}">
                 <i class="fas fa-search"></i>
             </button>

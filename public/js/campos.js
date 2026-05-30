@@ -335,12 +335,10 @@ document.addEventListener('DOMContentLoaded', () => {
         initCargarMasRadioCheckbox('.opciones-container','checkbox');
 
         // Búsqueda en modal
-        document.querySelectorAll('.btn-buscar-opcion').forEach(btn=>{
-            btn.addEventListener('click', ()=>{
-                const campoId = btn.dataset.campoId;
-                const modalEl = document.getElementById('modalBusqueda');
-                if(modalEl) new bootstrap.Modal(modalEl).show();
-                document.getElementById('btnBuscar').dataset.campoId = campoId;
+        document.querySelectorAll('.btn-buscar-opcion').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.getElementById('btnBuscar').dataset.campoId =
+                    btn.dataset.campoId;
             });
         });
 

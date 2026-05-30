@@ -11,29 +11,24 @@
                 </button>
             </div>
             <div class="modal-body">
-                <div class="row">
-                    <div class="col-12">
 
-                        @if($modulo == 0)
+                @if($modulo == 0)
 
-                            <form action="{{ route('formularios.respuestas.formulario', $formulario->id) }}" method="GET">
+                    <form action="{{ route('formularios.respuestas.formulario', $formulario->id) }}" method="GET">
 
-                        @else
-                                <form action="{{ route('modulo.index', $modulo) }}" method="GET">
+                @else
+                        <form action="{{ route('modulo.index', $modulo) }}" method="GET">
 
-                            @endif
+                    @endif
 
-                                <div class="input-group">
+                        <input type="hidden" name="id" value="{{ $formulario->id }}">
 
-                                    @include('formularios._campos', ['cols' => 1, 'requerido' => 0, 'caso' => 'busqueda', 'formulario' => $formulario])
-
-
-                                </div>
+                        @include('formularios._campos', ['cols' => 1, 'requerido' => 0, 'caso' => 'busqueda', 'formulario' => $formulario])
 
 
 
-                    </div>
-                </div>
+
+
             </div>
             <div class="modal-footer">
                 <button type="button" class="btn bg-gradient-secondary" data-bs-dismiss="modal">Cerrar</button>

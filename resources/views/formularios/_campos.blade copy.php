@@ -138,7 +138,7 @@
                 </select>
 
                 <button type="button" class="btn btn-outline-secondary btn-sm btn-buscar-opcion" data-bs-toggle="modal"
-                    data-bs-target="#modalBuscarOpcion" data-campo-id="{{ $campo->id }}">
+                    data-bs-target="#modalBusqueda" data-campo-id="{{ $campo->id }}">
                     <i class="fas fa-search"></i>
                 </button>
             </div>

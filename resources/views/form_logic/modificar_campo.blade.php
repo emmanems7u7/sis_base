@@ -43,7 +43,7 @@
         <div class="col-md-7">
             <label>Valor</label>
             <div class="input-group">
-                <select id="modal-tipo-valor" class="form-select">
+                <select id="tipo-valor" class="form-select">
                     <option value="static">Valor fijo</option>
                     <option value="campo">Campo del formulario de origen</option>
                 </select>

@@ -72,10 +72,7 @@
     <h1>{{ $export }}</h1>
 
     <div class="info-header">
-        <p><strong>Descripción:</strong> {{ $formulario->descripcion }}</p>
         <p><strong>Generado por:</strong> {{ $user->nombre_completo }}</p>
-
-
         <p><strong>Generado el:</strong> {{ $fechaLiteral }}</p>
 
     </div>

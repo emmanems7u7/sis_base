@@ -154,11 +154,18 @@ class FormularioController extends Controller
     }
 
 
-    public function exportPdf(Formulario $form)
+    public function exportPdf(Request $request, Formulario $form)
     {
-        $formulario = Formulario::with('campos.opciones_catalogo', 'respuestas.camposRespuestas.campo')->findOrFail($form->id);
+        $formulario = Formulario::with(
+            'campos.opciones_catalogo'
+        )->findOrFail($form->id);
 
-        $respuestas = $formulario->respuestas()->with('camposRespuestas.campo')->get();
+        $query = RespuestasForm::where('form_id', $formulario->id)
+            ->with('camposRespuestas.campo', 'actor');
+
+        $query = $this->FormularioRepository->aplicarFiltrosFormulario($query, $formulario, $request);
+
+        $respuestas = $query->orderBy('created_at', 'desc')->get();
 
         $datos = $this->FormularioRepository->generar_informacion_export($respuestas, $formulario);
 
@@ -166,6 +173,12 @@ class FormularioController extends Controller
 
         $fecha = Carbon::now()->format('d-m-Y H:i:s');
 
+        $mpdfConfig = array_merge([
+            'margin_top' => 15,
+            'margin_right' => 10,
+            'margin_bottom' => 30,
+            'margin_left' => 10,
+        ]);
         return ExportPDF::exportPdf(
             'formularios.export_respuestas',
             [
@@ -176,7 +189,8 @@ class FormularioController extends Controller
                 'fecha' => $fecha,
             ],
             'respuestas_formulario_' . $formulario->id,
-            false
+            false,
+            $mpdfConfig
         );
     }
     public function exportExcel(Formulario $form)

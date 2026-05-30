@@ -94,7 +94,6 @@ class FormLogicController extends Controller
         $rule = FormLogicRule::with([
             'formulario',
             'actions',
-            'actions.formularioDestino',
             'actions.conditions.campoCondicion',
             'actions.conditions.campoValor'
         ])->find($rule->id);
@@ -118,12 +117,14 @@ class FormLogicController extends Controller
                  *  1️⃣ TAC-001 → modificar_campo
                  * ------------------------------*/
                 if ($tipo === 'TAC-001') {
+
                     return (object) [
                         'id' => $action->id,
                         'tipo_accion_id' => $tipo,
                         'tipo_accion_text' => $action->tipo_accion_catalogo,
+                        'form_origen_id' => $p['form_origen_id'],
 
-                        'form_ref_id' => $action->formularioDestino?->id,
+                        'form_ref_id' => $p['form_ref_id'],
                         'form_ref_text' => $action->formularioDestino?->nombre ?? 'No asignado',
 
                         'campo_ref_id' => $action->campoDestino?->id,
@@ -145,32 +146,6 @@ class FormLogicController extends Controller
                         'condiciones' => $p['condiciones'] ?? [],
                     ];
                 }
-
-                /** ------------------------------
-                 *  2️⃣ TAC-005 → crear_registros
-                 * ------------------------------*/
-                if ($tipo === 'TAC-005') {
-                    return (object) [
-                        'id' => $action->id,
-                        'tipo_accion_id' => $tipo,
-                        'tipo_accion_text' => $action->tipo_accion_catalogo,
-
-                        'form_ref_id' => $action->formularioDestino?->id,
-                        'form_ref_text' => $action->formularioDestino?->nombre ?? 'No asignado',
-
-                        'usar_relacion' => $p['usar_relacion'] ?? false,
-                        'tipo_accion_text_raw' => $p['tipo_accion_text'] ?? '',
-
-                        'formulario_relacion_seleccionado' => $p['formulario_relacion_seleccionado'] ?? null,
-                        'formulario_relacion_text' => $p['formulario_relacion_text'] ?? '',
-
-                        'campos' => $p['campos'] ?? [],
-
-                        'filtros_relacion' => $p['filtros_relacion'] ?? [],
-                        'condiciones' => $p['condiciones'] ?? [],
-                    ];
-                }
-
                 /** ------------------------------
                  *  3️⃣ enviar_email
                  * ------------------------------*/
@@ -225,6 +200,49 @@ class FormLogicController extends Controller
                         'condiciones' => $p['condiciones'] ?? [],
                     ];
                 }
+                /** ------------------------------
+                 *  2️⃣ TAC-005 → crear_registros
+                 * ------------------------------*/
+                if ($tipo === 'TAC-005') {
+                    return (object) [
+                        'id' => $action->id,
+                        'tipo_accion_id' => $tipo,
+                        'tipo_accion_text' => $action->tipo_accion_catalogo,
+
+                        'form_ref_id' => $action->formularioDestino?->id,
+                        'form_ref_text' => $action->formularioDestino?->nombre ?? 'No asignado',
+
+                        'usar_relacion' => $p['usar_relacion'] ?? false,
+                        'tipo_accion_text_raw' => $p['tipo_accion_text'] ?? '',
+
+                        'formulario_relacion_seleccionado' => $p['formulario_relacion_seleccionado'] ?? null,
+                        'formulario_relacion_text' => $p['formulario_relacion_text'] ?? '',
+
+                        'campos' => $p['campos'] ?? [],
+
+                        'filtros_relacion' => $p['filtros_relacion'] ?? [],
+                        'condiciones' => $p['condiciones'] ?? [],
+                    ];
+                }
+
+                if ($tipo === 'TAC-006') {
+                    return (object) [
+                        'id' => $action->id,
+                        'tipo_accion_id' => $tipo,
+                        'tipo_accion_text' => $action->tipo_accion_catalogo,
+
+                        'form_origen_id' => $p['form_origen_id'],
+                        'form_origen_text' => $action->formularioOrigen?->nombre ?? 'No asignado',
+
+                        'form_ref_id' => $p['form_ref_id'],
+                        'form_ref_text' => $action->formularioDestino?->nombre ?? 'No asignado',
+
+                        'condiciones' => $p['condiciones'] ?? [],
+                    ];
+                }
+
+
+
                 /** ------------------------------
                  * 4️⃣ Otros tipos (fallback)
                  * ------------------------------*/

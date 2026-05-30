@@ -194,54 +194,16 @@ class FormularioRepository implements FormularioInterface
         $query = RespuestasForm::where('form_id', $formulario->id)
             ->with('camposRespuestas.campo', 'actor', 'grupos');
 
-        // FILTROS DINÁMICOS POR NOMBRE DE CAMPO
-        $inputs = collect($request->all())
-            ->except(['_token', 'page'])
-            ->filter(fn($v) => $v !== null && $v !== '');
+        $query = $this->aplicarFiltrosFormulario(
+            $query,
+            $formulario,
+            $request
+        );
 
-        foreach ($inputs as $nombreCampo => $valorEnviado) {
-            if (!$camposPorNombre->has($nombreCampo))
-                continue;
-            $campo = $camposPorNombre->get($nombreCampo);
-
-            $query->whereHas('camposRespuestas', function ($q) use ($campo, $valorEnviado) {
-                $q->where('cf_id', $campo->id);
-
-                switch ($campo->campo_nombre) {
-                    case 'text':
-                    case 'textarea':
-                    case 'email':
-                    case 'password':
-                    case 'enlace':
-                        $q->where('valor', 'like', "%{$valorEnviado}%");
-                        break;
-
-                    case 'checkbox':
-                        foreach ($valorEnviado as $valor) {
-                            $q->whereExists(function ($sub) use ($campo, $valor) {
-                                $sub->select(DB::raw(1))
-                                    ->from('respuestas_campos as cr2')
-                                    ->whereColumn('cr2.respuesta_id', 'respuestas_campos.respuesta_id')
-                                    ->where('cr2.cf_id', $campo->id)
-                                    ->where('cr2.valor', $valor);
-                            });
-                        }
-                        break;
-
-                    case 'selector':
-                    case 'radio':
-                        $q->where('valor', $valorEnviado);
-                        break;
-
-                    default:
-                        $q->where('valor', $valorEnviado);
-                        break;
-                }
-            });
-        }
-
-        // PAGINACIÓN
-        $respuestas = $query->orderBy('created_at', 'desc')->paginate(20, ['*'], $pageName ?? 'page')->withQueryString();
+        $respuestas = $query
+            ->orderBy('created_at', 'desc')
+            ->paginate(20, ['*'], $pageName ?? 'page')
+            ->withQueryString();
 
         // Cargar solo campos visibles en listado
         $formulario = Formulario::with([
@@ -403,13 +365,70 @@ class FormularioRepository implements FormularioInterface
 
         return $valor;
     }
+
+
+    public function aplicarFiltrosFormulario($query, $formulario, Request $request)
+    {
+        $camposPorNombre = $formulario->campos->keyBy('id');
+
+        $inputs = collect($request->all())
+            ->except(['_token', 'page'])
+            ->filter(fn($v) => $v !== null && $v !== '');
+
+        foreach ($inputs as $nombreCampo => $valorEnviado) {
+
+            if (!$camposPorNombre->has($nombreCampo)) {
+                continue;
+            }
+
+            $campo = $camposPorNombre->get($nombreCampo);
+
+            $query->whereHas('camposRespuestas', function ($q) use ($campo, $valorEnviado) {
+
+                $q->where('cf_id', $campo->id);
+
+                switch ($campo->campo_nombre) {
+
+                    case 'text':
+                    case 'textarea':
+                    case 'email':
+                    case 'password':
+                    case 'enlace':
+                        $q->where('valor', 'like', "%{$valorEnviado}%");
+                        break;
+
+                    case 'checkbox':
+
+                        foreach ($valorEnviado as $valor) {
+
+                            $q->whereExists(function ($sub) use ($campo, $valor) {
+
+                                $sub->select(DB::raw(1))
+                                    ->from('respuestas_campos as cr2')
+                                    ->whereColumn('cr2.respuesta_id', 'respuestas_campos.respuesta_id')
+                                    ->where('cr2.cf_id', $campo->id)
+                                    ->where('cr2.valor', $valor);
+                            });
+                        }
+
+                        break;
+
+                    default:
+                        $q->where('valor', $valorEnviado);
+                }
+            });
+        }
+
+        return $query;
+    }
+
     public function generar_informacion_export($respuestas, $formulario)
     {
 
         $datos = [];
         foreach ($respuestas as $respuesta) {
             $fila = [];
-            $fila['id'] = $respuesta->id;
+            //$fila['id'] = $respuesta->id;
 
             foreach ($formulario->campos->sortBy('posicion') as $campo) {
                 $valores = $respuesta->camposRespuestas

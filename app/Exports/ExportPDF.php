@@ -26,6 +26,8 @@ class ExportPDF
 
         $mpdf = new \Mpdf\Mpdf($mpdfConfig);
 
+
+
         $mpdf->SetHTMLFooter('
         <div style="border-top: 1px solid #ccc; padding-top: 5px; font-size: 10px;">
             <table width="100%" style="border-collapse: collapse; border: none;">

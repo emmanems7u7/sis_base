@@ -33,4 +33,7 @@ interface FormularioInterface
     public function GetFormAll();
     public function EliminarArchivos($respuesta);
 
+    public function aplicarFiltrosFormulario($query, $formulario, Request $request);
+
+
 }

@@ -52,16 +52,27 @@
 @if(!$esHidden)
 <div class="{{ $colClass }}">
 @endif
-
-    @if(!$esHidden)
-        <label class="form-label fw-bold">
+@if(!$esHidden)
+    <div class="d-flex align-items-center gap-1 mb-1">
+        <label class="form-label fw-bold mb-0">
             {{ $campo->etiqueta }}
             @if($mostrarAsterisco)
-                <span class="text-danger">* </span>
+                <span class="text-danger">*</span>
             @endif
         </label>
-    @endif
 
+        @if($tipo == 'selector')
+          
+        <i class="fas fa-search text-secondary btn-buscar-opcion"
+   style="cursor: pointer;"
+   data-bs-toggle="modal"
+   data-bs-target="#modalBusqueda"
+   data-campo-id="{{ $campo->id }}"
+   title="Buscar"></i>
+            
+        @endif
+    </div>
+@endif
     @switch($tipo)
 
         {{-- INPUTS BÁSICOS --}}

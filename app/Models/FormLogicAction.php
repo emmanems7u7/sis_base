@@ -26,11 +26,23 @@ class FormLogicAction extends Model
         return $this->belongsTo(FormLogicRule::class, 'rule_id');
     }
 
-    public function formularioDestino()
+    public function getFormularioOrigenAttribute()
     {
-        return $this->belongsTo(Formulario::class, 'form_ref_id');
+        $id = $this->parametros['form_origen_id'] ?? null;
+
+        return $id
+            ? Formulario::find($id)
+            : null;
     }
 
+    public function getFormularioDestinoAttribute()
+    {
+        $id = $this->parametros['form_ref_id'] ?? null;
+
+        return $id
+            ? Formulario::find($id)
+            : null;
+    }
     public function conditions()
     {
         return $this->hasMany(FormLogicCondition::class, 'action_id');
