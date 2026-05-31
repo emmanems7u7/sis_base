@@ -1,67 +1,38 @@
 document.addEventListener('DOMContentLoaded', function () {
 
-    document.querySelectorAll('[data-offcanvas]').forEach(offcanvasEl => {
+    document.addEventListener('click', function (e) {
 
-        const templateId = offcanvasEl.dataset.template;
-        const contentId = offcanvasEl.dataset.content;
+        if (e.target.closest('.form-check-input, .form-check-label')) {
+            return;
+        }
 
-        const contenido = document.getElementById(contentId);
-        const templateEl = document.getElementById(templateId);
+        const trigger = e.target.closest('[data-open-offcanvas]');
+        if (!trigger) return;
 
-        if (!contenido || !templateEl) return;
+        const offcanvasEl = document.getElementById(trigger.dataset.openOffcanvas);
+        if (!offcanvasEl) return;
+
+        const contenido = document.getElementById(offcanvasEl.dataset.content);
 
         const offcanvas = bootstrap.Offcanvas.getOrCreateInstance(offcanvasEl);
 
-        document.addEventListener('click', function (e) {
+        //CLAVE: buscar botones dentro del MISMO CARD
+        const card = trigger.closest('.card');
+        const source = card.querySelector('.acciones-source');
 
-  // evitar abrir si se hace click en checkbox o label
-  if (
-    e.target.closest('.form-check-input') ||
-    e.target.closest('.form-check-label')
-) {
-    return;
-}
+        if (!source || !contenido) return;
 
-            const trigger = e.target.closest('[data-open-offcanvas]');
+        contenido.innerHTML = source.innerHTML;
 
-            if (!trigger) return;
+        offcanvas.show();
 
-            // validar si este trigger pertenece a este offcanvas
-            if (trigger.dataset.openOffcanvas !== offcanvasEl.id) return;
+        // tooltips opcional
+        contenido.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
 
-            let template = templateEl.cloneNode(true).innerHTML;
-
-            // =========================
-            // placeholders dinámicos
-            // =========================
-
-            Object.keys(trigger.dataset).forEach(key => {
-
-                if (key === 'openOffcanvas')
-                    return;
-
-                const value = trigger.dataset[key];
-
-                const placeholder = `__${key.toUpperCase()}__`;
-
-                template = template.replaceAll(placeholder, value);
-
-            });
-
-            contenido.innerHTML = template;
-
-            offcanvas.show();
-
-            contenido.querySelectorAll('[data-bs-toggle="tooltip"]').forEach(el => {
-
-                if (!el._tooltipInit) {
-
-                    new bootstrap.Tooltip(el);
-
-                    el._tooltipInit = true;
-                }
-            });
-
+            if (!el._tooltipInit) {
+                new bootstrap.Tooltip(el);
+                el._tooltipInit = true;
+            }
         });
 
     });

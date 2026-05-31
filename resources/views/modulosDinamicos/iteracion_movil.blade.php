@@ -1,5 +1,5 @@
 @php
-$modulo_id = $modulo->id
+    $modulo_id = $modulo->id
 @endphp
 
 @if($modo === 'mostrar_todos')
@@ -47,8 +47,8 @@ $modulo_id = $modulo->id
 
     {{-- Pestañas móvil (similar al desktop, pero en full width) --}}
     <div class="col-12 mt-3">
-        <div class="nav-wrapper position-relative end-0">
-            <ul class="nav nav-pills nav-fill p-1" role="tablist">
+        <div class="nav-wrapper position-relative end-0 ">
+            <ul class="shadow-sm nav nav-pills nav-fill p-1" role="tablist">
                 @foreach($formulariosConRespuestas as $index => $item)
                     @php $formulario = $item['formulario']; @endphp
                     <li class="nav-item">
@@ -164,10 +164,7 @@ $modulo_id = $modulo->id
 
     <div id="acciones-template">
 
-        @include('formularios.partials.Botones_offcanvas', [
-            'modulo' => $modulo_id
-        ])
+
 
     </div>
 </x-offcanvas-acciones>
-

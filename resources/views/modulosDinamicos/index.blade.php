@@ -2,12 +2,27 @@
 
 @section('content')
 
+    @if($isMobile)
+
+        <script src="https://unpkg.com/@popperjs/core@2"></script>
+        <script src="https://unpkg.com/tippy.js@6"></script>
+        <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/themes/light.css">
+    @endif
+
+
     <div class="row">
         <div class="col-12 col-md-6 order-2 order-md-1">
             <div class="card shadow-lg mt-2">
                 <div class="card-body">
+                    @if($isMobile)
+
+                        <!-- ICONO ARRIBA A LA DERECHA -->
+                        <i class="fas fa-question-circle position-absolute top-0 end-0 m-2 text-primary" id="infoModulo"
+                            style="cursor:pointer; font-size:18px;">
+                        </i>
+                    @endif
                     <div class="d-flex justify-content-between align-items-center mb-1">
-                        <h5>Módulo {{ $modulo->nombre }}</h5>
+                        <h5>{{ $modulo->nombre }}</h5>
                     </div>
 
                     @role('admin')
@@ -40,15 +55,31 @@
                 </div>
             </div>
         </div>
-        <div class="col-12 col-md-6 order-1 order-md-2">
-            <div class="card shadow-lg mt-2">
-                <div class="card-body">
 
-                    {!!   $modulo->descripcion !!}
+        @if(!$isMobile)
+            <div class="col-12 col-md-6 order-1 order-md-2">
+                <div class="card shadow-lg mt-2">
+                    <div class="card-body">
+
+                        {!!   $modulo->descripcion !!}
+                    </div>
                 </div>
             </div>
-        </div>
+        @endif
     </div>
+    @if($isMobile)
+
+        <script>
+            tippy('#infoModulo', {
+                content: `{!! $modulo->descripcion !!}`,
+                allowHTML: true,
+                theme: 'light',
+                placement: 'left',
+                animation: 'scale',
+                interactive: true,
+            });
+        </script>
+    @endif
 
     {{-- modal para ver registros --}}
     @include('formularios.partials.modal_ver')

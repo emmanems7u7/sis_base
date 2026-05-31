@@ -43,10 +43,5 @@
 
     <div id="acciones-template">
 
-        @include('formularios.partials.Botones_offcanvas', [
-            'modulo' => 0
-        ])
-
     </div>
 </x-offcanvas-acciones>
-

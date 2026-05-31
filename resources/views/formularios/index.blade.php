@@ -82,6 +82,51 @@
 
                                 </div>
 
+                                <div class="d-none acciones-source">
+
+                                    <div class="row w-100 g-1 row-tight justify-content-center">
+
+                                        <div class="col-4">
+                                            <a href="{{ route('formularios.respuestas.formulario', $formulario->id) }}"
+                                                class="btn w-100 btn-mobile-small  btn-xs btn-outline-success">
+                                                <i class="fas fa-database"></i><br> Registros
+                                            </a>
+
+                                        </div>
+
+                                        <div class="col-4">
+                                            <a href="{{ route('formularios.config.edit', $formulario->id) }}"
+                                                class="btn w-100 btn-mobile-small  btn-xs btn-outline-dark">
+                                                <i class="fas fa-database"></i><br> Configuraciòn
+                                            </a>
+                                        </div>
+
+                                        <div class="col-4">
+
+                                            <a href="{{ route('formularios.campos.index', $formulario->id) }}"
+                                                class="btn w-100 btn-mobile-small  btn-xs btn-outline-info">
+                                                <i class="fas fa-list-alt"></i> <br> Campos
+                                            </a>
+
+
+                                        </div>
+                                        <div class="col-4">
+                                            <a href="{{ route('formularios.edit', $formulario->id) }}"
+                                                class="btn w-100 btn-mobile-small  btn-xs btn-outline-warning">
+                                                <i class="fas fa-pencil-alt"></i> <br> Editar
+                                            </a>
+
+                                        </div>
+                                        <div class="col-4">
+                                            <a type="button" class="btn w-100 btn-mobile-small  btn-xs btn-outline-danger"
+                                                onclick="confirmarEliminacion('eliminarFormulario_{{$formulario->id}}', '¿Estás seguro de que deseas eliminar este formulario?')">
+                                                <i class="fas fa-trash-alt"></i> <br> Eliminar
+                                            </a>
+
+                                        </div>
+                                    </div>
+                                </div>
+
                             </div>
 
                         </div>
@@ -96,54 +141,7 @@
         <x-offcanvas-acciones id="offcanvasAccionesFormularios" titulo="Acciones Formularios" icono="fas fa-bolt"
             contenidoId="accionesContenidoFormularios" templateId="acciones-template-formularios" height="165px">
 
-            <template id="acciones-template-formularios">
-
-                @php
-                    $fid = '__FORMULARIOID__';
-                @endphp
-
-                <div class="row w-100 g-1 row-tight justify-content-center">
-
-                    <div class="col-4">
-                        <a href="{{ route('formularios.respuestas.formulario', $fid) }}"
-                            class="btn w-100 btn-mobile-small  btn-xs btn-outline-success">
-                            <i class="fas fa-database"></i><br> Registros
-                        </a>
-
-                    </div>
-
-                    <div class="col-4">
-                        <a href="{{ route('formularios.config.edit', $fid) }}"
-                            class="btn w-100 btn-mobile-small  btn-xs btn-outline-dark">
-                            <i class="fas fa-database"></i><br> Configuraciòn
-                        </a>
-                    </div>
-
-                    <div class="col-4">
-
-                        <a href="{{ route('formularios.campos.index', $fid) }}"
-                            class="btn w-100 btn-mobile-small  btn-xs btn-outline-info">
-                            <i class="fas fa-list-alt"></i> <br> Campos
-                        </a>
-
-
-                    </div>
-                    <div class="col-4">
-                        <a href="{{ route('formularios.edit', $fid) }}"
-                            class="btn w-100 btn-mobile-small  btn-xs btn-outline-warning">
-                            <i class="fas fa-pencil-alt"></i> <br> Editar
-                        </a>
-
-                    </div>
-                    <div class="col-4">
-                        <a type="button" class="btn w-100 btn-mobile-small  btn-xs btn-outline-danger"
-                            onclick="confirmarEliminacion('eliminarFormulario_{{$fid}}', '¿Estás seguro de que deseas eliminar este formulario?')">
-                            <i class="fas fa-trash-alt"></i> <br> Eliminar
-                        </a>
-
-                    </div>
-                </div>
-            </template>
+            <template id="acciones-template-formularios"></template>
         </x-offcanvas-acciones>
 
     @else
@@ -188,7 +186,7 @@
 
                                                     <!-- Registro múltiple -->
                                                     <span class="badge rounded-pill px-2 py-1
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            {{ $registroMultiple
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    {{ $registroMultiple
                                 ? 'bg-success text-white'
                                 : 'bg-danger text-white' }}">
 
@@ -200,7 +198,7 @@
 
                                                     <!-- Permisos -->
                                                     <span class="badge rounded-pill px-2 py-1
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            {{ $crearPermisos
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    {{ $crearPermisos
                                 ? 'bg-success text-white'
                                 : 'bg-danger text-white' }}">
 
@@ -245,9 +243,9 @@
 
                                                 <a type="button" class="btn btn-xs btn-danger"
                                                     onclick="confirmarEliminacion(
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            'eliminarFormulario_{{ $formulario->id }}',
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            '¿Estás seguro de que deseas eliminar este formulario?'
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        )">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    'eliminarFormulario_{{ $formulario->id }}',
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    '¿Estás seguro de que deseas eliminar este formulario?'
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                )">
 
                                                     <i class="fas fa-trash-alt"></i>
                                                     Eliminar

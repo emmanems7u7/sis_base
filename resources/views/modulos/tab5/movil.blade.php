@@ -64,7 +64,50 @@
 
                     </div>
 
+                    <div class="d-none acciones-source">
+                        <div class="row w-100 g-2 justify-content-center">
 
+                            <div class="col-4">
+                                <button type="button" class="btn btn-xs btn-outline-info w-100 btn-accion"
+                                    data-bs-toggle="modal" data-bs-target="#configModal{{ $grupo->id }}">
+
+                                    <i class="fas fa-cog me-1"></i>
+                                    <br>
+                                    Config
+                                </button>
+                            </div>
+
+                            <div class="col-4">
+                                <a href="{{ route('grupos.edit', ['grupo' => $grupo->id, 'modulo' => $modulo->id]) }}"
+                                    class="btn btn-outline-warning btn-xs w-100 btn-accion">
+
+                                    <i class="fas fa-pencil-alt me-1"></i>
+                                    <br>
+                                    Editar
+                                </a>
+                            </div>
+
+                            <div class="col-4">
+                                <a href="#" class="btn btn-outline-danger btn-xs w-100 btn-accion"
+                                    onclick="confirmarEliminacion('eliminarGrupo_{{ $grupo->id }}', '¿Estás seguro?')">
+
+                                    <i class="fas fa-trash-alt me-1"></i>
+                                    <br>
+                                    Eliminar
+                                </a>
+
+                                <form id="eliminarGrupo_{{ $grupo->id }}" method="POST"
+                                    action="{{ route('grupos.destroy', ['grupo' => $grupo->id, 'modulo' => $modulo->id]) }}"
+                                    style="display:none;">
+
+                                    @csrf
+                                    @method('DELETE')
+
+                                </form>
+                            </div>
+
+                        </div>
+                    </div>
                 </div>
 
             </div>
@@ -129,51 +172,5 @@
 
     <template id="acciones-template-grupo">
 
-        @php
-            $gid = '__GRUPOID__';
-        @endphp
-
-        <div class="row w-100 g-2 justify-content-center">
-
-            <div class="col-4">
-                <button type="button" class="btn btn-xs btn-outline-info w-100 btn-accion" data-bs-toggle="modal"
-                    data-bs-target="#configModal{{ $gid }}">
-
-                    <i class="fas fa-cog me-1"></i>
-                    <br>
-                    Config
-                </button>
-            </div>
-
-            <div class="col-4">
-                <a href="{{ route('grupos.edit', ['grupo' => $gid, 'modulo' => $modulo->id]) }}"
-                    class="btn btn-outline-warning btn-xs w-100 btn-accion">
-
-                    <i class="fas fa-pencil-alt me-1"></i>
-                    <br>
-                    Editar
-                </a>
-            </div>
-
-            <div class="col-4">
-                <a href="#" class="btn btn-outline-danger btn-xs w-100 btn-accion"
-                    onclick="confirmarEliminacion('eliminarGrupo_{{ $gid }}', '¿Estás seguro?')">
-
-                    <i class="fas fa-trash-alt me-1"></i>
-                    <br>
-                    Eliminar
-                </a>
-
-                <form id="eliminarGrupo_{{ $gid }}" method="POST"
-                    action="{{ route('grupos.destroy', ['grupo' => $gid, 'modulo' => $modulo->id]) }}"
-                    style="display:none;">
-
-                    @csrf
-                    @method('DELETE')
-
-                </form>
-            </div>
-
-        </div>
     </template>
 </x-offcanvas-acciones>

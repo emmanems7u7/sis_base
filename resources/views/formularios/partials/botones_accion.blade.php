@@ -1,4 +1,3 @@
-{{-- Izquierda: Registrar, Exportar, Carga Masiva --}}
 <div class="d-flex gap-1 flex-wrap">
     {{-- Registrar --}}
     <a href="{{ route('formularios.registrar', ['form' => $formulario, 'modulo' => $modulo]) }}"
