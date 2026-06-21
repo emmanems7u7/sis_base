@@ -9,7 +9,6 @@ class Widget extends Model
 {
     protected $fillable = [
         'formulario_id',
-        'modulo_id',
         'nombre',
         'tipo',
         'configuracion',

@@ -166,6 +166,11 @@ class FormularioRepository implements FormularioInterface
         }
         if (!empty($campo->form_ref_id)) {
 
+            // Si no es numérico, ya es el valor real
+            if (!is_numeric($valorUsuario)) {
+                return $valorUsuario;
+            }
+
             $campoReferencia = CamposForm::where('form_id', $campo->form_ref_id)
                 ->orderBy('posicion', 'asc')
                 ->first();
@@ -178,9 +183,7 @@ class FormularioRepository implements FormularioInterface
                 ->where('cf_id', $campoReferencia->id)
                 ->first();
 
-            $valor = optional($respuestaCampo)->valor;
-
-            return $valor;
+            return optional($respuestaCampo)->valor;
         }
 
         return $valorUsuario;

@@ -36,7 +36,7 @@
                     -- Seleccionar --
                 </option>
 
-                @foreach($formularios as $form)
+                @foreach ($formularios as $form)
                     <option value="{{ $form->id }}">
                         {{ $form->nombre }}
                     </option>

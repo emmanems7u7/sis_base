@@ -4,7 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Widget;
 use Illuminate\Http\Request;
-use App\Models\Catalogo;
+use App\Models\Formulario;
 use App\Interfaces\CatalogoInterface;
 use App\Models\Modulo;
 
@@ -33,14 +33,14 @@ class WidgetController extends Controller
     public function create()
     {
         $catalogos = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Tipos de Widget', true);
-        $modulos = Modulo::all();
+        $formularios = Formulario::where('estado', 'EFORM-002')->get();
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
             ['name' => 'Widgets', 'url' => route('widgets.index')],
             ['name' => 'Crear Widget', 'url' => ''],
         ];
 
-        return view('widgets.create', compact('modulos', 'catalogos', 'breadcrumb'));
+        return view('widgets.create', compact('formularios', 'catalogos', 'breadcrumb'));
     }
 
     // Guardar widget
@@ -92,35 +92,22 @@ class WidgetController extends Controller
             case 'WID-006':
                 break;
             case 'WID-007':
-                $configuracion = [
-                    'campo_x_id' => $request->configuracion['campo_x_id'] ?? null,
-                    'campo_y_id' => $request->configuracion['campo_y_id'] ?? null,
-                    'periodo' => $request->configuracion['periodo'] ?? 'mes',
-                    'titulo' => $request->configuracion['titulo'] ?? null,
-                ];
-                break;
             case 'WID-008':
-                $configuracion = [
-                    'campo_x_id' => $request->configuracion['campo_x_id'] ?? null,
-                    'campo_y_id' => $request->configuracion['campo_y_id'] ?? null,
-                    'tipo' => $request->configuracion['tipo'] ?? 'conteo',
-                    'titulo' => $request->configuracion['titulo'] ?? null,
-                ];
-                break;
             case 'WID-009':
-                $configuracion = [
-                    'campo_x_id' => $request->configuracion['campo_x_id'] ?? null,
-                    'campo_y_id' => $request->configuracion['campo_y_id'] ?? null,
-                    'titulo' => $request->configuracion['titulo'] ?? null,
-                ];
+                $configuracion = $request->configuracion ?? [];
                 break;
+
             case 'WID-010':
+
+                $configuracion = $request->configuracion ?? [];
+                $configuracion['mostrar_icono'] = isset($request->configuracion['mostrar_icono']);
+                $configuracion['mostrar_descripcion'] = isset($request->configuracion['mostrar_descripcion']);
+
                 break;
 
         }
 
         $widget = Widget::create([
-            'modulo_id' => $request->modulo_id,
             'formulario_id' => $request->formulario_id,
             'nombre' => $request->nombre,
             'tipo' => $request->tipo,
@@ -135,16 +122,22 @@ class WidgetController extends Controller
 
     public function edit(Widget $widget)
     {
-        $modulos = Modulo::where('activo', 1)->get();
 
-        $catalogos = Catalogo::where('catalogo_tipo', 'TIPO_WIDGET')
-            ->where('activo', 1)
-            ->get();
+        $breadcrumb = [
+            ['name' => 'Inicio', 'url' => route('home')],
+            ['name' => 'Widgets', 'url' => route('widgets.index')],
+            ['name' => 'Editar Widget', 'url' => ''],
+        ];
+
+        $formularios = Formulario::where('estado', 'EFORM-002')->get();
+
+        $catalogos = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Tipos de Widget', true);
 
         return view('widgets.edit', compact(
             'widget',
-            'modulos',
-            'catalogos'
+            'formularios',
+            'catalogos',
+            'breadcrumb'
         ));
     }
 
@@ -158,7 +151,6 @@ class WidgetController extends Controller
         ]);
 
         $widget->update([
-            'modulo_id' => $request->modulo_id,
             'formulario_id' => $request->formulario_id,
             'nombre' => $request->nombre,
             'tipo' => $request->tipo,

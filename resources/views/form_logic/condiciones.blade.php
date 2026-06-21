@@ -124,10 +124,10 @@
                     <option value="!=">!=</option>
                     <option value=">">></option>
                     <option value="<">
-                        << /option>
+                        < </option>
                     <option value=">=">>=</option>
                     <option value="<=">
-                        <=< /option>
+                        <= </option>
 
                 </select>
 
@@ -161,7 +161,8 @@
         <!-- mensaje -->
         <div class="mt-2">
 
-            <input type="text" class="form-control cond-mensaje" placeholder="Ej: El valor supera el límite permitido">
+            <input type="text" class="form-control cond-mensaje"
+                placeholder="Ej: El valor supera el límite permitido">
 
         </div>
 

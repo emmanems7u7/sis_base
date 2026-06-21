@@ -12,7 +12,11 @@ return new class extends Migration {
     {
         Schema::create('widgets', function (Blueprint $table) {
             $table->id();
+            $table->foreignId('formulario_id')->nullable()->constrained('formularios')
+                ->onUpdate('cascade')
+                ->onDelete('cascade');
             $table->string('nombre');
+
             $table->string('tipo', 50)->comment('Especifica el tipo de widget')->nullable();
 
             $table->foreign('tipo')->references('catalogo_codigo')->on('catalogos')

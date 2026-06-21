@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Interfaces\CamposFormInterface;
 use App\Models\CamposForm;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
@@ -11,6 +12,7 @@ use App\Models\ContenedorGrid;
 use App\Models\Formulario;
 use App\Models\RespuestasCampo;
 use App\Interfaces\FormularioInterface;
+
 use Illuminate\Support\Facades\Cache;
 
 class HomeController extends Controller
@@ -18,15 +20,18 @@ class HomeController extends Controller
 
 
     protected $FormularioRepository;
+    protected $CamposFormRepository;
 
     /**
      * Create a new controller instance.
      *
      * @return void
      */
-    public function __construct(FormularioInterface $formularioInterface, )
+    public function __construct(FormularioInterface $formularioInterface, CamposFormInterface $camposFormInterface)
     {
         $this->FormularioRepository = $formularioInterface;
+        $this->CamposFormRepository = $camposFormInterface;
+
 
         $this->middleware('auth');
     }
@@ -41,6 +46,7 @@ class HomeController extends Controller
         $user = Auth::user();
         $rolNombre = $user->roles->first()?->name;
 
+        Cache::forget('contenedor_grid_' . $rolNombre);
         $contenedor = Cache::remember(
             'contenedor_grid_' . $rolNombre,
             now()->addHours(12),
@@ -107,13 +113,7 @@ class HomeController extends Controller
         switch ($widget->tipo) {
 
             case 'WID-010': // Contador
-                return [
-                    'tipo' => 'WID-010',
-                    'data' => [
-                        'contador' => $widget->respuestas_count,
-                        'nombre' => $widget->formulario->nombre ?? $widget->nombre,
-                    ],
-                ];
+                return $this->resolverContador($widget);
 
             case 'WID-006': // Formulario
                 return [
@@ -154,7 +154,7 @@ class HomeController extends Controller
             case 'WID-007': // Barra
             case 'WID-008': // Línea
             case 'WID-009': // Pastel
-                return $this->resolverGrafico($widget);
+                return $this->resolverGrafico($widget, true);
 
 
             default:
@@ -167,111 +167,193 @@ class HomeController extends Controller
         }
     }
 
-    private function resolverGrafico($widget): array
+    private function resolverGrafico($widget, bool $home = false, ?string $fechaDesde = null, ?string $fechaHasta = null): array
     {
+
         $config = $widget->configuracion;
 
         $campoX = $config['campo_x_id'] ?? null;
         $campoY = $config['campo_y_id'] ?? null;
-        $tipoGrafico = $widget->tipo;
+
+        $tipo = $config['tipo'] ?? 'conteo';
+        $periodo = $config['periodo'] ?? null;
+        $orden = $config['orden'] ?? 'asc';
+        $limite = $config['limite'] ?? null;
 
         if (!$campoX) {
             return [
-                'tipo' => $tipoGrafico,
+                'id' => $widget->id,
+                'tipo' => $widget->tipo,
+                'configuracion' => $config,
                 'data' => []
             ];
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | GRÁFICO DE BARRA (WID-008)
-        |--------------------------------------------------------------------------
-        */
-        if ($tipoGrafico === 'WID-008') {
+        $query = $widget->formulario
+            ->respuestas()
+            ->with('camposRespuestas');
 
-            $query = RespuestasCampo::where('cf_id', $campoX);
+        if ($home) {
 
-            if ($campoY) {
-                // SUMA
-                $datos = $query
-                    ->selectRaw('valor as label, SUM(CAST(valor as DECIMAL(10,2))) as total')
-                    ->groupBy('valor')
-                    ->pluck('total', 'label');
-            } else {
-                // CONTEO
-                $datos = $query
-                    ->selectRaw('valor as label, COUNT(*) as total')
-                    ->groupBy('valor')
-                    ->pluck('total', 'label');
+            $hoy = now();
+
+            if ($periodo === 'dia') {
+
+                $query->whereYear('created_at', $hoy->year)
+                    ->whereMonth('created_at', $hoy->month);
+
+            } elseif ($periodo === 'mes') {
+
+                $query->whereYear('created_at', $hoy->year);
             }
 
-            return [
-                'tipo' => $tipoGrafico,
-                'data' => [
-                    'labels' => $datos->keys(),
-                    'values' => $datos->values(),
-                    'titulo' => $config['titulo'] ?? 'Gráfico de Barra'
-                ]
-            ];
+        } else {
+
+            if ($fechaDesde) {
+                $query->whereDate('created_at', '>=', $fechaDesde);
+            }
+
+            if ($fechaHasta) {
+                $query->whereDate('created_at', '<=', $fechaHasta);
+            }
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | GRÁFICO DE PASTEL (WID-009)
-        |--------------------------------------------------------------------------
-        */
-        if ($tipoGrafico === 'WID-009') {
+        $respuestas = $query->get();
 
-            $datos = RespuestasCampo::where('cf_id', $campoX)
-                ->selectRaw('valor as label, COUNT(*) as total')
-                ->groupBy('valor')
-                ->pluck('total', 'label');
+        $datos = [];
+        $conteos = [];
 
-            return [
-                'tipo' => $tipoGrafico,
-                'data' => [
-                    'labels' => $datos->keys(),
-                    'values' => $datos->values(),
-                    'titulo' => $config['titulo'] ?? 'Gráfico Pastel'
-                ]
-            ];
+        foreach ($respuestas as $respuesta) {
+
+            $respuestaCampoX = $respuesta->camposRespuestas
+                ->firstWhere('cf_id', $campoX);
+
+            if (!$respuestaCampoX) {
+                continue;
+            }
+
+            if ($periodo) {
+
+                $fecha = $respuesta->created_at;
+
+                $clave = match ($periodo) {
+                    'dia' => $fecha->format('Y-m-d'),
+                    'mes' => $fecha->format('Y-m'),
+                    'anio' => $fecha->format('Y'),
+                    default => $respuestaCampoX->valor,
+                };
+
+            } else {
+
+                $clave = $respuestaCampoX->valor;
+            }
+
+            if ($campoY) {
+
+                $respuestaCampoY = $respuesta->camposRespuestas
+                    ->firstWhere('cf_id', $campoY);
+
+                $valor = $respuestaCampoY
+                    ? (float) $respuestaCampoY->valor
+                    : 0;
+
+            } else {
+
+                $valor = 1;
+            }
+
+            if (!isset($datos[$clave])) {
+                $datos[$clave] = [];
+            }
+
+            $datos[$clave][] = $valor;
+
+            $conteos[$clave] = ($conteos[$clave] ?? 0) + 1;
         }
 
-        /*
-        |--------------------------------------------------------------------------
-        | GRÁFICO DE LÍNEA (WID-007)
-        |--------------------------------------------------------------------------
-        */
-        if ($tipoGrafico === 'WID-007') {
+        $resultados = [];
 
-            $periodo = $config['periodo'] ?? 'mes';
+        foreach ($datos as $clave => $valores) {
 
-            $formato = $periodo === 'anio'
-                ? '%Y'
-                : '%Y-%m';
+            $resultados[$clave] = match ($tipo) {
 
-            $datos = RespuestasCampo::where('cf_id', $campoY)
-                ->selectRaw("DATE_FORMAT(created_at, '{$formato}') as label, COUNT(*) as total")
-                ->groupBy('label')
-                ->orderBy('label')
-                ->pluck('total', 'label');
+                'conteo' => $conteos[$clave],
 
-            return [
-                'tipo' => $tipoGrafico,
-                'data' => [
-                    'labels' => $datos->keys(),
-                    'values' => $datos->values(),
-                    'titulo' => $config['titulo'] ?? 'Gráfico de Línea'
-                ]
-            ];
+                'suma' => array_sum($valores),
+
+                'promedio' => count($valores)
+                ? round(array_sum($valores) / count($valores), 2)
+                : 0,
+
+                'maximo' => max($valores),
+
+                'minimo' => min($valores),
+
+                default => array_sum($valores),
+            };
+        }
+
+        if ($orden === 'asc') {
+            ksort($resultados);
+        } else {
+            krsort($resultados);
+        }
+
+        if ($limite) {
+
+            $resultados = array_slice(
+                $resultados,
+                0,
+                (int) $limite,
+                true
+            );
+        }
+
+        $labels = array_keys($resultados);
+
+        if (!$periodo) {
+
+            $campo = $this->CamposFormRepository->GetCampo($campoX);
+
+            foreach ($labels as &$label) {
+
+                $label = $this->FormularioRepository
+                    ->obtenerValorReal($campo, $label);
+            }
+
+            unset($label);
         }
 
         return [
-            'tipo' => $tipoGrafico,
-            'data' => []
+            'id' => $widget->id,
+            'tipo' => $widget->tipo,
+
+            'configuracion' => [
+                'titulo' => $config['titulo'] ?? 'Datos',
+                'subtitulo' => $config['subtitulo'] ?? null,
+                'color' => $config['color'] ?? '#0d6efd',
+                'color_fondo' => $config['color_fondo'] ?? null,
+                'color_texto' => $config['color_texto'] ?? null,
+                'mostrar_leyenda' => $config['mostrar_leyenda'] ?? false,
+                'mostrar_etiquetas' => $config['mostrar_etiquetas'] ?? false,
+                'animacion' => $config['animacion'] ?? false,
+                'altura' => $config['altura'] ?? null,
+                'ancho' => $config['ancho'] ?? null,
+            ],
+
+            'data' => [
+                'labels' => $labels,
+                'datasets' => [
+                    [
+                        'label' => $config['titulo'] ?? 'Datos',
+                        'backgroundColor' => $config['color'] ?? '#0d6efd',
+                        'borderColor' => $config['color'] ?? '#0d6efd',
+                        'data' => array_values($resultados),
+                    ]
+                ]
+            ]
         ];
     }
-
     private function resolverEstadistica($widget): array
     {
         $config = $widget->configuracion ?? [];
@@ -330,6 +412,127 @@ class HomeController extends Controller
                 'campo' => $campo?->etiqueta ?? 'Campo no definido',
                 'fecha' => $filtros['fecha'] ?? null,
             ],
+        ];
+    }
+
+
+    private function resolverContador($widget): array
+    {
+        $config = $widget->configuracion ?? [];
+
+        $query = $widget->formulario->respuestas();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Periodo
+        |--------------------------------------------------------------------------
+        */
+
+        $periodo = $config['periodo'] ?? null;
+
+        if ($periodo) {
+
+            $hoy = now();
+
+            match ($periodo) {
+
+                'hoy' => $query->whereDate('created_at', $hoy),
+
+                'semana' => $query->whereBetween(
+                    'created_at',
+                    [
+                        $hoy->copy()->startOfWeek(),
+                        $hoy->copy()->endOfWeek()
+                    ]
+                ),
+
+                'mes' => $query
+                    ->whereYear('created_at', $hoy->year)
+                    ->whereMonth('created_at', $hoy->month),
+
+                'anio' => $query
+                    ->whereYear('created_at', $hoy->year),
+
+                default => null
+            };
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Filtros
+        |--------------------------------------------------------------------------
+        */
+
+        $filtros = $config['filtros'] ?? [];
+
+        foreach ($filtros as $filtro) {
+
+            if (
+                empty($filtro['campo_id']) ||
+                !isset($filtro['valor'])
+            ) {
+                continue;
+            }
+
+            $campoId = $filtro['campo_id'];
+            $operador = $filtro['operador'] ?? '=';
+            $valor = $filtro['valor'];
+
+            $query->whereHas('camposRespuestas', function ($q) use ($campoId, $operador, $valor) {
+
+                $q->where('cf_id', $campoId);
+
+                if ($operador === 'like') {
+
+                    $q->where('valor', 'LIKE', "%{$valor}%");
+
+                } elseif ($operador === 'not_like') {
+
+                    $q->where('valor', 'NOT LIKE', "%{$valor}%");
+
+                } else {
+
+                    $q->where('valor', $operador, $valor);
+                }
+            });
+        }
+
+        $contador = $query->count();
+
+        return [
+
+            'tipo' => 'WID-010',
+
+            'configuracion' => $config,
+
+            'data' => [
+
+                'contador' => $contador,
+
+                'titulo' => $config['titulo']
+                    ?? $widget->nombre,
+
+                'descripcion' => $config['descripcion']
+                    ?? null,
+
+                'color' => $config['color']
+                    ?? '#0d6efd',
+
+                'icono' => $config['icono']
+                    ?? 'fa-solid fa-hashtag',
+
+                'prefijo' => $config['prefijo']
+                    ?? null,
+
+                'sufijo' => $config['sufijo']
+                    ?? null,
+
+                'mostrar_icono' =>
+                    $config['mostrar_icono'] ?? true,
+
+                'mostrar_descripcion' =>
+                    $config['mostrar_descripcion'] ?? true,
+            ]
         ];
     }
 }

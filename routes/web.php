@@ -37,6 +37,7 @@ use App\Http\Controllers\SeederController;
 use App\Http\Controllers\ContenedorGridController;
 use App\Http\Controllers\FilaController;
 use App\Http\Controllers\ColumnaController;
+use App\Http\Controllers\ConsultaController;
 use App\Http\Controllers\FormConfigurationController;
 use App\Http\Controllers\ModuloFormularioParaleloController;
 use App\Http\Controllers\WidgetController;
@@ -305,8 +306,7 @@ Route::middleware(['auth'])->group(function () {
 
 
     // Listado y constructor de campos
-    Route::get('/formularios/{formulario}/campos', [CamposFormController::class, 'index'])
-        ->name('formularios.campos.index');
+    Route::get('/{formulario}/campos', [CamposFormController::class, 'index'])->name('formularios.campos.index');
 
     // Crear campo
     Route::post('/campos/{formulario}', [CamposFormController::class, 'store'])
@@ -548,6 +548,18 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('formularios/{id}/configuracion', [FormConfigurationController::class, 'edit'])->name('formularios.config.edit');
     Route::put('formularios/{id}/configuracion', [FormConfigurationController::class, 'update'])->name('formularios.config.update');
+
+
+
+
+    Route::resource('consultas', ConsultaController::class);
+
+    Route::get(
+        '/consultas/{consulta}/ejecutar',
+        [ConsultaController::class, 'ejecutar']
+    )->name('consultas.ejecutar');
+
+    Route::get('/formularios/{formulario}/campos', [ConsultaController::class, 'campos']);
 
 });
 
