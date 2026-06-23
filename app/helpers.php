@@ -32,7 +32,8 @@ if (!function_exists('twoFactorGlobalEnabled')) {
  text   -> solo texto
  icon   -> solo icono
  mobile -> icono + <br> + texto
-
+ TAGS:
+ span (default), p, h1, h2, h3, h4, h5, h6, none
  ---------------------------------------------------------
  EJEMPLOS
 
@@ -47,19 +48,17 @@ if (!function_exists('twoFactorGlobalEnabled')) {
  {{ configForm($formulario->id, 'messages.success_create') }}
 
 */
-
 if (!function_exists('configForm')) {
 
     function configForm(
         $formularioId,
         $key,
         $default = null,
-        $mode = 'normal'
+        $mode = 'normal',
+        $tag = 'span'
     ) {
 
-
         $config = formConfigCache($formularioId);
-
 
         $defaultItem = data_get(
             config('forms'),
@@ -73,8 +72,7 @@ if (!function_exists('configForm')) {
             []
         );
 
-
-
+        // Merge config BD + config base
         if (is_array($defaultItem) && is_array($item)) {
 
             $item = array_merge(
@@ -87,70 +85,66 @@ if (!function_exists('configForm')) {
         }
 
         if (empty($item)) {
-
             $item = $defaultItem;
         }
-
-
 
         if (!$item) {
             return $default;
         }
 
+        /*
+        TEXT RENDER CON TAG
+        */
+        if (is_array($item) && array_key_exists('text', $item)) {
 
+            $textValue = e($item['text'] ?? '');
 
-        if (
-            is_array($item)
-            && array_key_exists('text', $item)
-        ) {
-
-            $text = e($item['text'] ?? '');
-
+            // ========= ICON =========
             $icon = '';
 
-
-
             if (!empty($item['icon'])) {
-
                 $icon = '<i class="' . e($item['icon']) . '"></i>';
             }
 
+            // ========= TEXT WITH TAG =========
+            if ($tag === 'none') {
+                $text = $textValue;
+            } else {
 
+                $allowedTags = ['span', 'p', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'];
 
+                if (!in_array($tag, $allowedTags)) {
+                    $tag = 'span';
+                }
+
+                $text = "<{$tag} class='btn-text'>{$textValue}</{$tag}>";
+            }
+
+            // ========= MODES =========
             switch ($mode) {
 
-                //SOLO ICONO
-
                 case 'icon':
-
                     return $icon;
 
-                //SOLO TEXTO
-
                 case 'text':
-
                     return $text;
 
-                //MOBILE
-
                 case 'mobile':
-
-                    return $icon . '<br><span class="btn-text">' . $text . '</span>';
-
-                //NORMAL
+                    return $icon . '<br>' . $text;
 
                 default:
-
-                    return $icon . ' <span class="btn-text">' . $text . '</span>';
+                    return $icon . ' ' . $text;
             }
         }
 
-        //STRING NORMAL
-
+        // STRING SIMPLE
         return $item;
     }
 }
 
+/*
+ CACHE FORM CONFIG
+*/
 if (!function_exists('formConfigCache')) {
 
     function formConfigCache($formularioId)

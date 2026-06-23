@@ -330,5 +330,27 @@ return [
             'text' => 'Volver al Módulo.',
             'icon' => 'fas fa-arrow-left',
         ],
+        'datos_asociados' => [
+            'label' => 'Datos asociados:',
+            'text' => 'Datos asociados:',
+            'icon' => 'fas fa-link',
+        ],
+
+        'datos_relacionados' => [
+            'label' => 'Datos relacionados:',
+            'text' => 'Datos relacionados:',
+            'icon' => 'fas fa-diagram-project',
+        ],
+
+        'datos_agrupados' => [
+            'label' => 'Datos agrupados:',
+            'text' => 'Datos agrupados:',
+            'icon' => 'fas fa-layer-group',
+        ],
+        'detalle_registro' => [
+            'label' => 'Detalle del Registro',
+            'text' => 'Detalle del Registro:',
+            'icon' => 'fas fa-circle-info',
+        ],
     ],
 ];

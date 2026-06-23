@@ -4,26 +4,24 @@
             class="modal-content {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }} ">
             <div class=" contenido-ajustado">
 
-           
-            
-            <div class="modal-header">
-                <h5 class="modal-title">Detalle del Registro</h5>
 
-                <i id="tooltip-registro-multiple" class="fas fa-info-circle text-white d-none">
-                </i>
 
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div id="contenidoRespuesta">
-                    <div class="text-center">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modal_titulo"></h5>
 
+
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div id="contenidoRespuesta">
+                        <div class="text-center">
+
+                        </div>
                     </div>
                 </div>
-            </div>
-            <div class="modal-footer">
-                <button type="button" class="btn bg-gradient-secondary" data-bs-dismiss="modal">Cerrar</button>
-            </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn bg-gradient-secondary" data-bs-dismiss="modal">Cerrar</button>
+                </div>
             </div>
         </div>
     </div>
@@ -32,9 +30,9 @@
 
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
 
-        document.addEventListener('click', function (e) {
+        document.addEventListener('click', function(e) {
 
             const btn = e.target.closest('.btn-ver-respuesta');
 
@@ -43,16 +41,13 @@
 
             e.preventDefault();
 
-            const tooltipIcon = document.getElementById('tooltip-registro-multiple');
             const formId = btn.dataset.formId;
             const respuestaId = btn.dataset.respuestaId;
 
             const modal = new bootstrap.Modal(document.getElementById('modalVerRespuesta'));
             const contenido = document.getElementById('contenidoRespuesta');
 
-            if (tooltipIcon) {
-                tooltipIcon.classList.add('d-none');
-            }
+
 
             function renderValor(tipo, valor) {
                 switch (tipo) {
@@ -110,7 +105,8 @@
                 .then(data => {
 
                     if (data.error) {
-                        contenido.innerHTML = `<div class="alert alert-danger p-1 small">${data.error}</div>`;
+                        contenido.innerHTML =
+                            `<div class="alert alert-danger p-1 small">${data.error}</div>`;
                         return;
                     }
 
@@ -118,20 +114,17 @@
                     html += renderCampos(data.campos);
                     html += `</div>`;
 
+                    var titulo_modal = document.getElementById('modal_titulo');
+                    titulo_modal.innerHTML = "";
+
+                    titulo_modal.innerHTML = data.detalle_registro;
+
                     if (data.respuestas_grupo && data.respuestas_grupo.length > 0) {
 
-                        if (tooltipIcon) {
-                            tooltipIcon.classList.remove('d-none');
-                            tooltipIcon.classList.add('d-inline');
 
-                            new bootstrap.Tooltip(tooltipIcon, {
-                                title: "Registro múltiple",
-                                placement: "top"
-                            });
-                        }
 
                         html += `<hr class="my-1">
-                     <div class="small fw-bold mb-1">Grupo:</div>`;
+                     <div class="small fw-bold mb-1">` + data.grupo_title + `</div>`;
 
                         html += `<div class="table-responsive" style="max-height:220px;">
                         <table class="table table-sm table-bordered mb-0 align-middle text-center">
@@ -146,7 +139,8 @@
                             html += `<tr>`;
                             resp.campos.forEach(campo => {
                                 let valor = '';
-                                campo.valores.forEach(v => valor += renderValor(campo.tipo, v));
+                                campo.valores.forEach(v => valor += renderValor(
+                                    campo.tipo, v));
                                 if (!valor) valor = '—';
                                 html += `<td class="p-1">${valor}</td>`;
                             });
@@ -156,17 +150,18 @@
                         html += `</tbody></table></div>`;
                     }
 
-                    if (data.datos_asociados) {
+                    if (data.datos_asociados && Object.keys(data.datos_asociados).length > 0) {
 
                         html += `<hr class="my-1">
-                     <div class="small fw-bold mb-1">Datos asociados:</div>`;
+                     <div class="small fw-bold mb-1">` + data.datos_asociados_title + `</div>`;
 
                         html += `<div class="table-responsive">
                         <table class="table table-sm table-bordered mb-1 text-center align-middle">
                             <thead class="table-light small"><tr>`;
 
                         Object.keys(data.datos_asociados).forEach(key => {
-                            html += `<th class="p-1 text-uppercase">${key.replaceAll('_', ' ')}</th>`;
+                            html +=
+                                `<th class="p-1 text-uppercase">${key.replaceAll('_', ' ')}</th>`;
                         });
 
                         html += `</tr></thead><tbody class="small"><tr>`;
@@ -176,6 +171,57 @@
                         });
 
                         html += `</tr></tbody></table></div>`;
+                    }
+
+                    if (data.datos_relacionados && data.datos_relacionados.length > 0) {
+
+                        html += `<hr class="my-1">
+    <div class="small fw-bold mb-1">
+        ` + data.datos_relacionados_title + `
+    </div>`;
+
+                        const encabezados = data.datos_relacionados[0].campos.map(c => c.etiqueta);
+
+                        html += `
+    <div class="table-responsive">
+        <table class="table table-sm table-bordered mb-0 align-middle text-center">
+            <thead class="table-light small">
+                <tr>
+`;
+
+                        encabezados.forEach(enc => {
+                            html += `<th class="p-1">${enc}</th>`;
+                        });
+
+                        html += `
+                </tr>
+            </thead>
+            <tbody class="small">
+`;
+
+                        data.datos_relacionados.forEach(registro => {
+
+                            html += `<tr>`;
+
+                            registro.campos.forEach(campo => {
+
+                                let valor = '';
+
+                                campo.valores.forEach(v => {
+                                    valor += renderValor(campo.tipo, v);
+                                });
+
+                                html += `<td class="p-1">${valor || '—'}</td>`;
+                            });
+
+                            html += `</tr>`;
+                        });
+
+                        html += `
+            </tbody>
+        </table>
+    </div>
+`;
                     }
 
                     contenido.innerHTML = html;

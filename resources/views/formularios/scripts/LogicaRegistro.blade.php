@@ -1,10 +1,5 @@
-@if(isset($formulario->config['registro_multiple']) && $formulario->config['registro_multiple'])
-
-
-
-
+@if (isset($formulario->config['registro_multiple']) && $formulario->config['registro_multiple'])
     <script>
-
         const AGRUPACION_ACTIVA = @json($formulario->config['agrupacion']['activa'] ?? false);
         const ES_MOBILE = @json($isMobile);
 
@@ -12,17 +7,16 @@
     </script>
 
     <script>
-        const CAMPOS = @json($formulario->campos->map(fn($c) => [
-            'id' => $c->id,
-            'nombre' => $c->nombre
-        ]));
+        const CAMPOS = @json(
+            $formulario->campos->map(fn($c) => [
+                    'id' => $c->id,
+                    'nombre' => $c->nombre,
+                ]));
         const FORMULAS = JSON.parse('{!! addslashes(json_encode($formulas)) !!}');
-
     </script>
 
     <script>
-
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
 
             let oldData = document.getElementById('registros_json').value;
 
@@ -62,6 +56,7 @@
 
             return nuevo;
         }
+
         function obtenerNombreCampoIncremento() {
             if (!CAMPO_INCREMENTO_ID) return null;
 
@@ -76,7 +71,7 @@
         let registros = [];
         let editIndex = null;
 
-        document.getElementById('btn-agregar-registro').addEventListener('click', function () {
+        document.getElementById('btn-agregar-registro').addEventListener('click', function() {
 
             let contenedor = document.getElementById('formulario-dinamico');
             let inputs = contenedor.querySelectorAll('input, select, textarea');
@@ -85,6 +80,13 @@
             let tieneError = false;
             let primerError = null;
 
+            const btnAgregar = document.getElementById('btn-agregar-registro');
+
+            const texto = btnAgregar.querySelector('.btn-text');
+
+            if (!btnAgregar.dataset.originalText) {
+                btnAgregar.dataset.originalText = texto.textContent;
+            }
 
             // Limpiar errores previos
 
@@ -104,9 +106,9 @@
                 let grupo = input.closest('.mb-3, .form-group, .col-md-6, .col-md-12');
                 let label = grupo ? grupo.querySelector('label') : null;
 
-                let nombreCampo = label
-                    ? label.innerText.replace('*', '').trim()
-                    : 'Este campo';
+                let nombreCampo = label ?
+                    label.innerText.replace('*', '').trim() :
+                    'Este campo';
 
 
                 // VALIDACIÓN REQUERIDOS
@@ -122,8 +124,7 @@
                             if (!primerError) primerError = `El campo ${nombreCampo} es obligatorio.`;
                         }
 
-                    }
-                    else if (input.type === 'radio') {
+                    } else if (input.type === 'radio') {
 
                         let grupoRadios = contenedor.querySelectorAll(`[name="${input.name}"]:checked`);
                         if (grupoRadios.length === 0) {
@@ -131,8 +132,7 @@
                             if (!primerError) primerError = `El campo ${nombreCampo} es obligatorio.`;
                         }
 
-                    }
-                    else if (input.type === 'file') {
+                    } else if (input.type === 'file') {
 
                         if (
                             input.files.length === 0 &&
@@ -143,8 +143,7 @@
                             if (!primerError) primerError = `El campo ${nombreCampo} es obligatorio.`;
                         }
 
-                    }
-                    else {
+                    } else {
 
                         if (!input.value.trim()) {
                             tieneError = true;
@@ -174,8 +173,7 @@
                         });
                     }
 
-                }
-                else if (input.type === 'radio') {
+                } else if (input.type === 'radio') {
 
                     if (input.checked) {
 
@@ -188,8 +186,7 @@
                             text: texto
                         };
                     }
-                }
-                else if (input.tagName === 'SELECT') {
+                } else if (input.tagName === 'SELECT') {
 
                     const selectedOption = input.options[input.selectedIndex];
 
@@ -198,8 +195,7 @@
                         text: selectedOption ? selectedOption.text : ''
                     };
 
-                }
-                else if (input.type === 'file') {
+                } else if (input.type === 'file') {
 
                     if (input.files.length > 0) {
 
@@ -212,15 +208,13 @@
                             text: file.name
                         };
 
-                    }
-                    else if (editIndex !== null && registros[editIndex]?.[key]) {
+                    } else if (editIndex !== null && registros[editIndex]?.[key]) {
 
                         registro[key] = registros[editIndex][key];
 
                     }
 
-                }
-                else {
+                } else {
 
                     registro[key] = {
                         value: input.value,
@@ -236,7 +230,10 @@
                 mostrarAlerta('warning', primerError ?? 'Complete los campos obligatorios.');
                 let campoInvalido = contenedor.querySelector('.is-invalid');
                 if (campoInvalido) {
-                    campoInvalido.scrollIntoView({ behavior: 'smooth', block: 'center' });
+                    campoInvalido.scrollIntoView({
+                        behavior: 'smooth',
+                        block: 'center'
+                    });
                     campoInvalido.focus();
                 }
 
@@ -303,7 +300,9 @@
                         render_informacion();
                         actualizarRegistrosJson();
                         const btnAgregar = document.getElementById('btn-agregar-registro');
+
                         const texto = btnAgregar.querySelector('.btn-text');
+
                         if (!btnAgregar.dataset.originalText) {
                             btnAgregar.dataset.originalText = texto.textContent;
                         }
@@ -382,9 +381,9 @@
             const formId = @json($formulario->id);
 
             fetch(`/formularios/validar-registro`, {
-                method: 'POST',
-                body: formData,
-            })
+                    method: 'POST',
+                    body: formData,
+                })
                 .then(async response => {
 
                     if (!response.ok) {
@@ -416,16 +415,22 @@
                         render_informacion();
 
                         limpiarFormulario();
-                    }
-                    else {
+
+                        const btnAgregar = document.getElementById('btn-agregar-registro');
+
+                        const texto = btnAgregar.querySelector('.btn-text');
+                        console.log(texto);
+                        if (!btnAgregar.dataset.originalText) {
+                            btnAgregar.dataset.originalText = texto.textContent;
+                        }
+
+                    } else {
 
                         if (!Array.isArray(data.errors) && typeof data.errors === 'object') {
 
                             let primerError = Object.values(data.errors)[0][0];
                             mostrarAlerta('error', primerError);
-                        }
-
-                        else if (Array.isArray(data.errors)) {
+                        } else if (Array.isArray(data.errors)) {
                             mostrarAlerta('error', data.errors[0]);
 
                         }
@@ -483,11 +488,13 @@
             });
 
         }
+
         function crearFileList(file) {
             const dataTransfer = new DataTransfer();
             dataTransfer.items.add(file);
             return dataTransfer.files;
         }
+
         function actualizarRegistrosJson() {
 
 
@@ -538,9 +545,9 @@
 
             const valor = parseFloat(valorRaw);
 
-            return !isNaN(valor)
-                ? valor
-                : 0;
+            return !isNaN(valor) ?
+                valor :
+                0;
 
         }
 
@@ -574,9 +581,9 @@
                     return resultado * valor;
 
                 case '/':
-                    return valor != 0
-                        ? resultado / valor
-                        : resultado;
+                    return valor != 0 ?
+                        resultado / valor :
+                        resultado;
 
                 default:
                     return resultado;
@@ -698,21 +705,21 @@
 
                 case 'AVG':
 
-                    return valores.length
-                        ? valores.reduce((a, b) => a + b, 0) / valores.length
-                        : 0;
+                    return valores.length ?
+                        valores.reduce((a, b) => a + b, 0) / valores.length :
+                        0;
 
                 case 'MIN':
 
-                    return valores.length
-                        ? Math.min(...valores)
-                        : 0;
+                    return valores.length ?
+                        Math.min(...valores) :
+                        0;
 
                 case 'MAX':
 
-                    return valores.length
-                        ? Math.max(...valores)
-                        : 0;
+                    return valores.length ?
+                        Math.max(...valores) :
+                        0;
 
                 case 'COUNT':
 
@@ -989,7 +996,8 @@
             tbody.innerHTML = '';
 
             if (!registros || registros.length === 0) {
-                thead.innerHTML = `
+                thead.innerHTML =
+                    `
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <th>#</th>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <th>Acciones</th>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 `;
@@ -1073,7 +1081,8 @@
                 //  ACCIONES
 
                 let tdAcciones = document.createElement('td');
-                tdAcciones.innerHTML = `
+                tdAcciones.innerHTML =
+                    `
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <button type="button" 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             class="btn btn-sm btn-warning me-2"
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             onclick="editarRegistro(${index})">
@@ -1136,12 +1145,12 @@
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 </button>
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ${val > 1 ? `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <button class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        style="width:22px; height:22px;"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        onclick="cambiarValor(${index}, '${key}', -1)">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        -
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ` : ''}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <button class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            style="width:22px; height:22px;"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            onclick="cambiarValor(${index}, '${key}', -1)">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            -
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ` : ''}
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             </div>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         `;
@@ -1203,7 +1212,8 @@
             contenedor.innerHTML = '';
 
             if (!registros || registros.length === 0) {
-                contenedor.innerHTML = `
+                contenedor.innerHTML =
+                    `
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             <div class="text-center text-muted py-2">
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 No hay registros
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             </div>
@@ -1220,17 +1230,15 @@
                 if (!input.name) return;
 
                 let key = input.name.replace('[]', '');
-                let key_visible = key.includes('[')
-                    ? key.split('[').pop().replace(']', '')
-                    : key;
+                let key_visible = input.dataset.etiqueta;
                 if (campos.some(c => c.key === key)) return;
 
                 let grupo = input.closest('.mb-3, .form-group, .col-md-6, .col-md-12');
                 let label = grupo ? grupo.querySelector('label') : null;
 
-                let textoLabel = label
-                    ? label.innerText.replace('*', '').trim()
-                    : key;
+                let textoLabel = label ?
+                    label.innerText.replace('*', '').trim() :
+                    key;
 
                 campos.push({
                     key,
@@ -1259,7 +1267,8 @@
                         campo.key
                     );
 
-                    contenido += `
+                    contenido +=
+                        `
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 <div class="col-6 mb-1">
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     <small class="text-muted d-block" style="font-size:11px;">
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                       <strong>  ${campo.key_visible}</strong> 
@@ -1274,7 +1283,8 @@
                 let card = document.createElement('div');
                 card.className = 'card mb-2 shadow-sm border-0';
 
-                card.innerHTML = `
+                card.innerHTML =
+                    `
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             <div class="card-body p-2">
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 <!-- HEADER -->
@@ -1364,8 +1374,7 @@
 
                 if (input.type === 'checkbox' || input.type === 'radio') {
                     input.checked = false;
-                }
-                else if (input.type !== 'file') {
+                } else if (input.type !== 'file') {
                     input.value = '';
                 }
 
@@ -1412,19 +1421,13 @@
 
 
                 // RADIO
-
                 else if (tipo === 'radio') {
 
                     campos.forEach(radio => {
                         let val = typeof value === 'object' ? value.value : value;
                         radio.checked = (radio.value == val);
                     });
-                }
-
-
-
-
-                else if (tipo === 'selector' || tipo === 'campo_relacion') {
+                } else if (tipo === 'selector' || tipo === 'campo_relacion') {
 
                     let val = value;
 
@@ -1448,15 +1451,13 @@
                         campo.value = val;
                     }
 
-                    campo.dispatchEvent(new Event('change', { bubbles: true }));
+                    campo.dispatchEvent(new Event('change', {
+                        bubbles: true
+                    }));
                 }
 
 
                 // ARCHIVOS (archivo, imagen, video)
-
-
-
-
                 else if (['archivo', 'imagen', 'video'].includes(tipo)) {
 
                     let preview = null;
@@ -1488,7 +1489,8 @@
 
                         if (value.file?.type?.startsWith('image')) {
 
-                            preview.innerHTML = `
+                            preview.innerHTML =
+                                `
                                                                                                                                                                                                                                                                                                                                                                                 <a href="${value.preview}" 
                                                                                                                                                                                                                                                                                                                                                                                 data-fancybox="imagenes"
                                                                                                                                                                                                                                                                                                                                                                                 data-caption="Imagen seleccionada"
@@ -1502,7 +1504,8 @@
 
                         } else if (value.file?.type?.startsWith('video')) {
 
-                            preview.innerHTML = `
+                            preview.innerHTML =
+                                `
                                                                                                                                                                                                                                                                                                                                                                 <a href="${value.preview}" target="_blank" class="text-primary">
                                                                                                                                                                                                                                                                                                                                                                     <i class="fas fa-video"></i> Ver video
                                                                                                                                                                                                                                                                                                                                                                 </a>
@@ -1510,7 +1513,8 @@
 
                         } else {
 
-                            preview.innerHTML = `
+                            preview.innerHTML =
+                                `
                                                                                                                                                                                                                                                                                                                                                                 <a href="${value.preview}" target="_blank" class="text-primary">
                                                                                                                                                                                                                                                                                                                                                                     <i class="fas fa-file"></i> Ver archivo
                                                                                                                                                                                                                                                                                                                                                                 </a>
@@ -1520,7 +1524,6 @@
 
 
                     // ARCHIVO YA GUARDADO
-
                     else if (typeof value === 'string' && value !== '') {
 
                         let baseUrl = `/archivos/formulario_${FORM_ID}`; // asegúrate de tener esto global
@@ -1531,7 +1534,8 @@
 
                             url = `${baseUrl}/imagenes/${value}`;
 
-                            preview.innerHTML = `
+                            preview.innerHTML =
+                                `
                                                                                                                                                                                                                                                                                                                                                                         <a href="${url}" 
                                                                                                                                                                                                                                                                                                                                                                         data-fancybox="imagenes_${key}" 
                                                                                                                                                                                                                                                                                                                                                                         data-caption="Imagen"
@@ -1543,18 +1547,18 @@
                             if (typeof Fancybox !== 'undefined') {
                                 Fancybox.bind(`[data-fancybox="imagenes_${key}"]`);
                             }
-                        }
-                        else if (tipo === 'video') {
+                        } else if (tipo === 'video') {
                             url = `${baseUrl}/videos/${value}`;
-                            preview.innerHTML = `
+                            preview.innerHTML =
+                                `
                                                                                                                                                                                                                                                                                                                                                                 <a href="${url}" target="_blank" class="text-primary">
                                                                                                                                                                                                                                                                                                                                                                     <i class="fas fa-video"></i> Ver video
                                                                                                                                                                                                                                                                                                                                                                 </a>
                                                                                                                                                                                                                                                                                                                                                             `;
-                        }
-                        else {
+                        } else {
                             url = `${baseUrl}/archivos/${value}`;
-                            preview.innerHTML = `
+                            preview.innerHTML =
+                                `
                                                                                                                                                                                                                                                                                                                                                                 <a href="${url}" target="_blank" class="text-primary">
                                                                                                                                                                                                                                                                                                                                                                     <i class="fas fa-file"></i> Ver archivo
                                                                                                                                                                                                                                                                                                                                                                 </a>
@@ -1566,7 +1570,6 @@
 
 
                 // FECHA
-
                 else if (tipo === 'fecha') {
 
                     let val = getValorPlano(value);
@@ -1581,7 +1584,6 @@
 
 
                 // HORA
-
                 else if (tipo === 'hora') {
 
                     campo.value = getValorPlano(value);
@@ -1589,7 +1591,6 @@
 
 
                 // COLOR
-
                 else if (tipo === 'color') {
 
                     campo.value = value || '#000000';
@@ -1597,7 +1598,6 @@
 
 
                 // AUTOCOMPLETADO
-
                 else if (tipo === 'campo autocompletado') {
 
                     campo.value = campo.dataset.default ?? campo.value ?? '';
@@ -1605,7 +1605,6 @@
 
 
                 // TEXTAREA
-
                 else if (tipo === 'textarea') {
 
                     campo.value = getValorPlano(value);
@@ -1613,7 +1612,6 @@
 
 
                 // INPUTS BÁSICOS
-
                 else {
 
                     let val = getValorPlano(value);
@@ -1674,9 +1672,9 @@
             const formId = @json($formulario->id);
 
             fetch(`/formularios/${formId}/eliminar-registro`, {
-                method: 'POST',
-                body: formData,
-            })
+                    method: 'POST',
+                    body: formData,
+                })
                 .then(async response => {
 
                     if (!response.ok) {
@@ -1699,8 +1697,7 @@
 
                         ejecutarFormulas(registros, FORMULAS, index);
                         render_informacion();
-                    }
-                    else {
+                    } else {
 
                         if (data.message) {
                             mostrarAlerta('error', data.message);
@@ -1760,5 +1757,4 @@
             texto.textContent = btnAgregar.dataset.originalText;
         }
     </script>
-
 @endif

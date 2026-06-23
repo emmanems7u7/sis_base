@@ -4,6 +4,7 @@ namespace App\Repositories;
 
 use App\Interfaces\FormularioInterface;
 use App\Interfaces\CatalogoInterface;
+use App\Interfaces\RespuestasCampoInterface;
 use App\Models\CamposForm;
 use App\Models\Catalogo;
 use App\Models\FormLogicRule;
@@ -25,10 +26,12 @@ class FormularioRepository implements FormularioInterface
     protected $model;
     protected $CatalogoRepository;
 
-    public function __construct(Formulario $model, CatalogoInterface $catalogoInterface, )
+
+    public function __construct(Formulario $model, CatalogoInterface $catalogoInterface)
     {
         $this->model = $model;
         $this->CatalogoRepository = $catalogoInterface;
+
 
     }
 
@@ -171,9 +174,7 @@ class FormularioRepository implements FormularioInterface
                 return $valorUsuario;
             }
 
-            $campoReferencia = CamposForm::where('form_id', $campo->form_ref_id)
-                ->orderBy('posicion', 'asc')
-                ->first();
+            $campoReferencia = CamposForm::where('form_id', $campo->form_ref_id)->orderBy('posicion', 'asc')->first();
 
             if (!$campoReferencia) {
                 return null;
@@ -499,7 +500,7 @@ class FormularioRepository implements FormularioInterface
 
             $displayValores = [];
             foreach ($valores as $v) {
-                $valorResuelto = $this->resolverValor($campo, $v);
+                $valorResuelto = $this->obtenerValorReal($campo, $v);
 
                 $tipoCampo = strtolower($campo->campo_nombre);
                 switch ($tipoCampo) {

@@ -6,18 +6,17 @@
         @include('formularios.contenedor_superior', ['formulario' => $formulario])
 
 
-      
-                <form action="{{ route('respuestas.update', ['respuesta' => $respuesta, 'modulo' => $modulo]) }}"
-                    method="POST" enctype="multipart/form-data">
-                    @csrf
-                    @method('PUT')
 
-                    @foreach($formularios as $index => $formItem)
+        <form action="{{ route('respuestas.update', ['respuesta' => $respuesta, 'modulo' => $modulo]) }}" method="POST"
+            enctype="multipart/form-data">
+            @csrf
+            @method('PUT')
 
-                    <div class="card mt-3 shadow-lg">
-            <div class="card-body">
+            @foreach ($formularios as $index => $formItem)
+                <div class="card mt-3 shadow-lg">
+                    <div class="card-body">
 
-            @if($formularios->count() > 1)
+                        @if ($formularios->count() > 1)
                             <h6 class="">
                                 {{ $formItem->nombre }}
                             </h6>
@@ -25,81 +24,81 @@
                         @endif
 
 
-                            @php
-                                $valores = [];
-                                foreach ($formulario->campos as $campo) {
-                                    $valores[$campo->nombre] = $respuesta->camposRespuestas
-                                        ->where('cf_id', $campo->id)
-                                        ->pluck('valor')
-                                        ->toArray();
-                                }
-                            @endphp
+                        @php
+                            $valores = [];
+                            foreach ($formulario->campos as $campo) {
+                                $valores[$campo->nombre] = $respuesta->camposRespuestas
+                                    ->where('cf_id', $campo->id)
+                                    ->pluck('valor')
+                                    ->toArray();
+                            }
+                        @endphp
 
-                            @include('formularios._campos', [
-                                'campos' => $formItem->campos->sortBy('posicion'),
-                                'valores' => $valoresGlobal[$formItem->id] ?? [],
-                                'prefix' => "form_{$formItem->id}",
-                                'formulario' => $formItem,
-                                'caso' => 'edit'
-                            ])
+                        @include('formularios._campos', [
+                            'campos' => $formItem->campos->sortBy('posicion'),
+                            'valores' => $valoresGlobal[$formItem->id] ?? [],
+                            'prefix' => "form_{$formItem->id}",
+                            'formulario' => $formItem,
+                            'caso' => 'edit',
+                        ])
 
-                            @php
-                                $formPrincipal = $formularios->first();
-                            @endphp
+                        @php
+                            $formPrincipal = $formularios->first();
+                        @endphp
 
-                            @if($formPrincipal->id == $formItem->id)
-                                @if(isset($formPrincipal->config['registro_multiple']) && $formPrincipal->config['registro_multiple'])
-
-                                    <button type="button" class="btn btn-success btn-xs w-100 mt-3" id="btn-agregar-registro">
+                        @if ($formPrincipal->id == $formItem->id)
+                            @if (isset($formPrincipal->config['registro_multiple']) && $formPrincipal->config['registro_multiple'])
+                                <button type="button" class="btn btn-success btn-xs w-100 mt-3" id="btn-agregar-registro">
                                     {!! configForm($formItem->id, 'titles.add_multiple') !!}
-                                    </button>
+                                </button>
 
-                                    <div class="mt-1">
-                                        <h6>{!! configForm($formItem->id, 'titles.registers_adds') !!}</h6>
+                                <div class="mt-1">
+                                    <h6>{!! configForm($formItem->id, 'titles.registers_adds') !!}</h6>
 
-                                        @if($isMobile)
-                                            <div id="contenedor-cards"></div>
-                                        @else
-                                            <div id="contenedor-tabla" class="table-responsive">
-                                                <table class="table table-bordered table-striped" id="tabla-registros">
-                                                    <thead>
-                                                        <tr id="thead-dinamico">
-                                                            <th>#</th>
-                                                            <th>Acciones</th>
-                                                        </tr>
-                                                    </thead>
-                                                    <tbody></tbody>
-                                                </table>
-                                            </div>
-                                        @endif
-                                    </div>
+                                    @if ($isMobile)
+                                        <div id="contenedor-cards"></div>
+                                    @else
+                                        <div id="contenedor-tabla" class="table-responsive">
+                                            <table class="table table-bordered table-striped" id="tabla-registros">
+                                                <thead>
+                                                    <tr id="thead-dinamico">
+                                                        <th>#</th>
+                                                        <th>Acciones</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody></tbody>
+                                            </table>
+                                        </div>
+                                    @endif
+                                </div>
 
-                                    <input type="hidden" name="registros_json" id="registros_json"value="{{ old('registros_json', $formItem->registros_json ?? '[]') }}">
+                                <input type="hidden" name="registros_json"
+                                    id="registros_json"value="{{ old('registros_json', $formItem->registros_json ?? '[]') }}">
 
-                                    <div id="hidden_files_container"></div>
-
-                                @endif
+                                <div id="hidden_files_container"></div>
                             @endif
+                        @endif
 
-                            </div>
-            </div>
-                    @endforeach
-
-
-           @include('formularios.partials.Botones_RA_footer', [
-            'texto' => 'Actualizar',
-            'icono'=> 'fas fa-save' ,
-            'moduloModelo' => $moduloModelo])
-
-    </form>
-             
-
-        </div>
+                    </div>
+                </div>
+            @endforeach
 
 
-        @include('formularios.scripts.LogicaRegistro',['formulario'=> $formPrincipal])
+            @include('formularios.partials.Botones_RA_footer', [
+                'texto' => 'Actualizar',
+                'icono' => 'fas fa-save',
+                'moduloModelo' => $moduloModelo,
+            ])
 
-        @include('formularios.scripts.LogicaRegistro2',['formulario'=> $formPrincipal])
+        </form>
+
+
+    </div>
+
+
+    @include('formularios.scripts.LogicaRegistro', ['formulario' => $formPrincipal])
+
+    @include('formularios.scripts.LogicaRegistro2', ['formulario' => $formPrincipal])
 
 
 @endsection

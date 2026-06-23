@@ -19,6 +19,7 @@ use App\Interfaces\CamposFormInterface;
 
 
 use App\Models\AuditoriaAccion;
+use App\Models\CamposForm;
 use App\Models\RespuestasCampo;
 
 use function Laravel\Prompts\form;
@@ -300,7 +301,7 @@ class FormularioController extends Controller
         if ($grupo) {
 
             foreach ($grupo->respuestas as $resp) {
-                // <-- Aquí filtramos la respuesta actual
+
                 if ($resp->id == $respuesta->id) {
                     continue;
                 }
@@ -360,13 +361,72 @@ class FormularioController extends Controller
         /* OBTENER REGISTRO ASOCIADO 1:1 CON FORMULARIO*/
 
 
+        $datosRelacionados = [];
+
+        $camposReferenciados = CamposForm::where('form_ref_id', $form_id)->get();
+
+        foreach ($camposReferenciados as $campoRelacionado) {
+
+            $config = $campoRelacionado->config['asociacion'] ?? null;
+
+            if (!$config) {
+                continue;
+            }
+
+            $campoPadreId = $config['campo_ref_id'] ?? null;
+
+            if (!$campoPadreId) {
+                continue;
+            }
+
+            // valor del campo padre en la respuesta actual
+            $valorPadre = $respuesta->camposRespuestas->firstWhere('cf_id', $campoPadreId)?->valor;
+
+            if (!$valorPadre) {
+                continue;
+            }
+
+            // respuestas hijas que apuntan a este registro
+            $respuestaIds = RespuestasCampo::where('cf_id', $campoRelacionado->id)
+                ->where('valor', $valorPadre)
+                ->pluck('respuesta_id');
+
+            $respuestasHijas = RespuestasForm::with([
+                'camposRespuestas.campo'
+            ])
+                ->whereIn('id', $respuestaIds)
+                ->get();
+
+            foreach ($respuestasHijas as $hija) {
+
+                $datosRelacionados[] = [
+                    'formulario_id' => $campoRelacionado->form_id,
+                    'respuesta_id' => $hija->id,
+                    'campos' => $this->FormularioRepository->procesarCamposRespuesta($hija, $hija->formulario)
+                ];
+            }
+        }
+        $datos_asociados_title = configForm($form_id, 'titles.datos_asociados');
+        $datos_relacionados_title = configForm($form_id, 'titles.datos_relacionados');
+        $grupo_title = configForm($form_id, 'titles.datos_agrupados');
+        $detalle_registro = configForm($form_id, 'titles.detalle_registro', null, 'normal', 'none');
+
+
         return response()->json([
             'nombre_formulario' => $formulario->nombre,
             'campos' => $camposRespuestaPrincipal,
             'grupo_id' => $grupo->id ?? null,
             'codigo_grupo' => $grupo->codigo ?? null,
             'respuestas_grupo' => $respuestasGrupo,
-            'datos_asociados' => $datos
+            'datos_asociados' => $datos,
+            'datos_relacionados' => $datosRelacionados,
+            'datos_asociados_title' => $datos_asociados_title,
+            'datos_relacionados_title' => $datos_relacionados_title,
+            'grupo_title' => $grupo_title,
+            'detalle_registro' => $detalle_registro,
+
+
+
         ]);
     }
     /**

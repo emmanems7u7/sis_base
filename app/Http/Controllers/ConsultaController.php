@@ -109,9 +109,7 @@ class ConsultaController extends Controller
         $resultado = $this->execute($consulta);
         $config = $consulta->configuracion;
 
-        $columnas = $this->obtenerEtiquetasColumnas(
-            $config['select'] ?? []
-        );
+        $columnas = $this->obtenerEtiquetasColumnas($config['select'] ?? []);
 
 
         return view(
@@ -128,23 +126,12 @@ class ConsultaController extends Controller
     {
         return collect($ids)->mapWithKeys(function ($id) {
 
-            $partes = explode('.', $id);
+            $campoId = last(explode('.', $id));
 
-            $etiquetas = [];
-
-            foreach ($partes as $campoId) {
-
-                $campo = CamposForm::find($campoId);
-
-                if (!$campo) {
-                    continue;
-                }
-
-                $etiquetas[] = $campo->etiqueta;
-            }
+            $campo = CamposForm::find($campoId);
 
             return [
-                $id => implode(' → ', $etiquetas)
+                $id => $campo?->etiqueta ?? $id
             ];
         });
     }

@@ -268,37 +268,90 @@ document.addEventListener('DOMContentLoaded', () => {
     /*** 7️⃣ TomSelect + radios + checkboxes + búsqueda ***/
     const initSelectsYOpciones = () => {
         const initCargarMasSelect = (select) => {
-            let offset = select.options.length;
+
             const limit = 20;
+        
+            select.dataset.offset = select.options.length || 0;
+        
+            const wrapper = select.closest('.tom-select-wrapper');
+        
             const ts = new TomSelect(select, {
+        
                 maxOptions: 100,
                 plugins: ['dropdown_input'],
-                render: { option: (item, escape)=>`<div class="${item.nueva?'option-nueva':''}">${escape(item.text)}</div>` },
-                onDropdownOpen: function(){
+        
+                render: {
+                    option: (item, escape) =>
+                        `<div class="${item.nueva ? 'option-nueva' : ''}">
+                            ${escape(item.text)}
+                        </div>`
+                },
+        
+                onInitialize: function () {
+        
+                    wrapper?.querySelector('.ts-skeleton')?.remove();
+        
+                    const tsWrapper = select.nextElementSibling;
+                    tsWrapper?.classList.remove('d-none');
+                },
+        
+                onDropdownOpen: function () {
+        
                     const dropdown = this.dropdown;
-                    if(!dropdown.querySelector('.ts-dropdown-ver-mas')){
-                        const btnVerMas = document.createElement('div');
-                        btnVerMas.classList.add('ts-dropdown-ver-mas','text-center','p-1');
-                        btnVerMas.innerHTML = `<button type="button" class="btn btn-sm btn-outline-primary w-100">Ver más...</button>`;
-                        btnVerMas.querySelector('button').addEventListener('click', async ()=>{
-                            const campoId = select.dataset.campoId;
-                            const resp = await fetch(`/campos/${campoId}/cargar-mas?offset=${offset}&limit=${limit}`);
-                            const data = await resp.json();
-                            data.forEach(opcion=>{
-                                opcion.nueva=true;
-                                ts.addOption({value:opcion.catalogo_codigo,text:opcion.catalogo_descripcion,nueva:true});
+        
+                    if (dropdown.querySelector('.ts-dropdown-ver-mas')) return;
+        
+                    const btnVerMas = document.createElement('div');
+                    btnVerMas.classList.add('ts-dropdown-ver-mas', 'text-center', 'p-1');
+        
+                    btnVerMas.innerHTML = `
+                        <button type="button" class="btn btn-sm btn-outline-primary w-100">
+                            Ver más...
+                        </button>
+                    `;
+        
+                    btnVerMas.querySelector('button').addEventListener('click', async () => {
+        
+                        const campoId = select.dataset.campoId;
+        
+                        let offset = parseInt(select.dataset.offset || 0);
+        
+                        const resp = await fetch(
+                            `/campos/${campoId}/cargar-mas?offset=${offset}&limit=${limit}`
+                        );
+        
+                        const data = await resp.json();
+        
+                        data.forEach(opcion => {
+        
+                            ts.addOption({
+                                value: opcion.catalogo_codigo,
+                                text: opcion.catalogo_descripcion,
+                                nueva: true   // 🔥 CLAVE PARA QUE SE PINTE
                             });
-                            ts.refreshOptions(false);
-                            setTimeout(()=>{ data.forEach(o=>{ const opt=ts.getOption(o.catalogo_codigo); if(opt) opt.classList.remove('option-nueva'); }); },1000);
-                            offset += data.length;
+        
                         });
-                        dropdown.appendChild(btnVerMas);
-                    }
+        
+                        ts.refreshOptions(false);
+        
+                        // 🔥 efecto temporal de highlight
+                        setTimeout(() => {
+        
+                            data.forEach(o => {
+                                const opt = ts.getOption(o.catalogo_codigo);
+                                if (opt) opt.classList.remove('option-nueva');
+                            });
+        
+                        }, 1000);
+        
+                        select.dataset.offset = offset + data.length;
+                    });
+        
+                    dropdown.appendChild(btnVerMas);
                 }
             });
         };
-
-        document.querySelectorAll('.tom-select').forEach(initCargarMasSelect);
+        document.querySelectorAll('select.tom-select').forEach(initCargarMasSelect);
 
         // Radios y checkboxes dinámicos
         const initCargarMasRadioCheckbox = (selector, tipo) => {

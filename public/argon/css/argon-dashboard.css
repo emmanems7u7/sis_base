@@ -28685,3 +28685,40 @@ pre[class*=language-] {
                   
                       z-index:2;
   }
+
+  .tom-select + .ts-wrapper,
+.ts-wrapper {
+    width: 100%;
+}
+
+.ts-control {
+  border: 1px solid #d0d0d0 !important;
+  padding: 8px 8px !important;
+  width: 100% !important;
+  overflow: hidden !important;
+  position: relative !important;
+  z-index: 1 !important;
+  box-sizing: border-box !important;
+  box-shadow: none !important;
+  border-radius: 8px !important;
+  display: flex !important;
+  flex-wrap: wrap !important;
+}
+
+.ts-wrapper:hover .ts-control {
+    border-color: #b8c2cc;
+}
+
+.ts-wrapper.focus .ts-control {
+    border-color: #5e72e4; 
+    box-shadow: 0 0 0 0.2rem rgba(94, 114, 228, 0.25);
+}
+
+.ts-dropdown .dropdown-input {
+    border-radius: 0.6rem;
+    padding: 0.4rem 0.6rem;
+}
+
+.mt-custom {
+    margin-top: 0.17rem;
+}
