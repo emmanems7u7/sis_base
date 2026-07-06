@@ -7,7 +7,7 @@ use App\Interfaces\RespuestasFormInterface;
 use App\Models\RespuestasForm;
 use App\Interfaces\CatalogoInterface;
 use App\Models\Formulario;
-use App\Models\ModuloFormularioParalelo;
+use App\Models\FormularioAsociacion;
 use App\Models\RespuestasCampo;
 use App\Interfaces\FormularioInterface;
 use Illuminate\Support\Facades\DB;
@@ -97,11 +97,10 @@ class RespuestasFormRepository implements RespuestasFormInterface
 
         foreach ($campos as $campo) {
 
-            $tipo = strtolower($campo->campo_nombre);
             $required = $campo->requerido ? 'required' : 'nullable';
 
             // ========================================
-            // Valor existente (solo edición)
+            // Valor existente
             // ========================================
             $valorExistente = null;
 
@@ -115,7 +114,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
             // ========================================
             // Importación desde archivo: omitir multimedia
             // ========================================
-            if ($modo === 'archivo' && in_array($tipo, ['archivo', 'imagen', 'video'])) {
+            if ($modo === 'archivo' && in_array($campo->tipo, ['CAMPF-023', 'CAMPF-018', 'CAMPF-019'])) {
                 continue;
             }
 
@@ -123,18 +122,18 @@ class RespuestasFormRepository implements RespuestasFormInterface
                 ? "{$prefix}.{$campo->id}"
                 : $campo->id;
 
-            switch ($tipo) {
+            switch ($campo->tipo) {
 
-                case 'text':
-                case 'textarea':
+                case 'CAMPF-012': //text
+                case 'CAMPF-014': //textarea
                     $rules[$fieldName] = [$required, 'string', 'max:255'];
                     break;
 
-                case 'number':
+                case 'CAMPF-013': //number
                     $rules[$fieldName] = [$required, 'numeric'];
                     break;
 
-                case 'checkbox':
+                case 'CAMPF-015': //checkbox
                     $arrayRules = [$required, 'array'];
                     if ($campo->requerido) {
                         $arrayRules[] = 'min:1';
@@ -142,14 +141,14 @@ class RespuestasFormRepository implements RespuestasFormInterface
                     $rules[$fieldName] = $arrayRules;
                     break;
 
-                case 'radio':
-                case 'selector':
+                case 'CAMPF-016': //radio
+                case 'CAMPF-017': //selector
                     $rules[$fieldName] = [$required];
                     break;
 
-                case 'archivo':
-                case 'imagen':
-                case 'video':
+                case 'CAMPF-023': //archivo
+                case 'CAMPF-018': //imagen
+                case 'CAMPF-019': //video
 
                     $extensiones_permitidas = $this->CatalogoRepository
                         ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true);
@@ -191,14 +190,14 @@ class RespuestasFormRepository implements RespuestasFormInterface
 
                     break;
 
-                case 'color':
+                case 'CAMPF-024': //color
                     $rules[$fieldName] = [
                         $required,
                         'regex:/^#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})$/'
                     ];
                     break;
 
-                case 'email':
+                case 'CAMPF-025': //email
                     $uniqueRule = $respuestaId
                         ? "unique:respuestas_campos,valor,{$respuestaId},respuesta_id,cf_id,{$campo->id}"
                         : "unique:respuestas_campos,valor,NULL,id,cf_id,{$campo->id}";
@@ -211,7 +210,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
                     ];
                     break;
 
-                case 'password':
+                case 'CAMPF-026': //password
                     $rules[$fieldName] = [
                         $required,
                         'string',
@@ -220,15 +219,14 @@ class RespuestasFormRepository implements RespuestasFormInterface
                     ];
                     break;
 
-                case 'enlace':
+                case 'CAMPF-020': //enlace
                     $rules[$fieldName] = [$required, 'url'];
                     break;
-
-                case 'fecha':
+                case 'CAMPF-021': //fecha
                     $rules[$fieldName] = [$required, 'date'];
                     break;
 
-                case 'hora':
+                case 'CAMPF-022': //hora
                     $rules[$fieldName] = [$required, 'date_format:H:i'];
                     break;
 

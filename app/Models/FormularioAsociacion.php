@@ -4,12 +4,10 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 
-class ModuloFormularioParalelo extends Model
+class FormularioAsociacion extends Model
 {
     protected $fillable = [
-        'modulo_id',
         'formularios',
-        'grupo',
         'config'
     ];
 

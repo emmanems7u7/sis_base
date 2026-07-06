@@ -1,4 +1,4 @@
-<div class="config-relacion" data-relacion='@json($campo->config['asociacion'] ?? null)'>
+<div class="config-relacion" data-relacion='@json($campo->config['asociacion'] ?? $campo->config['relacion'])'>
 
     <script>
         window.formulariosRef = window.formulariosRef ?? @json($formularios_ref);
@@ -7,10 +7,11 @@
     <div class="row">
         <div class="col-md-6">
             <div class="mb-3">
-                <label class="form-label">Formulario relacionado</label>
+
+                <label class="form-label">Formulario relacionado </label>
                 <select class="form-select selectFormulario">
                     <option value="">Seleccione un formulario</option>
-                    @foreach($formularios_ref as $form)
+                    @foreach ($formularios_ref as $form)
                         <option value="{{ $form->id }}">{{ $form->nombre }}</option>
                     @endforeach
                 </select>

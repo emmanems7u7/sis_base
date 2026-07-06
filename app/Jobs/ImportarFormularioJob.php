@@ -66,8 +66,7 @@ class ImportarFormularioJob implements ShouldQueue
                         if ($valor === null)
                             continue;
 
-                        $tipo = strtolower($campo->campo_nombre);
-                        if (in_array($tipo, ['imagen', 'video', 'archivo'])) {
+                        if (in_array($campo->tipo, ['CAMPF-018', 'CAMPF-019', 'CAMPF-023'])) {
                             app('App\Repositories\FormularioRepository')->guardarArchivoGenerico($campo, $respuesta->id, $this->form, $valor);
                         } else {
                             app('App\Repositories\CamposFormRepository')->guardarValorSimple($campo, $respuesta->id, $valor);

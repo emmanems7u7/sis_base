@@ -7,7 +7,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Models\Modulo;
 use App\Models\FormLogicRule;
-use App\Models\ModuloFormularioParalelo;
+use App\Models\FormularioAsociacion;
 
 
 use App\Interfaces\FormularioInterface;
@@ -232,7 +232,6 @@ class ModuloController extends Controller
 
         $modulo = Modulo::with([
             'formularios.campos',
-            'formulariosParalelos'
         ])->findOrFail($modulo);
 
 
@@ -285,16 +284,12 @@ class ModuloController extends Controller
             }
         }
 
-        $grupos = ModuloFormularioParalelo::where('modulo_id', $modulo->id)
-            ->get();
-
 
         return view('modulos.administrar', compact(
             'rules',
             'modulo',
             'breadcrumb',
             'grafo',
-            'grupos'
         ));
 
     }

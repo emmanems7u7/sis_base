@@ -1,270 +1,276 @@
-<div class="row mb-3">
-    <div class="col-md-3  mt-3 ">
+<div class="container">
+    <div class="row mb-3  mt-3 ">
 
-
-        <div class="card shadow-sm">
-            <div class="card-body">
-                <div class="mb-3">
-                    <label class="form-label">Nombre del grupo</label>
-                    <input type="text" name="grupo" class="form-control" value="{{ old('grupo', $grupoNombre ?? '') }}"
-                        placeholder="Ej: A" required>
+        <div class="col-md-4">
+            <div class="card">
+                <div class="card-body">
+                    <button type="button" class="btn btn-xs btn-dark" id="btn_operacion"> Agregar operacion</button>
+                    <hr>
+                    <h6>Lista de operaciones</h6>
+                    <div id="lista_operaciones" class="row row-cols-1  g-2">
+                    </div>
                 </div>
-                <h6 class="mb-3">
-                    <i class="fas fa-layer-group"></i> Formularios disponibles
-                </h6>
-
-                @forelse ($formularios as $form)
-                    <div class="d-flex justify-content-between align-items-center border-bottom py-2">
-
-                        <div class="form-check">
-                            <input class="form-check-input check-formulario" type="checkbox" name="formularios[]"
-                                value="{{ $form->id }}" id="form_{{ $form->id }}" {{ in_array($form->id, $seleccionados ?? []) ? 'checked' : '' }}>
-
-                            <label class="form-check-label" for="form_{{ $form->id }}">
-                                @if($form->config['registro_multiple'])
-                                    <i class="fas fa-question-circle" data-bs-toggle="tooltip" data-bs-placement="top"
-                                        title="Permite Registros multiples"></i>
-                                @endif
-                                {{ $form->nombre }}
-
-
-
-                            </label>
-                        </div>
-                        @if($form->config['registro_multiple'])
-                            <div class="form-check">
-                                <input class="form-check-input radio-principal" type="radio" name="principal"
-                                    value="{{ $form->id }}" {{ ($principal ?? null) == $form->id ? 'checked' : '' }}>
-
-                                <label class="form-check-label">
-                                    Principal
-                                </label>
-                            </div>
-                        @endif
-                    </div>
-                @empty
-                    <div class="alert alert-warning mb-0">
-                        No hay formularios disponibles
-                    </div>
-                @endforelse
-
-                <input type="hidden" name="operaciones_json" id="operaciones_json" value="">
             </div>
-            <div class="card-footer  d-flex justify-content-center gap-2">
-                <button type="button" class="btn btn-xs btn-info" id="btn_continuar"> Continuar</button>
+
+        </div>
+        <div class="col-md-8  ">
+
+            <div id="contenedor_operaciones" class="card ">
+                <div class="card-body">
+
+                    <div class="d-none" id="contenedor_op">
+
+
+                        <div class="row">
+                            <div class="row g-3 align-items-stretch">
+
+                                <!-- RELACION MULTIPLE -->
+                                <div class="col-md-6">
+
+                                    <div class="border rounded p-3 h-100 bg-light">
+
+                                        <div class="d-flex align-items-center mb-2">
+
+                                            <i class="fas fa-project-diagram text-warning me-2"></i>
+
+                                            <span class="fw-bold">
+                                                Relación
+                                            </span>
+
+                                        </div>
+
+                                        <div class="form-check form-switch">
+
+                                            <input class="form-check-input" type="checkbox" id="relacion_multiple"
+                                                name="relacion_multiple" value="1">
+
+                                            <label class="form-check-label ms-1" for="relacion_multiple">
+
+                                                Válido para relación 1:N
+
+                                            </label>
+
+                                        </div>
+
+                                        <small class="text-muted d-block mt-2">
+
+                                            Permite definir si la operación se aplicará en casos de relación 1:N entre
+                                            los
+                                            formularios.
+
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+                                <!-- TIPO CALCULO -->
+                                <div class="col-md-6">
+
+                                    <div class="border rounded p-3 h-100 bg-light">
+
+                                        <div class="d-flex align-items-center mb-2">
+
+                                            <i class="fas fa-calculator text-primary me-2"></i>
+
+                                            <span class="fw-bold">
+                                                Tipo de cálculo
+                                            </span>
+
+                                        </div>
+
+                                        <select class="form-select" id="tipo_calculo">
+
+                                            <option value="fila">
+                                                Por fila
+                                            </option>
+
+                                            <option value="global">
+                                                Global
+                                            </option>
+
+                                            <option value="grupo">
+                                                Por grupo
+                                            </option>
+
+                                        </select>
+
+                                        <small class="text-muted d-block mt-2">
+
+                                            Define cómo se ejecutará la fórmula.
+
+                                        </small>
+
+                                    </div>
+
+                                </div>
+
+                            </div>
+
+                            @foreach ($formularios as $form)
+                                <div class="col-md-6">
+                                    <div class="fw-bold mb-2 text-primary">
+                                        {{ $form->nombre }}
+                                    </div>
+
+                                    <div class="d-flex flex-wrap gap-1">
+
+                                        @foreach ($form->campos as $campo)
+                                            <button type="button" class="btn btn-primary btn-xs campo-draggable"
+                                                draggable="true" data-campo_id="{{ $campo->id }}"
+                                                data-nombre="{{ $campo->nombre }}"
+                                                data-campo="{{ $campo->campo_nombre }}" data-form="{{ $form->id }}"
+                                                data-principal="{{ $form->id == $principal ? 1 : 0 }}"
+                                                data-bs-toggle="tooltip" data-bs-placement="top"
+                                                title="{{ $campo->campo_nombre }}">
+
+                                                {{ $campo->etiqueta }}
+
+                                            </button>
+                                        @endforeach
+
+                                    </div>
+                                </div>
+                            @endforeach
+                        </div>
+
+
+                        <!-- FILA PRINCIPAL -->
+                        <div class="d-flex flex-wrap align-items-center gap-2">
+
+                            <div style="width: 180px;">
+                                <small>Destino</small>
+                                <div id="drop_destino" class="border p-2 text-center bg-light"
+                                    style="min-height: 42px;">
+                                    Arrastra aquí
+                                </div>
+                            </div>
+
+
+
+                            <div class="flex-grow-1">
+                                <small>Operación</small>
+                                <div id="drop_operacion" class="border p-2 d-flex flex-wrap gap-1 bg-light"
+                                    style="min-height: 42px;">
+                                </div>
+                            </div>
+
+                            <div class="mt-2 mt-md-0">
+                                <button type="button" class="btn btn-success btn-sm" onclick="guardarOperacion()">
+                                    Agregar
+                                </button>
+                            </div>
+
+                        </div>
+
+                        <!-- OPERADORES -->
+                        <div class="mt-3 d-flex gap-1">
+                            <button type="button" class="btn btn-primary btn-xs operador" data-op="="
+                                draggable="true">=</button>
+                            <button type="button" class="btn btn-primary btn-xs operador" draggable="true"
+                                data-op="+">+</button>
+                            <button type="button" class="btn btn-primary btn-xs operador" draggable="true"
+                                data-op="-">-</button>
+                            <button type="button" class="btn btn-primary btn-xs operador" draggable="true"
+                                data-op="*">*</button>
+                            <button type="button" class="btn btn-primary btn-xs operador" draggable="true"
+                                data-op="/">/</button>
+                        </div>
+
+                        <!-- FUNCIONES -->
+                        <div class="mt-2 d-flex gap-1 flex-wrap">
+
+                            <button type="button" class="btn btn-warning btn-xs funcion" draggable="true"
+                                data-func="SUM">
+                                SUM
+                            </button>
+
+                            <button type="button" class="btn btn-warning btn-xs funcion" draggable="true"
+                                data-func="AVG">
+                                AVG
+                            </button>
+
+                            <button type="button" class="btn btn-warning btn-xs funcion" draggable="true"
+                                data-func="IF">
+                                IF
+                            </button>
+
+                            <button type="button" class="btn btn-warning btn-xs funcion" draggable="true"
+                                data-func="ROUND">
+                                ROUND
+                            </button>
+
+                            <button type="button" class="btn btn-warning btn-xs funcion" draggable="true"
+                                data-func="COUNT">
+                                COUNT
+                            </button>
+
+                            <button type="button" class="btn btn-warning btn-xs funcion" draggable="true"
+                                data-func="MIN">
+                                MIN
+                            </button>
+
+                            <button type="button" class="btn btn-warning btn-xs funcion" draggable="true"
+                                data-func="MAX">
+                                MAX
+                            </button>
+
+                        </div>
+
+                        <div class="mt-2 d-flex gap-1">
+
+                            <button type="button" class="btn btn-secondary btn-xs agrupador" draggable="true"
+                                data-group="(">
+                                (
+                            </button>
+
+                            <button type="button" class="btn btn-secondary btn-xs agrupador" draggable="true"
+                                data-group=")">
+                                )
+                            </button>
+
+                        </div>
+
+
+
+                        <div class=" d-flex justify-content-center gap-2">
+
+                            <button type="submit" class="btn btn-success btn-sm px-4">Guardar Asociación</button>
+                        </div>
+
+                    </div>
+
+
+                </div>
+
 
             </div>
         </div>
 
-
-    </div>
-    <div class="col-md-9  mt-3 ">
-
-        <div id="contenedor_campos"></div>
-
-
-        <div id="contenedor_operaciones" class="card mt-3 d-none">
-            <div class="card-body">
-                <div class="row g-3 align-items-stretch">
-
-                    <!-- RELACION MULTIPLE -->
-                    <div class="col-md-6">
-
-                        <div class="border rounded p-3 h-100 bg-light">
-
-                            <div class="d-flex align-items-center mb-2">
-
-                                <i class="fas fa-project-diagram text-warning me-2"></i>
-
-                                <span class="fw-bold">
-                                    Relación
-                                </span>
-
-                            </div>
-
-                            <div class="form-check form-switch">
-
-                                <input class="form-check-input" type="checkbox" id="relacion_multiple"
-                                    name="relacion_multiple" value="1">
-
-                                <label class="form-check-label ms-1" for="relacion_multiple">
-
-                                    Válido para relación 1:N
-
-                                </label>
-
-                            </div>
-
-                            <small class="text-muted d-block mt-2">
-
-                                Permite definir si la operación se aplicará en casos de relación 1:N entre los
-                                formularios seleccionados.
-
-                            </small>
-
-                        </div>
-
-                    </div>
-
-                    <!-- TIPO CALCULO -->
-                    <div class="col-md-6">
-
-                        <div class="border rounded p-3 h-100 bg-light">
-
-                            <div class="d-flex align-items-center mb-2">
-
-                                <i class="fas fa-calculator text-primary me-2"></i>
-
-                                <span class="fw-bold">
-                                    Tipo de cálculo
-                                </span>
-
-                            </div>
-
-                            <select class="form-select" id="tipo_calculo">
-
-                                <option value="fila">
-                                    Por fila
-                                </option>
-
-                                <option value="global">
-                                    Global
-                                </option>
-
-                                <option value="grupo">
-                                    Por grupo
-                                </option>
-
-                            </select>
-
-                            <small class="text-muted d-block mt-2">
-
-                                Define cómo se ejecutará la fórmula.
-
-                            </small>
-
-                        </div>
-
-                    </div>
-
-                </div>
-                <!-- FILA PRINCIPAL -->
-                <div class="d-flex flex-wrap align-items-center gap-2">
-
-                    <div style="width: 180px;">
-                        <small>Destino</small>
-                        <div id="drop_destino" class="border p-2 text-center bg-light" style="min-height: 42px;">
-                            Arrastra aquí
-                        </div>
-                    </div>
-
-
-
-                    <div class="flex-grow-1">
-                        <small>Operación</small>
-                        <div id="drop_operacion" class="border p-2 d-flex flex-wrap gap-1 bg-light"
-                            style="min-height: 42px;">
-                        </div>
-                    </div>
-
-                    <div class="mt-2 mt-md-0">
-                        <button type="button" class="btn btn-success btn-sm" onclick="guardarOperacion()">
-                            Agregar
-                        </button>
-                    </div>
-
-                </div>
-
-                <!-- OPERADORES -->
-                <div class="mt-3 d-flex gap-1">
-                    <button type="button" class="btn btn-primary btn-xs operador" data-op="="
-                        draggable="true">=</button>
-                    <button type="button" class="btn btn-primary btn-xs operador" draggable="true"
-                        data-op="+">+</button>
-                    <button type="button" class="btn btn-primary btn-xs operador" draggable="true"
-                        data-op="-">-</button>
-                    <button type="button" class="btn btn-primary btn-xs operador" draggable="true"
-                        data-op="*">*</button>
-                    <button type="button" class="btn btn-primary btn-xs operador" draggable="true"
-                        data-op="/">/</button>
-                </div>
-
-                <!-- FUNCIONES -->
-                <div class="mt-2 d-flex gap-1 flex-wrap">
-
-                    <button type="button" class="btn btn-warning btn-xs funcion" draggable="true" data-func="SUM">
-                        SUM
-                    </button>
-
-                    <button type="button" class="btn btn-warning btn-xs funcion" draggable="true" data-func="AVG">
-                        AVG
-                    </button>
-
-                    <button type="button" class="btn btn-warning btn-xs funcion" draggable="true" data-func="IF">
-                        IF
-                    </button>
-
-                    <button type="button" class="btn btn-warning btn-xs funcion" draggable="true" data-func="ROUND">
-                        ROUND
-                    </button>
-
-                    <button type="button" class="btn btn-warning btn-xs funcion" draggable="true" data-func="COUNT">
-                        COUNT
-                    </button>
-
-                    <button type="button" class="btn btn-warning btn-xs funcion" draggable="true" data-func="MIN">
-                        MIN
-                    </button>
-
-                    <button type="button" class="btn btn-warning btn-xs funcion" draggable="true" data-func="MAX">
-                        MAX
-                    </button>
-
-                </div>
-
-                <div class="mt-2 d-flex gap-1">
-
-                    <button type="button" class="btn btn-secondary btn-xs agrupador" draggable="true" data-group="(">
-                        (
-                    </button>
-
-                    <button type="button" class="btn btn-secondary btn-xs agrupador" draggable="true" data-group=")">
-                        )
-                    </button>
-
-                </div>
-                <hr>
-                <!-- TABLA -->
-                <table class="table table-sm">
-                    <thead>
-                        <tr>
-                            <th>Destino</th>
-                            <th>Fórmula</th>
-                            <th>Modo</th>
-                            <th>Tipo cálculo</th>
-
-                            <th>Relación</th>
-                            <th></th>
-
-                        </tr>
-                    </thead>
-                    <tbody id="tabla_operaciones"></tbody>
-                </table>
-
-            </div>
-
-            <div class="card-footer d-flex justify-content-center gap-2">
-                <button type="button" class="btn btn-dark btn-sm px-4">Cancelar</button>
-                <button type="submit" class="btn btn-success btn-sm px-4">Guardar Asociación</button>
-            </div>
-        </div>
     </div>
 </div>
+<script>
+    let contenedor_op = document.getElementById('contenedor_op');
+    let btn_operacion = document.getElementById('btn_operacion');
 
 
+    btn_operacion.addEventListener('click', function() {
+        contenedor_op.classList.remove('d-none');
+        btn_operacion.classList.add('d-none');
+    });
+
+
+    document.addEventListener('DOMContentLoaded', () => {
+
+        @if (!empty($asociacion->config))
+            cargarOperacionesExistentes(@json($asociacion->config));
+        @endif
+
+    });
+</script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function () {
+    document.addEventListener('DOMContentLoaded', function() {
 
         const maxSeleccion = 2;
 
@@ -296,7 +302,7 @@
         }
 
         checks.forEach(check => {
-            check.addEventListener('change', function () {
+            check.addEventListener('change', function() {
 
                 let seleccionados = document.querySelectorAll('.check-formulario:checked');
 
@@ -310,7 +316,7 @@
         });
 
         radios.forEach(radio => {
-            radio.addEventListener('click', function (e) {
+            radio.addEventListener('click', function(e) {
 
                 let check = document.querySelector(`.check-formulario[value="${this.value}"]`);
 
@@ -324,161 +330,35 @@
 
 
     });
-
-
-    // AUTO CONTINUAR EN EDIT
-    @if(isset($seleccionados) && count($seleccionados) === 2 && isset($principal))
-        setTimeout(() => {
-            document.getElementById('btn_continuar').click();
-        }, 300);
-    @endif
-
 </script>
 
 
 <script>
     let operaciones = [];
-    document.getElementById('btn_continuar').addEventListener('click', function () {
-
-        let seleccionados = Array.from(document.querySelectorAll('.check-formulario:checked'))
-            .map(el => el.value);
-
-        let principal = document.querySelector('.radio-principal:checked')?.value;
-
-        if (seleccionados.length === 0) {
-            mostrarAlerta('warning', 'Selecciona al menos un formulario');
-            return;
-        }
-
-        if (seleccionados.length < 2) {
-            mostrarAlerta('warning', 'Debes seleccionar 2 formularios');
-            return;
-        }
-
-        if (seleccionados.length > 2) {
-            mostrarAlerta('warning', 'Solo puedes seleccionar 2 formularios');
-            return;
-        }
-        if (!principal) {
-            mostrarAlerta('warning', 'Selecciona un formulario principal');
-            return;
-        }
 
 
-        fetch("{{ route('formularios.campos.multiples') }}", {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-            },
-            body: JSON.stringify({
-                formularios: seleccionados,
-                principal: principal
-            })
-        })
-            .then(res => res.json())
-            .then(data => {
-                if (data.success) {
-                    renderCampos(data.data);
+    document.querySelectorAll('.campo-draggable').forEach(btn => {
 
-                    var contenedorOperaciones = document.getElementById('contenedor_operaciones');
-                    contenedorOperaciones.classList.remove('d-none');
+        btn.addEventListener('dragstart', function(e) {
 
-                    @if(isset($configOperaciones) && count($configOperaciones) > 0)
-                        cargarOperacionesExistentes(@json($configOperaciones));
-                    @endif
-    }
-            })
-            .catch(err => console.error(err));
+            let data = {
+                tipo: 'campo',
+                color: 'primary',
+                nombre: this.dataset.nombre,
+                campo: this.dataset.campo,
+                campo_id: this.dataset.campo_id,
+                form: this.dataset.form,
+                principal: this.dataset.principal
+            };
+
+            e.dataTransfer.setData('application/json', JSON.stringify(data));
+        });
 
     });
 
-    function renderCampos(formularios) {
-
-        let contenedor = document.getElementById('contenedor_campos');
-        contenedor.innerHTML = '';
-
-        let row = document.createElement('div');
-        row.className = 'row';
-
-        formularios.forEach(form => {
-
-            let col = document.createElement('div');
-            col.className = 'col-md-6';
-
-            let html = `
-                        <div class="card mb-3">
-                            
-                            <div class="card-body">
-                                
-                                <div class="fw-bold mb-2 text-primary">
-                                    ${form.nombre}
-                                </div>
-                                <div class="d-flex flex-wrap gap-1">
-                        `;
-
-            form.campos.forEach(campo => {
-
-                html += `
-                            <button 
-                                type="button" 
-                                class="btn btn-primary btn-xs campo-draggable"
-                                draggable="true"
-                                data-campo_id="${campo.id}"
-                                data-nombre="${campo.nombre}"
-                                data-campo="${campo.campo_nombre}"
-                                data-form="${form.id}"
-                                data-principal="${form.principal ? 1 : 0}"
-                                data-bs-toggle="tooltip" 
-                                data-bs-placement="top" 
-                                title="${campo.campo_nombre}">
-                                
-                                ${campo.etiqueta}
-                            </button>
-                        `;
-            });
-
-            html += `
-                            </div>
-
-                        </div>
-                    </div>
-                    `;
-
-            col.innerHTML = html;
-            row.appendChild(col);
-        });
-
-        contenedor.appendChild(row);
-
-        let tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-        tooltipTriggerList.map(function (tooltipTriggerEl) {
-            return new bootstrap.Tooltip(tooltipTriggerEl);
-        });
-
-        document.querySelectorAll('.campo-draggable').forEach(btn => {
-
-            btn.addEventListener('dragstart', function (e) {
-
-                let data = {
-                    tipo: 'campo',
-                    color: 'primary',
-                    nombre: this.dataset.nombre,
-                    campo: this.dataset.campo,
-                    campo_id: this.dataset.campo_id,
-                    form: this.dataset.form,
-                    principal: this.dataset.principal
-                };
-
-                e.dataTransfer.setData('application/json', JSON.stringify(data));
-            });
-
-        });
-
-    }
 
     document.querySelectorAll('.operador').forEach(btn => {
-        btn.addEventListener('dragstart', function (e) {
+        btn.addEventListener('dragstart', function(e) {
             e.dataTransfer.effectAllowed = 'move';
             e.dataTransfer.setData('application/json', JSON.stringify({
                 tipo: 'operador',
@@ -492,12 +372,12 @@
         let zona = document.getElementById(id);
         if (!zona) return;
 
-        zona.addEventListener('dragover', function (e) {
+        zona.addEventListener('dragover', function(e) {
             e.preventDefault();
             e.dataTransfer.dropEffect = 'move';
         });
 
-        zona.addEventListener('drop', function (e) {
+        zona.addEventListener('drop', function(e) {
             e.preventDefault();
 
             let raw = e.dataTransfer.getData('application/json');
@@ -541,18 +421,15 @@
 
             texto.innerText = data.nombre;
 
-        }
-        else if (data.tipo === 'operador') {
+        } else if (data.tipo === 'operador') {
 
             texto.innerText = data.valor;
 
-        }
-        else if (data.tipo === 'funcion') {
+        } else if (data.tipo === 'funcion') {
 
             texto.innerText = data.nombre;
 
-        }
-        else if (data.tipo === 'agrupador') {
+        } else if (data.tipo === 'agrupador') {
 
             texto.innerText = data.valor;
 
@@ -584,24 +461,21 @@
             span.dataset.form = data.form;
             span.dataset.principal = data.principal;
 
-        }
-        else if (data.tipo === 'operador') {
+        } else if (data.tipo === 'operador') {
 
             span.dataset.valor = data.valor;
 
-        }
-        else if (data.tipo === 'funcion') {
+        } else if (data.tipo === 'funcion') {
 
             span.dataset.nombre = data.nombre;
 
-        }
-        else if (data.tipo === 'agrupador') {
+        } else if (data.tipo === 'agrupador') {
 
             span.dataset.valor = data.valor;
 
         }
 
-        x.onclick = function (e) {
+        x.onclick = function(e) {
 
             e.stopPropagation();
 
@@ -613,6 +487,7 @@
 
         return span;
     }
+
     function crearBadgeOperador(data) {
         let cont = document.createElement('div');
         cont.className = 'badge-container d-inline-flex align-items-center me-1 mb-1';
@@ -636,11 +511,12 @@
 
     function activarBotonesYDrag() {
         document.querySelectorAll('.btn-remove').forEach(btn => {
-            btn.onclick = function () {
+            btn.onclick = function() {
                 this.closest('.badge-container').remove();
             };
         });
     }
+
     function guardarOperacion() {
         let destinoEl = document.querySelector('#drop_destino span');
         if (!destinoEl) {
@@ -671,16 +547,14 @@
                     campo_id: el.dataset.campo_id,
                     form: el.dataset.form
                 });
-            }
-            else if (el.dataset.tipo === 'funcion') {
+            } else if (el.dataset.tipo === 'funcion') {
 
                 formula.push({
                     tipo: 'funcion',
                     nombre: el.dataset.nombre
                 });
 
-            }
-            else if (el.dataset.tipo === 'agrupador') {
+            } else if (el.dataset.tipo === 'agrupador') {
 
                 formula.push({
                     tipo: 'agrupador',
@@ -757,113 +631,21 @@
         let badgeModo = '';
         let badgeCalculo = '';
 
+        document
+            .getElementById('lista_operaciones')
+            .insertAdjacentHTML(
+                'beforeend',
+                cardOperacion(operacion)
+            );
 
-        // BADGE MODO
-        if (operacion.modo === 'asignacion') {
-
-            badgeModo = `
-    <span class="badge bg-info">
-        Asignación
-    </span>
-`;
-
-        }
-        else if (operacion.modo === 'calculo') {
-
-            badgeModo = `
-    <span class="badge bg-primary">
-        Cálculo
-    </span>
-`;
-
-        }
-        else if (operacion.modo === 'funcion') {
-
-            badgeModo = `
-    <span class="badge bg-warning text-dark">
-        Función
-    </span>
-`;
-
-        }
-
-
-        // BADGE TIPO CALCULO
-        if (operacion.tipo_calculo === 'fila') {
-
-            badgeCalculo = `
-    <span class="badge bg-secondary">
-        Por fila
-    </span>
-`;
-
-        }
-        else if (operacion.tipo_calculo === 'global') {
-
-            badgeCalculo = `
-    <span class="badge bg-dark">
-        Global
-    </span>
-`;
-
-        }
-        else if (operacion.tipo_calculo === 'grupo') {
-
-            badgeCalculo = `
-    <span class="badge bg-success">
-        Por grupo
-    </span>
-`;
-
-        }
-
-
-        let fila = `
-<tr data-id="${operacion.id}">
-
-<td>
-    ${destino.nombre}
-</td>
-
-<td>
-    ${formulaTexto}
-</td>
-
-<td>
-    ${badgeModo}
-</td>
-
-<td>
-    ${badgeCalculo}
-</td>
-
-<td>
-    ${operacion.relacion_multiple
-                ? '<span class="badge bg-warning text-dark">1:N</span>'
-                : '<span class="badge bg-light text-dark border">1:1</span>'
-            }
-</td>
-
-<td>
-    <button
-        type='button'
-        class="btn btn-danger btn-xs btn-eliminar">
-
-        <i class="fas fa-trash"></i>
-
-    </button>
-</td>
-
-</tr>
-`;
-        document.getElementById('tabla_operaciones').insertAdjacentHTML('beforeend', fila);
+        actualizarEventosEliminar();
 
         // Actualizar el input hidden
         actualizarHidden();
 
         // Configurar botón eliminar
         document.querySelectorAll('.btn-eliminar').forEach(btn => {
-            btn.onclick = function () {
+            btn.onclick = function() {
                 let tr = this.closest('tr');
                 let id = tr.dataset.id;
                 operaciones = operaciones.filter(op => op.id != id);
@@ -875,6 +657,127 @@
         // Limpiar droppable
         document.getElementById('drop_destino').innerHTML = 'Arrastra aquí';
         document.getElementById('drop_operacion').innerHTML = '';
+
+
+        contenedor_op.classList.add('d-none');
+        btn_operacion.classList.remove('d-none');
+    }
+
+
+
+
+    function obtenerFormulaTexto(formula) {
+
+        return formula.map(f => {
+
+            switch (f.tipo) {
+
+                case 'campo':
+                    return f.nombre;
+
+                case 'operador':
+                case 'agrupador':
+                    return f.valor;
+
+                case 'funcion':
+                    return f.nombre;
+
+                default:
+                    return '';
+            }
+
+        }).join(' ');
+
+    }
+
+    function badgeModo(modo) {
+
+        const badges = {
+
+            asignacion: '<span class="badge bg-info">Asignación</span>',
+            calculo: '<span class="badge bg-primary">Cálculo</span>',
+            funcion: '<span class="badge bg-warning text-dark">Función</span>'
+
+        };
+
+        return badges[modo] || '';
+
+    }
+
+    function badgeCalculo(tipo) {
+
+        const badges = {
+
+            fila: '<span class="badge bg-secondary">Por fila</span>',
+            global: '<span class="badge bg-dark">Global</span>',
+            grupo: '<span class="badge bg-success">Por grupo</span>'
+
+        };
+
+        return badges[tipo] || '';
+
+    }
+
+    function cardOperacion(op) {
+
+        return `
+
+<div class="col" data-id="${op.id}">
+
+<div class="card shadow-sm border-0 h-100">
+
+    <div class="card-body p-2">
+
+        <div class="d-flex justify-content-between align-items-start">
+
+            <div class="fw-semibold text-truncate">
+                <i class="fas fa-bullseye text-primary me-1"></i>
+                ${op.destino.nombre}
+            </div>
+
+            <button
+                type="button"
+                class="btn btn-danger btn-xs btn-eliminar">
+
+                <i class="fas fa-trash"></i>
+
+            </button>
+
+        </div>
+
+        <div
+            class="small text-muted mt-2"
+            style="
+                min-height:38px;
+                word-break:break-word;
+            ">
+
+            ${obtenerFormulaTexto(op.formula)}
+
+        </div>
+
+        <div class="d-flex flex-wrap gap-1 mt-2">
+
+            ${badgeModo(op.modo)}
+
+            ${badgeCalculo(op.tipo_calculo)}
+
+            ${
+                op.relacion_multiple
+                    ? '<span class="badge bg-warning text-dark">1:N</span>'
+                    : '<span class="badge bg-light text-dark border">1:1</span>'
+            }
+
+        </div>
+
+    </div>
+
+</div>
+
+</div>
+
+`;
+
     }
 
     // Función para actualizar input hidden
@@ -890,175 +793,33 @@
         }
         inputHidden.value = JSON.stringify(operaciones);
     }
+
     function cargarOperacionesExistentes(data) {
 
         operaciones = data;
 
-        let tabla = document.getElementById('tabla_operaciones');
+        let lista = document.getElementById('lista_operaciones');
 
-        tabla.innerHTML = '';
+        lista.innerHTML = '';
 
         data.forEach(op => {
 
-            let destino = op.destino.nombre;
-
-            let formulaTexto = op.formula.map(f => {
-
-                if (f.tipo === 'campo') {
-                    return f.nombre;
-                }
-
-                if (f.tipo === 'operador') {
-                    return f.valor;
-                }
-
-                if (f.tipo === 'funcion') {
-                    return f.nombre;
-                }
-
-                if (f.tipo === 'agrupador') {
-                    return f.valor;
-                }
-
-                return '';
-
-            }).join(' ');
-
-
-            // BADGE MODO
-            let badgeModo = '';
-
-            if (op.modo === 'asignacion') {
-
-                badgeModo = `
-            <span class="badge bg-info">
-                Asignación
-            </span>
-        `;
-
-            }
-            else if (op.modo === 'calculo') {
-
-                badgeModo = `
-            <span class="badge bg-primary">
-                Cálculo
-            </span>
-        `;
-
-            }
-            else if (op.modo === 'funcion') {
-
-                badgeModo = `
-            <span class="badge bg-warning text-dark">
-                Función
-            </span>
-        `;
-
-            }
-
-
-            // BADGE TIPO CALCULO
-            let badgeCalculo = '';
-
-            if (op.tipo_calculo === 'fila') {
-
-                badgeCalculo = `
-            <span class="badge bg-secondary">
-                Por fila
-            </span>
-        `;
-
-            }
-            else if (op.tipo_calculo === 'global') {
-
-                badgeCalculo = `
-            <span class="badge bg-dark">
-                Global
-            </span>
-        `;
-
-            }
-            else if (op.tipo_calculo === 'grupo') {
-
-                badgeCalculo = `
-            <span class="badge bg-success">
-                Por grupo
-            </span>
-        `;
-
-            }
-
-
-            let fila = `
-    <tr data-id="${op.id}">
-
-        <td>
-            ${destino}
-        </td>
-
-        <td>
-            ${formulaTexto}
-        </td>
-
-        <td>
-            ${badgeModo}
-        </td>
-
-        <td>
-            ${badgeCalculo}
-        </td>
-
-        <td>
-            ${op.relacion_multiple
-                    ? '<span class="badge bg-warning text-dark">1:N</span>'
-                    : '<span class="badge bg-light text-dark border">1:1</span>'
-                }
-        </td>
-
-        <td>
-
-            <button
-                type='button'
-                class="btn btn-danger btn-xs btn-eliminar">
-
-                <i class="fas fa-trash"></i>
-
-            </button>
-
-        </td>
-
-    </tr>
-    `;
-
-            tabla.insertAdjacentHTML('beforeend', fila);
+            lista.insertAdjacentHTML(
+                'beforeend',
+                cardOperacion(op)
+            );
 
         });
 
-        // ACTIVAR ELIMINAR
-        document.querySelectorAll('.btn-eliminar').forEach(btn => {
-
-            btn.onclick = function () {
-
-                let tr = this.closest('tr');
-
-                let id = tr.dataset.id;
-
-                operaciones = operaciones.filter(op => op.id != id);
-
-                tr.remove();
-
-                actualizarHidden();
-
-            };
-
-        });
+        actualizarEventosEliminar();
 
         actualizarHidden();
+
 
     }
     document.querySelectorAll('.funcion').forEach(btn => {
 
-        btn.addEventListener('dragstart', function (e) {
+        btn.addEventListener('dragstart', function(e) {
 
             e.dataTransfer.effectAllowed = 'move';
 
@@ -1074,7 +835,7 @@
 
     document.querySelectorAll('.agrupador').forEach(btn => {
 
-        btn.addEventListener('dragstart', function (e) {
+        btn.addEventListener('dragstart', function(e) {
 
             e.dataTransfer.effectAllowed = 'move';
 

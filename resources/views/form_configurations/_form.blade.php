@@ -7,25 +7,21 @@
     */
 
     $types = [
-
         'buttons' => 'Botón',
         'messages' => 'Mensaje',
         'validations' => 'Validación',
         'titles' => 'Título',
         'datatables' => 'Datatable',
         'alerts' => 'Alerta',
-
     ];
 
 @endphp
 
 
-<div class="card mt-3 shadow-lg">
-    <div class="card-body">
-  
-{{-- PREDEFINIDOS --}}
-@foreach($fields as $section => $items)
 
+
+{{-- PREDEFINIDOS --}}
+@foreach ($fields as $section => $items)
     <div class="mb-5">
 
         <h6 class="border-bottom pb-2 mb-4">
@@ -36,23 +32,16 @@
 
         <div class="row">
 
-            @foreach($items as $item)
-
+            @foreach ($items as $item)
                 @php
 
-                    $value = data_get(
-                        $config?->config ?? [],
-                        $item['key'] . '.text'
-                    );
+                    $value = data_get($config?->config ?? [], $item['key'] . '.text');
 
-                    $icon = data_get(
-                        $config?->config ?? [],
-                        $item['key'] . '.icon'
-                    );
+                    $icon = data_get($config?->config ?? [], $item['key'] . '.icon');
 
                 @endphp
 
-        <div class="col-6 col-md-4 col-lg-2 mb-4">
+                <div class="col-6 col-md-4 col-lg-2 mb-4">
 
                     <label class="form-label fw-bold">
 
@@ -61,17 +50,16 @@
                     </label>
 
                     {{-- TEXTO --}}
-                    <input type="text" class="form-control mb-2" name="defaults[{{ $item['key'] }}][text]" value="{{ $value }}"
-                        placeholder="Texto">
+                    <input type="text" class="form-control mb-2" name="defaults[{{ $item['key'] }}][text]"
+                        value="{{ $value }}" placeholder="Texto">
 
                     {{-- ICONOS SOLO BUTTON --}}
-                    @if(str_contains($item['key'], 'buttons.')  || str_contains($item['key'], 'titles.'))
-
+                    @if (str_contains($item['key'], 'buttons.') || str_contains($item['key'], 'titles.'))
                         <div class="input-group">
 
                             <span class="input-group-text icon-preview">
 
-                                @if($icon)
+                                @if ($icon)
                                     <i class="{{ $icon }}"></i>
                                 @else
                                     <i class="fas fa-icons"></i>
@@ -79,31 +67,26 @@
 
                             </span>
 
-                            <input type="text" class="form-control icon-input" name="defaults[{{ $item['key'] }}][icon]"
-                                value="{{ $icon }}" placeholder="fas fa-save">
+                            <input type="text" class="form-control icon-input"
+                                name="defaults[{{ $item['key'] }}][icon]" value="{{ $icon }}"
+                                placeholder="fas fa-save">
 
                         </div>
-
                     @endif
 
                 </div>
-
             @endforeach
 
         </div>
 
     </div>
-
 @endforeach
-</div>
-</div>
 
 
 
 
 
 <script>
-
     let customIndex = {{ count($customs ?? []) }};
 
     /*
@@ -114,7 +97,7 @@
 
     document
         .getElementById('add-custom')
-        .addEventListener('click', function () {
+        .addEventListener('click', function() {
 
             let html = document
                 .getElementById('custom-template')
@@ -140,7 +123,7 @@
     |--------------------------------------------------------------------------
     */
 
-    document.addEventListener('click', function (e) {
+    document.addEventListener('click', function(e) {
 
         if (e.target.classList.contains('remove-custom')) {
 
@@ -156,7 +139,7 @@
     |--------------------------------------------------------------------------
     */
 
-    document.addEventListener('change', function (e) {
+    document.addEventListener('change', function(e) {
 
         if (e.target.classList.contains('custom-type')) {
 
@@ -164,7 +147,7 @@
 
             const iconWrapper = card.querySelector('.icon-wrapper');
 
-            if (e.target.value === 'buttons'|| e.target.value === 'titles') {
+            if (e.target.value === 'buttons' || e.target.value === 'titles') {
 
                 iconWrapper.style.display = '';
 
@@ -184,7 +167,7 @@
     |--------------------------------------------------------------------------
     */
 
-    document.addEventListener('input', function (e) {
+    document.addEventListener('input', function(e) {
 
         if (e.target.classList.contains('icon-input')) {
 
@@ -207,5 +190,4 @@
         }
 
     });
-
 </script>

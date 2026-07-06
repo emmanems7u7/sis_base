@@ -137,7 +137,6 @@ class CamposFormRepository implements CamposFormInterface
     {
         if ($campo->categoria_id) {
 
-
             $campo->opciones_catalogo = $this->CatalogoRepository
                 ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true, $limit, $offset);
 
@@ -197,7 +196,6 @@ class CamposFormRepository implements CamposFormInterface
 
     public function guardarCampo($campo, $respuesta_id, $datosFormulario, $form, $prefix = null)
     {
-        $tipo = strtolower($campo->campo_nombre);
         $name = $campo->id;
 
         $inputKey = $prefix
@@ -213,14 +211,15 @@ class CamposFormRepository implements CamposFormInterface
         // =========================================
         // ARCHIVOS
         // =========================================
+
         if (
-            in_array($tipo, ['imagen', 'video', 'archivo'])
+            in_array($campo->tipo, ['CAMPF-018', 'CAMPF-019', 'CAMPF-023'])
             && $valor instanceof \Illuminate\Http\UploadedFile
         ) {
 
-            $filename = uniqid($tipo . '_') . '.' . $valor->getClientOriginalExtension();
+            $filename = uniqid($campo->tipo . '_') . '.' . $valor->getClientOriginalExtension();
 
-            $path = match ($tipo) {
+            $path = match ($campo->tipo) {
                 'imagen' => public_path("archivos/formulario_{$form}/imagenes"),
                 'video' => public_path("archivos/formulario_{$form}/videos"),
                 'archivo' => public_path("archivos/formulario_{$form}/archivos"),
@@ -278,10 +277,6 @@ class CamposFormRepository implements CamposFormInterface
 
     public function actualizarCampo($campo, $respuesta_id, $datosFormulario, $form, $prefix = null)
     {
-
-
-        $tipo = strtolower($campo->campo_nombre);
-
         $inputKey = $prefix
             ? "{$prefix}[{$campo->id}]"
             : $campo->id;
@@ -293,13 +288,13 @@ class CamposFormRepository implements CamposFormInterface
         }
 
         if (
-            in_array($tipo, ['imagen', 'video', 'archivo'])
+            in_array($campo->tipo, ['CAMPF-018', 'CAMPF-019', 'CAMPF-023'])
             && $valor instanceof \Illuminate\Http\UploadedFile
         ) {
 
-            $filename = uniqid($tipo . '_') . '.' . $valor->getClientOriginalExtension();
+            $filename = uniqid($campo->tipo . '_') . '.' . $valor->getClientOriginalExtension();
 
-            $path = match ($tipo) {
+            $path = match ($campo->tipo) {
                 'imagen' => public_path("archivos/formulario_{$form}/imagenes"),
                 'video' => public_path("archivos/formulario_{$form}/videos"),
                 'archivo' => public_path("archivos/formulario_{$form}/archivos"),
@@ -392,7 +387,7 @@ class CamposFormRepository implements CamposFormInterface
 
     public function GetCampoOrderByPosicion($form_id)
     {
-        return CamposForm::where('form_id', $form_id)->orderBy('posicion')->get();
+        return CamposForm::with('tipoCatalogo')->where('form_id', $form_id)->orderBy('posicion')->get();
     }
     public function GetCampoOrderByPosicionId($campo_id)
     {

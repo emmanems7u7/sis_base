@@ -16,13 +16,14 @@ use Maatwebsite\Excel\Facades\Excel;
 use App\Interfaces\FormularioInterface;
 use App\Interfaces\PermisoInterface;
 use App\Interfaces\CamposFormInterface;
+use App\Interfaces\FormConfigInterface;
 
 
 use App\Models\AuditoriaAccion;
 use App\Models\CamposForm;
 use App\Models\RespuestasCampo;
-
-use function Laravel\Prompts\form;
+use App\Interfaces\CategoriaInterface;
+use App\Models\FormConfiguration;
 
 class FormularioController extends Controller
 {
@@ -32,10 +33,16 @@ class FormularioController extends Controller
 
     protected $CamposFormRepository;
     protected $CatalogoRepository;
+    protected $CategoriaRepository;
+
+    protected $formConfigInterface;
+
     public function __construct(
         CatalogoInterface $catalogoInterface,
         FormularioInterface $formularioInterface,
         PermisoInterface $permisoInterface,
+        CategoriaInterface $categoriaInterface,
+        FormConfigInterface $formConfigInterface,
         CamposFormInterface $camposFormInterface
 
     ) {
@@ -45,7 +52,8 @@ class FormularioController extends Controller
         $this->PermisoRepository = $permisoInterface;
         $this->PermisoRepository = $permisoInterface;
         $this->CamposFormRepository = $camposFormInterface;
-
+        $this->CategoriaRepository = $categoriaInterface;
+        $this->formConfigInterface = $formConfigInterface;
 
 
     }
@@ -103,7 +111,65 @@ class FormularioController extends Controller
         $estado_formularios = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Estado Formulario', true);
         $conf_formularios = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Configuracion Columnas', true);
 
-        return view('formularios.edit', compact('estado_formularios', 'conf_formularios', 'formulario', 'breadcrumb'));
+
+        // Cargar todos los campos del formulario, pero sin procesar todas las opciones
+        $campos = $this->CamposFormRepository->GetCampoOrderByPosicion($formulario->id);
+
+        $categorias = $this->CategoriaRepository->GetAll();
+
+        $campos_formulario = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Campos Formulario', true);
+
+        $formularios = Formulario::where('id', '!=', $formulario->id)->get();
+
+        // Procesar campos para la vista solo con un límite inicial de opciones
+        $limitOpciones = 10;
+
+        $campos = $this->CamposFormRepository->CamposFormCat($campos, $limitOpciones);
+
+
+        /*
+        $formsRefIds = CamposForm::where('form_id', $formulario->id)
+            ->whereNotNull('form_ref_id')
+            ->pluck('form_ref_id')
+            ->unique()
+            ->values();*/
+
+        /*TEMPORAL TRAER TODOS LOS FORMULARIOS PARA ASIGNAR, POSTERIORMENTE EL MODULO DE FORMULARIOS
+        SERA COMPLEMENTO DEL MODULO DE MODULOS DINAMICOS Y SE EXTRAERAN LOS FORMULARIOS ASOCIADOS
+        A UN MODULO DINAMICO*/
+
+        $formsRefIds = Formulario::all()
+            ->pluck('id')
+            ->unique()
+            ->values();
+
+        $formularios_ref = Formulario::with('campos')->whereIn('id', $formsRefIds)->get();
+
+
+
+        // obtener la configuracion general de retorno de mensajes
+
+        $config = FormConfiguration::firstOrCreate(['formulario_id' => $formulario->id], ['config' => []]);
+
+        $fields = $this->formConfigInterface->defaultFields($config);
+
+        return view('formularios.edit', compact(
+            'breadcrumb',
+            'formulario',
+            'campos',
+            'categorias',
+            'campos_formulario',
+            'formularios',
+            'limitOpciones',
+            'formularios_ref',
+            'estado_formularios',
+            'conf_formularios',
+            'config',
+            'fields'
+        ));
+
+
+
     }
 
     public function update(Request $request, Formulario $formulario)

@@ -38,6 +38,6 @@ class Modulo extends Model
     }
     public function formulariosParalelos()
     {
-        return $this->hasMany(ModuloFormularioParalelo::class);
+        return $this->hasMany(FormularioAsociacion::class);
     }
 }

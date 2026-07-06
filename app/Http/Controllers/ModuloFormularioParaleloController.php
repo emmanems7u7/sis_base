@@ -3,7 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Modulo;
-use App\Models\ModuloFormularioParalelo;
+use App\Models\FormularioAsociacion;
 use Illuminate\Http\Request;
 use App\Interfaces\CatalogoInterface;
 use App\Interfaces\FormularioInterface;
@@ -31,37 +31,66 @@ class ModuloFormularioParaleloController extends Controller
 
     }
 
-    public function create($modulo)
+    public function create($form_principal, $form_relacion)
     {
+        // Buscar si ya existe una asociación con exactamente estos formularios
+        $asociacion = FormularioAsociacion::query()
+            ->whereJsonContains('formularios', ['id' => $form_principal])
+            ->whereJsonContains('formularios', ['id' => $form_relacion])
+            ->first();
 
-        $modulo = Modulo::with('formularios')->findOrFail($modulo);
+        // Si no existe, crearla
+        if (!$asociacion) {
+
+            $asociacion = FormularioAsociacion::create([
+                'formularios' => [
+                    [
+                        'id' => $form_principal,
+                        'es_principal' => 1,
+                    ],
+                    [
+                        'id' => $form_relacion,
+                        'es_principal' => 0,
+                    ],
+                ],
+                'config' => [],
+            ]);
+        }
+
+        // Formularios seleccionados
+        $seleccionados = collect($asociacion->formularios)
+            ->pluck('id')
+            ->toArray();
+
+        // Formulario principal
+        $principal = collect($asociacion->formularios)
+            ->firstWhere('es_principal', 1)['id'] ?? null;
+        // Obtener formularios con sus campos
+        $formularios = Formulario::with([
+            'campos' => function ($q) {
+                $q->orderBy('posicion');
+            }
+        ])
+            ->whereIn('id', $seleccionados)
+            ->get()
+            ->sortByDesc(fn($form) => $form->id == $principal)
+            ->values();
 
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
-            ['name' => 'Administrar Módulo', 'url' => route('modulo.administrar', $modulo->id)],
-            ['name' => 'Asociacion de formularios', 'url' => ''],
+            ['name' => 'Campos', 'url' => route('formularios.campos.index', $principal)],
+            ['name' => 'Reglas de relación', 'url' => ''],
         ];
 
-        $grupos = ModuloFormularioParalelo::where('modulo_id', $modulo->id)->get();
-        //Se agrega filtro de formularios usados en grupos para no mostrarlos en la creación de nuevos grupos
-        //Para evitar ambigüedades en la selección de formularios para cada grupo
-        $idsUsados = $grupos->flatMap(function ($grupo) {
-            return collect($grupo->formularios)->pluck('id');
-        })->unique()->toArray();
-
-
-        $formulariosDisponibles = $modulo->formularios->whereNotIn('id', $idsUsados);
-
         return view('modulos.agrupacion.create', [
-            'modulo' => $modulo,
-            'formularios' => $formulariosDisponibles,
-            'seleccionados' => [],
-            'principal' => null,
+            'asociacion' => $asociacion,
+            'formularios' => $formularios,
+            'seleccionados' => $seleccionados,
+            'principal' => $principal,
             'grupoNombre' => null,
-            'breadcrumb' => $breadcrumb
+            'breadcrumb' => $breadcrumb,
         ]);
     }
-
     public function store(Request $request, $modulo)
     {
         $request->validate([
@@ -121,7 +150,7 @@ class ModuloFormularioParaleloController extends Controller
 
         }
 
-        ModuloFormularioParalelo::create([
+        FormularioAsociacion::create([
             'modulo_id' => $modulo,
             'grupo' => $request->grupo,
             'formularios' => $formulariosData,
@@ -140,7 +169,7 @@ class ModuloFormularioParaleloController extends Controller
             ['name' => 'Asociacion de formularios', 'url' => ''],
         ];
 
-        $grupoData = ModuloFormularioParalelo::where('modulo_id', $modulo->id)
+        $grupoData = FormularioAsociacion::where('modulo_id', $modulo->id)
             ->where('id', $grupo)
             ->first();
 
@@ -204,7 +233,7 @@ class ModuloFormularioParaleloController extends Controller
             }
         }
 
-        $registro = ModuloFormularioParalelo::where('modulo_id', $modulo)
+        $registro = FormularioAsociacion::where('modulo_id', $modulo)
             ->where('id', $grupo)
             ->first();
 
@@ -235,7 +264,7 @@ class ModuloFormularioParaleloController extends Controller
     public function destroy($modulo, $grupo)
     {
 
-        ModuloFormularioParalelo::where('modulo_id', $modulo)
+        FormularioAsociacion::where('modulo_id', $modulo)
             ->where('id', $grupo)->delete();
 
 

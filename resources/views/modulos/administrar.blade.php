@@ -1,11 +1,6 @@
 @extends('layouts.argon')
 
 @section('content')
-
-
-
-
-
     <div class="row">
 
         <div class="col-md-6 mt-2 order-1 order-md-2">
@@ -86,18 +81,12 @@
                     </button>
                 </li>
                 <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="diagrama-tab" data-bs-toggle="tab" data-bs-target="#diagrama" type="button"
-                        role="tab" aria-controls="diagrama" aria-selected="false">
+                    <button class="nav-link" id="diagrama-tab" data-bs-toggle="tab" data-bs-target="#diagrama"
+                        type="button" role="tab" aria-controls="diagrama" aria-selected="false">
                         <i class="fas fa-sliders-h me-1"></i> Personalización del Módulo
                     </button>
                 </li>
-                <li class="nav-item" role="presentation">
-                    <button class="nav-link" id="asociacion_registros-tab" data-bs-toggle="tab"
-                        data-bs-target="#asociacion_registros" type="button" role="tab" aria-controls="asociacion_registros"
-                        aria-selected="false">
-                        <i class="fas fa-project-diagram me-1"></i> Asociación de Registros
-                    </button>
-                </li>
+
             </ul>
 
             <div class="tab-content p-4 border border-top-0 rounded-bottom " id="moduloTabContent">
@@ -120,12 +109,7 @@
 
                 </div>
 
-                <!-- asociacion de registros -->
-                <div class="tab-pane fade" id="asociacion_registros" role="tabpanel"
-                    aria-labelledby="asociacion_registros-tab">
-                    @include('modulos.tab5.tab5')
 
-                </div>
             </div>
 
         </div>

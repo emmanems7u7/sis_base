@@ -440,8 +440,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('modulos.configuracion.update');
 
 
-
-    Route::get('grupos/create/{modulo}', [ModuloFormularioParaleloController::class, 'create'])
+    Route::get('grupos/create/{form_principal}/{form_relacion}', [ModuloFormularioParaleloController::class, 'create'])
         ->name('grupos.create');
 
     Route::post('grupos/{modulo}', [ModuloFormularioParaleloController::class, 'store'])

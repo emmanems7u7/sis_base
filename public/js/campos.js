@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
 
-    /*** 1️⃣ Tooltips dinámicos ***/
+    /*** Tooltips dinámicos ***/
     const initTooltips = () => {
         const tooltipElements = document.querySelectorAll('[data-bs-toggle="tooltip"]');
         if (tooltipElements.length) {
@@ -8,7 +8,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    /*** 2️⃣ Campo de formulario dinámico con info tooltip ***/
+    /*** Campo de formulario dinámico con info tooltip ***/
     const initCampoFormulario = () => {
         document.addEventListener('change', async (e) => {
             const el = e.target;
@@ -59,7 +59,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     };
 
-    /*** 3️⃣ Previsualización de imágenes y videos ***/
+    /*** 3Previsualización de imágenes y videos ***/
     const initPrevisualizacionMedia = () => {
         const previewMedia = (inputSelector, previewPrefix, tipo) => {
             document.querySelectorAll(inputSelector).forEach(input => {
@@ -265,7 +265,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
     };
 
-    /*** 7️⃣ TomSelect + radios + checkboxes + búsqueda ***/
+    /*** TomSelect + radios + checkboxes + búsqueda ***/
     const initSelectsYOpciones = () => {
         const initCargarMasSelect = (select) => {
 
@@ -327,14 +327,13 @@ document.addEventListener('DOMContentLoaded', () => {
                             ts.addOption({
                                 value: opcion.catalogo_codigo,
                                 text: opcion.catalogo_descripcion,
-                                nueva: true   // 🔥 CLAVE PARA QUE SE PINTE
+                                nueva: true   
                             });
         
                         });
         
                         ts.refreshOptions(false);
         
-                        // 🔥 efecto temporal de highlight
                         setTimeout(() => {
         
                             data.forEach(o => {
@@ -419,7 +418,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                         const tom = select.tomselect;
                 
-                        // 🔥 Obtener el orden mínimo actual
                         const ordenMinimo = Math.min(
                             ...Object.values(tom.options).map(o => o.$order ?? 0),
                             0
@@ -447,7 +445,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                         tom.refreshOptions(false);
                 
-                        // 🔥 Aplicar clase visual
                         setTimeout(() => {
                             agregados.forEach(codigo => {
                                 const opcion = tom.getOption(codigo);
@@ -457,7 +454,6 @@ document.addEventListener('DOMContentLoaded', () => {
                             });
                         }, 50);
                 
-                        // 🔥 Quitar clase después de 1 segundo
                         setTimeout(() => {
                             agregados.forEach(codigo => {
                                 const opcion = tom.getOption(codigo);
@@ -488,7 +484,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // ---- Inicialización de todos los módulos ----
     initTooltips();
     initCampoFormulario();
     initPrevisualizacionMedia();

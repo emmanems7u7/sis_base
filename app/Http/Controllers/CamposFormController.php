@@ -330,7 +330,7 @@ class CamposFormController extends Controller
             'form_ref_id' => $request->form_ref_id,
             'campo_ref_id' => $request->campo_ref_id,
         ];
-
+        $campo->form_ref_id = $request->form_ref_id;
         $campo->config = $config;
 
         $campo->save();
@@ -450,9 +450,9 @@ class CamposFormController extends Controller
 
             $valor = null;
 
-            switch ($campo->campo_nombre) {
+            switch ($campo->tipo) {
 
-                case 'identificador':
+                case 'CAMPF-032': //identificador
 
                     $prefijo = $config['prefix'] ?? '';
                     $longitud = $config['longitud'] ?? 3;
@@ -469,13 +469,13 @@ class CamposFormController extends Controller
                     $valor = $prefijo . str_pad($numero, $longitud, '0', STR_PAD_LEFT);
                     break;
 
-                case 'fecha':
+                case 'CAMPF-021': //fecha
                     if ($config['auto_fecha'] ?? false) {
                         $valor = now()->format('Y-m-d');
                     }
                     break;
 
-                case 'hora':
+                case 'CAMPF-022': //hora
                     if ($config['auto_hora'] ?? false) {
                         $valor = now()->format('H:i');
                     }

@@ -22,7 +22,7 @@ class CamposForm extends Model
         'config' => 'array',
         'requerido' => 'boolean'
     ];
-    protected $appends = ['campo_nombre'];
+
     public function formulario()
     {
         return $this->belongsTo(Formulario::class, 'form_id');
@@ -32,12 +32,7 @@ class CamposForm extends Model
     {
         return $this->hasMany(RespuestasCampo::class, 'cf_id');
     }
-    public function getCampoNombreAttribute()
-    {
-        return strtolower(
-            $this->tipoCatalogo?->catalogo_descripcion ?? 'no encontrado'
-        );
-    }
+
 
     public function tipoCatalogo()
     {

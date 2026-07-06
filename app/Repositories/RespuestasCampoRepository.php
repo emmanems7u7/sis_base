@@ -3,7 +3,7 @@
 namespace App\Repositories;
 
 use App\Interfaces\RespuestasCampoInterface;
-use App\Models\ModuloFormularioParalelo;
+use App\Models\FormularioAsociacion;
 use App\Models\RespuestasCampo;
 use App\Models\RespuestasForm;
 
@@ -318,7 +318,7 @@ class RespuestasCampoRepository implements RespuestasCampoInterface
         $form_id = (string) $form_id;
         $form_id2 = (string) $form_id2;
 
-        $paralelo = ModuloFormularioParalelo::whereJsonContains('formularios', ['id' => $form_id])
+        $paralelo = FormularioAsociacion::whereJsonContains('formularios', ['id' => $form_id])
             ->whereJsonContains('formularios', ['id' => $form_id2])
             ->first();
 

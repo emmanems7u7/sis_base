@@ -258,7 +258,6 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
 
 
         foreach ($campos as $campo) {
-            $tipo = strtolower($campo->campo_nombre);
             $name = $campo->id;
 
             $inputName = $prefix
@@ -270,7 +269,7 @@ class CatalogoRepository extends BaseRepository implements CatalogoInterface
                 ? $request->all()
                 : $request;
 
-            if (in_array($tipo, ['checkbox', 'radio', 'selector']) && array_key_exists($inputName, $data)) {
+            if (in_array($campo->tipo, ['CAMPF-015', 'CAMPF-016', 'CAMPF-017']) && array_key_exists($inputName, $data)) {
 
                 $valores = is_array($request->input($inputName))
                     ? $request->input($inputName)

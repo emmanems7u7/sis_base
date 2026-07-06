@@ -9,7 +9,7 @@ use App\Models\CamposForm;
 use App\Models\Catalogo;
 use App\Models\FormLogicRule;
 use App\Models\Formulario;
-use App\Models\ModuloFormularioParalelo;
+use App\Models\FormularioAsociacion;
 use App\Models\RespuestasCampo;
 use App\Models\RespuestasForm;
 use App\Models\RespuestasGrupo;
@@ -391,17 +391,17 @@ class FormularioRepository implements FormularioInterface
 
                 $q->where('cf_id', $campo->id);
 
-                switch ($campo->campo_nombre) {
+                switch ($campo->tipo) {
 
-                    case 'text':
-                    case 'textarea':
-                    case 'email':
-                    case 'password':
-                    case 'enlace':
+                    case 'CAMPF-012': //text
+                    case 'CAMPF-014': //textarea
+                    case 'CAMPF-025': //email
+                    case 'CAMPF-026': //password
+                    case 'CAMPF-020': //enlace
                         $q->where('valor', 'like', "%{$valorEnviado}%");
                         break;
 
-                    case 'checkbox':
+                    case 'CAMPF-015': //checkbox
 
                         foreach ($valorEnviado as $valor) {
 
@@ -440,19 +440,18 @@ class FormularioRepository implements FormularioInterface
                     ->pluck('valor')
                     ->toArray();
 
-                $tipoCampo = strtolower($campo->campo_nombre);
                 $display = [];
 
                 foreach ($valores as $v) {
-                    switch ($tipoCampo) {
-                        case 'checkbox':
-                        case 'radio':
-                        case 'selector':
+                    switch ($campo->tipo) {
+                        case 'CAMPF-015': //checkbox
+                        case 'CAMPF-016': //radio
+                        case 'CAMPF-017': //selector
                             $desc = $campo->opciones_catalogo->where('catalogo_codigo', $v)->first()?->catalogo_descripcion;
                             $display[] = $desc ?? $v;
                             break;
 
-                        case 'imagen':
+                        case 'CAMPF-018':
                             $path = public_path("archivos/formulario_{$formulario->id}/imagenes/{$v}");
                             if (file_exists($path)) {
                                 $base64 = base64_encode(file_get_contents($path));
@@ -461,12 +460,12 @@ class FormularioRepository implements FormularioInterface
                             }
                             break;
 
-                        case 'video':
-                        case 'archivo':
+                        case 'CAMPF-019': //video
+                        case 'CAMPF-023': //archivo
                             $display[] = $v; // Solo mostrar nombre
                             break;
 
-                        case 'fecha':
+                        case 'CAMPF-021': //fecha
                             $display[] = Carbon::parse($v)->format('d/m/Y');
                             break;
 
@@ -503,21 +502,21 @@ class FormularioRepository implements FormularioInterface
                 $valorResuelto = $this->obtenerValorReal($campo, $v);
 
                 $tipoCampo = strtolower($campo->campo_nombre);
-                switch ($tipoCampo) {
-                    case 'imagen':
+                switch ($campo->tipo) {
+                    case 'CAMPF-018': // IMAGEN
                         $displayValores[] = asset("archivos/formulario_{$formulario->id}/imagenes/{$valorResuelto}");
                         break;
-                    case 'video':
+                    case 'CAMPF-019': //VIDEO
                         $displayValores[] = asset("archivos/formulario_{$formulario->id}/videos/{$valorResuelto}");
                         break;
-                    case 'archivo':
+                    case 'CAMPF-023': // ARCHIVO
                         $displayValores[] = asset("archivos/formulario_{$formulario->id}/archivos/{$valorResuelto}");
                         break;
-                    case 'enlace':
-                    case 'hora':
+                    case 'CAMPF-020': //EMLACE
+                    case 'CAMPF-022': // HORA
                         $displayValores[] = $valorResuelto;
                         break;
-                    case 'fecha':
+                    case 'CAMPF-021': //FECHA
                         $displayValores[] = Carbon::parse($valorResuelto)->format('d/m/Y');
                         break;
                     default:
@@ -604,7 +603,7 @@ class FormularioRepository implements FormularioInterface
 
     public function obtenerFormulariosDelGrupo($formularioId, $moduloId)
     {
-        $grupo = ModuloFormularioParalelo::where('modulo_id', $moduloId)->get()
+        $grupo = FormularioAsociacion::where('modulo_id', $moduloId)->get()
             ->first(function ($g) use ($formularioId) {
                 return collect($g->formularios)->pluck('id')->contains($formularioId);
             });
@@ -654,11 +653,10 @@ class FormularioRepository implements FormularioInterface
     public function EliminarArchivos($respuesta)
     {
         foreach ($respuesta->camposRespuestas as $campo) {
-            $tipo = strtolower($campo->campo->campo_nombre ?? ''); // Asegúrate de tener la relación campo
             $valor = $campo->valor;
 
-            if (in_array($tipo, ['imagen', 'video', 'archivo']) && $valor) {
-                $path = match ($tipo) {
+            if (in_array($campo->tipo, ['CAMPF-018', 'CAMPF-019', 'CAMPF-023']) && $valor) {
+                $path = match ($campo->tipo) {
                     'imagen' => public_path("archivos/formulario_{$respuesta->form_id}/imagenes/{$valor}"),
                     'video' => public_path("archivos/formulario_{$respuesta->form_id}/videos/{$valor}"),
                     'archivo' => public_path("archivos/formulario_{$respuesta->form_id}/archivos/{$valor}"),

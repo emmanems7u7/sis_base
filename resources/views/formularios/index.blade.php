@@ -17,13 +17,11 @@
 
 
 
-    @if($isMobile)
-
+    @if ($isMobile)
         <div class="d-block mt-2 mb-3">
             <div class="row g-2">
 
-                @foreach($formularios as $formulario)
-
+                @foreach ($formularios as $formulario)
                     @php
                         $config = $formulario->config ?? [];
 
@@ -101,15 +99,7 @@
                                             </a>
                                         </div>
 
-                                        <div class="col-4">
 
-                                            <a href="{{ route('formularios.campos.index', $formulario->id) }}"
-                                                class="btn w-100 btn-mobile-small  btn-xs btn-outline-info">
-                                                <i class="fas fa-list-alt"></i> <br> Campos
-                                            </a>
-
-
-                                        </div>
                                         <div class="col-4">
                                             <a href="{{ route('formularios.edit', $formulario->id) }}"
                                                 class="btn w-100 btn-mobile-small  btn-xs btn-outline-warning">
@@ -119,7 +109,7 @@
                                         </div>
                                         <div class="col-4">
                                             <a type="button" class="btn w-100 btn-mobile-small  btn-xs btn-outline-danger"
-                                                onclick="confirmarEliminacion('eliminarFormulario_{{$formulario->id}}', '¿Estás seguro de que deseas eliminar este formulario?')">
+                                                onclick="confirmarEliminacion('eliminarFormulario_{{ $formulario->id }}', '¿Estás seguro de que deseas eliminar este formulario?')">
                                                 <i class="fas fa-trash-alt"></i> <br> Eliminar
                                             </a>
 
@@ -132,7 +122,6 @@
                         </div>
 
                     </div>
-
                 @endforeach
 
             </div>
@@ -143,7 +132,6 @@
 
             <template id="acciones-template-formularios"></template>
         </x-offcanvas-acciones>
-
     @else
         <div class="card mt-3">
             <div class="card-body">
@@ -161,109 +149,103 @@
 
                         <tbody>
 
-                            @foreach($formularios as $formulario)
+                            @foreach ($formularios as $formulario)
+                                @php
+                                    $config = $formulario->config ?? [];
 
-                                        @php
-                                            $config = $formulario->config ?? [];
+                                    $registroMultiple = $config['registro_multiple'] ?? false;
+                                    $crearPermisos = $config['crear_permisos'] ?? false;
+                                @endphp
 
-                                            $registroMultiple = $config['registro_multiple'] ?? false;
-                                            $crearPermisos = $config['crear_permisos'] ?? false;
-                                        @endphp
+                                <tr>
 
-                                        <tr>
+                                    <td>{{ $formulario->nombre }}</td>
+                                    <td>{{ $formulario->estado_nombre }}</td>
 
-                                            <td>{{ $formulario->nombre }}</td>
-                                            <td>{{ $formulario->estado_nombre  }}</td>
-
-                                            <td>{{$formulario->ColumnasCatalogo?->catalogo_descripcion }}</td>
-
+                                    <td>{{ $formulario->ColumnasCatalogo?->catalogo_descripcion }}</td>
 
 
-                                            <!-- Config -->
-                                            <td>
 
-                                                <div class="d-flex flex-wrap gap-1 small">
+                                    <!-- Config -->
+                                    <td>
 
-                                                    <!-- Registro múltiple -->
-                                                    <span class="badge rounded-pill px-2 py-1
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    {{ $registroMultiple
-                                ? 'bg-success text-white'
-                                : 'bg-danger text-white' }}">
+                                        <div class="d-flex flex-wrap gap-1 small">
 
-                                                        <i class="fas fa-layer-group me-1"></i>
+                                            <!-- Registro múltiple -->
+                                            <span
+                                                class="badge rounded-pill px-2 py-1
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    {{ $registroMultiple ? 'bg-success text-white' : 'bg-danger text-white' }}">
 
-                                                        {{ $registroMultiple ? 'Multi' : 'Simple' }}
+                                                <i class="fas fa-layer-group me-1"></i>
 
-                                                    </span>
+                                                {{ $registroMultiple ? 'Multi' : 'Simple' }}
 
-                                                    <!-- Permisos -->
-                                                    <span class="badge rounded-pill px-2 py-1
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    {{ $crearPermisos
-                                ? 'bg-success text-white'
-                                : 'bg-danger text-white' }}">
+                                            </span>
 
-                                                        <i class="fas fa-lock me-1"></i>
+                                            <!-- Permisos -->
+                                            <span
+                                                class="badge rounded-pill px-2 py-1
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    {{ $crearPermisos ? 'bg-success text-white' : 'bg-danger text-white' }}">
 
-                                                        {{ $crearPermisos ? 'Permisos' : 'Sin permisos' }}
+                                                <i class="fas fa-lock me-1"></i>
 
-                                                    </span>
+                                                {{ $crearPermisos ? 'Permisos' : 'Sin permisos' }}
 
-                                                </div>
+                                            </span>
 
-                                            </td>
+                                        </div>
 
-                                            <td>
+                                    </td>
 
-                                                <a href="{{ route('formularios.respuestas.formulario', $formulario) }}"
-                                                    class="btn btn-xs btn-success">
+                                    <td>
 
-                                                    <i class="fas fa-database"></i>
-                                                    Ver Datos Registrados
+                                        <a href="{{ route('formularios.respuestas.formulario', $formulario) }}"
+                                            class="btn btn-xs btn-success">
 
-                                                </a>
+                                            <i class="fas fa-database"></i>
+                                            Ver Datos Registrados
 
-                                                <a href="{{ route('formularios.config.edit', $formulario) }}" class="btn btn-xs btn-dark">
-                                                    <i class="fas fa-database"></i> Configuraciòn
-                                                </a>
+                                        </a>
+
+                                        <a href="{{ route('formularios.config.edit', $formulario) }}"
+                                            class="btn btn-xs btn-dark">
+                                            <i class="fas fa-database"></i> Configuraciòn
+                                        </a>
 
 
-                                                <a href="{{ route('formularios.campos.index', $formulario) }}" class="btn btn-xs btn-info">
 
-                                                    <i class="fas fa-list-alt"></i>
-                                                    Campos
 
-                                                </a>
+                                        <a href="{{ route('formularios.edit', $formulario) }}"
+                                            class="btn btn-xs btn-warning">
 
-                                                <a href="{{ route('formularios.edit', $formulario) }}" class="btn btn-xs btn-warning">
+                                            <i class="fas fa-pencil-alt"></i>
+                                            Editar
 
-                                                    <i class="fas fa-pencil-alt"></i>
-                                                    Editar
+                                        </a>
 
-                                                </a>
-
-                                                <a type="button" class="btn btn-xs btn-danger"
-                                                    onclick="confirmarEliminacion(
+                                        <a type="button" class="btn btn-xs btn-danger"
+                                            onclick="confirmarEliminacion(
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     'eliminarFormulario_{{ $formulario->id }}',
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     '¿Estás seguro de que deseas eliminar este formulario?'
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 )">
 
-                                                    <i class="fas fa-trash-alt"></i>
-                                                    Eliminar
+                                            <i class="fas fa-trash-alt"></i>
+                                            Eliminar
 
-                                                </a>
+                                        </a>
 
-                                                <form id="eliminarFormulario_{{ $formulario->id }}" method="POST"
-                                                    action="{{ route('formularios.destroy', $formulario) }}" style="display: none;">
+                                        <form id="eliminarFormulario_{{ $formulario->id }}" method="POST"
+                                            action="{{ route('formularios.destroy', $formulario) }}"
+                                            style="display: none;">
 
-                                                    @csrf
-                                                    @method('DELETE')
+                                            @csrf
+                                            @method('DELETE')
 
-                                                </form>
+                                        </form>
 
-                                            </td>
+                                    </td>
 
-                                        </tr>
-
+                                </tr>
                             @endforeach
 
                         </tbody>
@@ -271,7 +253,6 @@
                 </div>
             </div>
         </div>
-
     @endif
 
     <!-- Paginación -->

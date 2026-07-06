@@ -10,19 +10,10 @@ return new class extends Migration {
      */
     public function up(): void
     {
-        Schema::create('modulo_formulario_paralelos', function (Blueprint $table) {
+        Schema::create('formulario_asociacions', function (Blueprint $table) {
             $table->id();
-
-            $table->foreignId('modulo_id')
-                ->constrained()
-                ->cascadeOnDelete();
-
             $table->json('formularios')->nullable();
-
-            $table->string('grupo')->nullable();
-
             $table->json('config')->nullable();
-
             $table->timestamps();
 
 
@@ -34,6 +25,6 @@ return new class extends Migration {
      */
     public function down(): void
     {
-        Schema::dropIfExists('modulo_formulario_paralelos');
+        Schema::dropIfExists('formulario_asociacions');
     }
 };

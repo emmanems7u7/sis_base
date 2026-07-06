@@ -8,7 +8,7 @@
         $cols = $cols ?? 2;
         $colSize = intval(12 / max(1, min(12, $cols)));
 
-        if (strtolower($campo->campo_nombre) === 'textarea') {
+        if ($campo->tipo === 'CAMPF-014') {
         $colClass = 'col-12';
         } else {
         $colClass = "col-md-{$colSize}";
@@ -43,7 +43,7 @@
 
 
         <div class="{{ $colClass }}">
-            @if($campo->campo_nombre != 'campo autocompletado' && $campo->campo_nombre != 'campo_calculado')
+            @if($campo->tipo != 'CAMPF-027' && $campo->tipo != 'CAMPF-029')
 
             <label class="form-label fw-bold">
                 {{ $campo->etiqueta }} {{ $esRequerido }}
@@ -52,31 +52,31 @@
                 @endif
             </label>
             @endif
-            @switch(strtolower($campo->campo_nombre))
+            @switch($campo->tipo)
 
             {{-- TEXTO --}}
-            @case('text')
+            @case('CAMPF-012')
             <input type="text" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" class="form-control"
                 value="{{ $valor }}" placeholder="{{ $campo->config['placeholder'] ?? '' }}" {{ $esRequerido
                 ? 'required' : '' }}>
             @break
 
             {{-- NUMBER --}}
-            @case('number')
+            @case('CAMPF-013')
             <input type="number" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" class="form-control"
                 value="{{ $valor }}" placeholder="{{ $campo->config['placeholder'] ?? '' }}" {{ $esRequerido
                 ? 'required' : '' }}>
             @break
 
             {{-- TEXTAREA --}}
-            @case('textarea')
+            @case('CAMPF-014')
             <textarea name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" class="form-control"
                 placeholder="{{ $campo->config['placeholder'] ?? '' }}" {{ $esRequerido ? 'required' : ''
                 }}>{{ $valor }}</textarea>
             @break
 
             {{-- CHECKBOX --}}
-            @case('checkbox')
+            @case('CAMPF-015')
             @php
             $checkedValues = (array) old($campo->nombre, $valoresCampo);
             @endphp
@@ -102,7 +102,7 @@
             @break
 
             {{-- RADIO --}}
-            @case('radio')
+            @case('CAMPF-016')
             <div class="radio-container" data-campo-id="{{ $campo->id }}">
                 @foreach($campo->opciones_catalogo as $opcion)
                 <div class="form-check">
@@ -123,7 +123,7 @@
             @break
 
             {{-- SELECTOR --}}
-            @case('selector')
+            @case('CAMPF-017')
             <div class="d-flex align-items-center gap-2">
                 <select name="{{ $campo->nombre }}" id="{{ $campo->nombre }}"
                     class="form-select tom-select campo-dinamico" data-campo-id="{{ $campo->id }}" {{ $esRequerido
@@ -145,34 +145,34 @@
             @break
 
             {{-- EMAIL --}}
-            @case('email')
+            @case('CAMPF-025')
             <input type="email" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" class="form-control"
                 value="{{ $valor }}" placeholder="{{ $campo->config['placeholder'] ?? '' }}" {{ $esRequerido
                 ? 'required' : '' }}>
             @break
 
             {{-- PASSWORD --}}
-            @case('password')
+            @case('CAMPF-026')
             <input type="password" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" class="form-control"
                 placeholder="{{ $campo->config['placeholder'] ?? '' }}" {{ $esRequerido ? 'required' : '' }}>
             @break
 
             {{-- FECHA --}}
-            @case('fecha')
+            @case('CAMPF-021')
             <input type="date" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" class="form-control"
                 value="{{ $valor ? \Carbon\Carbon::parse($valor)->format('Y-m-d') : '' }}" {{ $esRequerido ? 'required'
                 : '' }}>
             @break
 
             {{-- HORA --}}
-            @case('hora')
+            @case('CAMPF-022')
             <input type="time" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" class="form-control"
                 value="{{ $valor ? \Carbon\Carbon::parse($valor)->format('H:i') : '' }}" {{ $esRequerido ? 'required'
                 : '' }}>
             @break
 
             {{-- ARCHIVO --}}
-            @case('archivo')
+            @case('CAMPF-023')
 
             @if($valor)
             <div class="mb-2">
@@ -192,7 +192,7 @@
             @break
 
             {{-- IMAGEN --}}
-            @case('imagen')
+            @case('CAMPF-018')
 
             @if($valor)
             <div class="mb-2">
@@ -210,7 +210,7 @@
             @break
 
             {{-- VIDEO --}}
-            @case('video')
+            @case('CAMPF-019')
 
             @if($valor)
             <div class="mb-2">
@@ -231,20 +231,20 @@
 
 
             {{-- ENLACE --}}
-            @case('enlace')
+            @case('CAMPF-020')
             <input type="url" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" class="form-control"
                 value="{{ $valor }}" placeholder="https://..." {{ $esRequerido ? 'required' : '' }}>
             @break
 
             {{-- COLOR --}}
-            @case('color')
+            @case('CAMPF-024')
             <input type="color" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}"
                 class="form-control form-control-color" value="{{ $valor }}" {{ $esRequerido ? 'required' : '' }}>
             @break
 
 
 
-            @case('campo autocompletado')
+            @case('CAMPF-027')
             <input type="hidden" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}"
                 class="form-control campo-autocompletado" value="{{ $campo->config['autocompletar'] }}"
                 placeholder="{{ $campo->config['placeholder'] ?? '' }}" {{ $esRequerido ? 'required' : '' }}
@@ -252,7 +252,7 @@
             @break
 
 
-            @case('campo_relacion')
+            @case('CAMPF-028')
             <input type="text" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" class="form-control"
                 data-campo-id="{{ $campo->id }}" value="" placeholder="{{ $campo->config['placeholder'] ?? '' }}" {{
                 $esRequerido ? 'required' : '' }} readonly>
@@ -313,7 +313,7 @@
             @break
 
 
-            @case('campo_calculado')
+            @case('CAMPF-029')
             <input type="hidden" name="{{ $campo->nombre }}" id="{{ $campo->nombre }}" class="form-control"
                 data-campo-id="{{ $campo->id }}" value="0" placeholder="" {{ $esRequerido ? 'required' : '' }} readonly>
 

@@ -22,7 +22,7 @@ use App\Models\Formulario;
 use App\Notifications\LogicaFormularioFinalizada;
 use App\Services\DynamicMailer;
 use App\Jobs\EjecutarLogicaFormulario;
-use App\Models\ModuloFormularioParalelo;
+use App\Models\FormularioAsociacion;
 
 class FormLogicRepository implements FormLogicInterface
 {

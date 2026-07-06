@@ -146,7 +146,6 @@
     // 🔹 CACHE DE CAMPOS
     let lastFormOrigenId = null;
     let lastFormDestinoId = null;
-
 </script>
 
 <script src="{{ asset('js/FormLogic/CargaCampos.js') }}"></script>
@@ -159,8 +158,6 @@
 <script src="{{ asset('js/FormLogic/TAC-006.js') }}"></script>
 
 <script>
-
-
     function restaurarInicio() {
 
         // Ocultar todos los bloques
@@ -196,7 +193,7 @@
     }
 
     document.getElementById('cancelar-edicion-accion')
-        ?.addEventListener('click', function () {
+        ?.addEventListener('click', function() {
 
             // Reset índice de edición
             editingIndex = null;
@@ -239,19 +236,23 @@
 
         if (formOrigenId && formOrigenId !== lastFormOrigenId) {
             lastFormOrigenId = formOrigenId;
-            promesas.push(cargarCamposConCache(formOrigenId, document.getElementById('modal-valor-campo'), 'origen', '-- Seleccione campo origen --'));
+            promesas.push(cargarCamposConCache(formOrigenId, document.getElementById('modal-valor-campo'), 'origen',
+                '-- Seleccione campo origen --'));
 
 
             document.querySelectorAll('#condiciones-container .cond-form-origen')
-                .forEach(sel => promesas.push(cargarCamposConCache(formOrigenId, sel, 'origen', '-- Seleccione campo origen --')));
+                .forEach(sel => promesas.push(cargarCamposConCache(formOrigenId, sel, 'origen',
+                    '-- Seleccione campo origen --')));
         }
 
         // campos destino
         if (formDestinoId && formDestinoId !== lastFormDestinoId) {
             lastFormDestinoId = formDestinoId;
-            promesas.push(cargarCamposConCache(formDestinoId, document.getElementById('modal-campo-ref'), 'destino', '-- Seleccione campo destino --'));
+            promesas.push(cargarCamposConCache(formDestinoId, document.getElementById('modal-campo-ref'), 'destino',
+                '-- Seleccione campo destino --'));
             document.querySelectorAll('#condiciones-container .cond-form-destino')
-                .forEach(sel => promesas.push(cargarCamposConCache(formDestinoId, sel, 'destino', '-- Seleccione campo destino --')));
+                .forEach(sel => promesas.push(cargarCamposConCache(formDestinoId, sel, 'destino',
+                    '-- Seleccione campo destino --')));
         }
 
         await Promise.all(promesas);
@@ -282,9 +283,12 @@
         const tipoAccion_id = document.getElementById('modal-tipo-accion').value;
 
         var form_ref_id = document.getElementById('modal-form-ref_crear_registros').value;
-        const accionObj = editingIndex !== null
-            ? { ...accionesArray[editingIndex], condiciones: [] }
-            : {
+        const accionObj = editingIndex !== null ?
+            {
+                ...accionesArray[editingIndex],
+                condiciones: []
+            } :
+            {
                 tipo_accion_id: tipoAccion_id,
                 form_ref_id: form_ref_id,
                 condiciones: []
@@ -298,7 +302,8 @@
             const campoRef = document.getElementById('modal-campo-ref');
             const operacion = document.getElementById('modal-operacion');
             const tipoValor = document.getElementById('tipo-valor').value;
-            const valor = tipoValor === 'static' ? document.getElementById('modal-valor-estatico').value : document.getElementById('modal-valor-campo').value;
+            const valor = tipoValor === 'static' ? document.getElementById('modal-valor-estatico').value : document
+                .getElementById('modal-valor-campo').value;
 
             let valor_text;
 
@@ -338,13 +343,14 @@
 
         if (tipoAccion_id === 'TAC-005') {
             const usarRelacion = document.getElementById('check-usar-relacion')?.checked;
-            const radioSeleccionado = document.querySelector('#formularios-relacionados input[name="listGroupRadio"]:checked');
+            const radioSeleccionado = document.querySelector(
+                '#formularios-relacionados input[name="listGroupRadio"]:checked');
 
             accionObj.usar_relacion = usarRelacion;
             accionObj.formulario_relacion_seleccionado = radioSeleccionado ? radioSeleccionado.value : null;
-            accionObj.formulario_relacion_text = radioSeleccionado
-                ? document.querySelector(`label[for="${radioSeleccionado.id}"]`)?.textContent.trim()
-                : null;
+            accionObj.formulario_relacion_text = radioSeleccionado ?
+                document.querySelector(`label[for="${radioSeleccionado.id}"]`)?.textContent.trim() :
+                null;
 
 
 
@@ -379,7 +385,8 @@
                 accionObj.filtros_relacion = Object.values(filtrosGuardados);
             });
 
-            accionObj.tipo_accion_text = document.getElementById('modal-tipo-accion').options[document.getElementById('modal-tipo-accion').selectedIndex]?.text || '';
+            accionObj.tipo_accion_text = document.getElementById('modal-tipo-accion').options[document.getElementById(
+                'modal-tipo-accion').selectedIndex]?.text || '';
         }
 
         // ===== TAC-003 / enviar_email =====
@@ -410,7 +417,8 @@
                 .map(li => li.querySelector('span').textContent.trim());
 
             // Roles seleccionados (IDs) y textos
-            const rolesInputs = Array.from(document.querySelectorAll('#modal-email-block input[name="roles[]"]:checked'));
+            const rolesInputs = Array.from(document.querySelectorAll(
+                '#modal-email-block input[name="roles[]"]:checked'));
             const rolesSeleccionados = rolesInputs.map(input => input.value);
             const rolesTextos = rolesInputs.map(input => {
                 const label = document.querySelector(`label[for="${input.id}"]`);
@@ -436,7 +444,8 @@
                     valorPlantilla: `[${btn.dataset.nombreCampo}]`
                 });
             });
-            accionObj.tipo_accion_text = document.getElementById('modal-tipo-accion').options[document.getElementById('modal-tipo-accion').selectedIndex]?.text || '';
+            accionObj.tipo_accion_text = document.getElementById('modal-tipo-accion').options[document.getElementById(
+                'modal-tipo-accion').selectedIndex]?.text || '';
 
             accionObj.email_detalle = {
                 to: accionObj.email_usuarios,
@@ -478,9 +487,9 @@
 
                     const tipoValorValue = tipoValor.value;
 
-                    const valor = tipoValorValue === 'static'
-                        ? valorEstatico.value
-                        : valorCampo.value;
+                    const valor = tipoValorValue === 'static' ?
+                        valorEstatico.value :
+                        valorCampo.value;
 
                     let valor_text = '';
 
@@ -561,16 +570,13 @@
                     tipo_condicion: 'form_valor',
 
                     formulario_tipo: tipoFormulario.value,
-                    formulario_tipo_text:
-                        tipoFormulario.options[tipoFormulario.selectedIndex]?.text || '',
+                    formulario_tipo_text: tipoFormulario.options[tipoFormulario.selectedIndex]?.text || '',
 
                     campo_condicion: campo.value,
-                    campo_condicion_text:
-                        campo.options[campo.selectedIndex]?.text || '',
+                    campo_condicion_text: campo.options[campo.selectedIndex]?.text || '',
 
                     operador: operador.value,
-                    operador_text:
-                        operador.options[operador.selectedIndex]?.text || '',
+                    operador_text: operador.options[operador.selectedIndex]?.text || '',
 
                     valor: valor.value
                 });
@@ -671,13 +677,13 @@
                     mostrarAlerta('confirm', '¿Está seguro de quitar este usuario de la lista?', {
                         titulo: 'Confirmación',
                         onOk: () => {
-                            usuariosSeleccionados = usuariosSeleccionados.filter(id => id !== String(userId));
+                            usuariosSeleccionados = usuariosSeleccionados.filter(id =>
+                                id !== String(userId));
                             userList.removeChild(li);
                             actualizarHiddenUsuarios();
                             mostrarAlerta('success', 'Usuario eliminado');
                         },
-                        onCancel: () => {
-                        }
+                        onCancel: () => {}
                     });
 
                 };
@@ -808,9 +814,9 @@
 
         container.innerHTML = '';
 
-        const condiciones = Array.isArray(accion.condiciones)
-            ? accion.condiciones
-            : [];
+        const condiciones = Array.isArray(accion.condiciones) ?
+            accion.condiciones :
+            [];
 
         for (const condicion of condiciones) {
 
@@ -818,6 +824,7 @@
 
         }
     }
+
     function eliminarAccion(index) {
 
         if (index < 0 || index >= accionesArray.length) return;
@@ -846,8 +853,7 @@
                 }
                 mostrarAlerta('success', 'Acción eliminada correctamente');
             },
-            onCancel: () => {
-            }
+            onCancel: () => {}
         });
 
     }
@@ -889,7 +895,7 @@
     }
 
 
-    document.addEventListener('change', async function (e) {
+    document.addEventListener('change', async function(e) {
 
         if (!e.target.classList.contains('cond-campo')) return;
 
@@ -917,8 +923,8 @@
             //CLAVE: SOLO el bloque actual
             const block = e.target.closest('.condicion-form-valor-block');
 
-            const valorContainer = block.querySelector('.col-md-2:has(.cond-valor)')
-                || block.querySelector('.cond-valor')?.closest('.col-md-2');
+            const valorContainer = block.querySelector('.col-md-2:has(.cond-valor)') ||
+                block.querySelector('.cond-valor')?.closest('.col-md-2');
 
             const oldInput = block.querySelector('.cond-valor');
 
@@ -976,9 +982,11 @@
                 return;
             }
 
-            if (!accionObj.form_ref_id || !accionObj.campo_ref_id || !accionObj.operacion || !accionObj.valor) {
+            if (!accionObj.form_ref_id || !accionObj.campo_ref_id || !accionObj.operacion || !accionObj
+                .valor) {
 
-                mostrarAlerta('warning', 'Complete todos los campos obligatorios para la acción "Modificar Campo".');
+                mostrarAlerta('warning',
+                    'Complete todos los campos obligatorios para la acción "Modificar Campo".');
 
                 return;
             }
@@ -986,7 +994,8 @@
 
         if (tipoAccion === 'TAC-005') {
             const usarRelacion = document.getElementById('check-usar-relacion')?.checked;
-            const radioSeleccionado = document.querySelector('#formularios-relacionados input[name="listGroupRadio"]:checked');
+            const radioSeleccionado = document.querySelector(
+                '#formularios-relacionados input[name="listGroupRadio"]:checked');
 
             if (usarRelacion && !radioSeleccionado) {
 
@@ -1005,15 +1014,18 @@
                 const formRefId = fila.dataset.formRefId;
 
                 // Ignorar validación de input de destino si pertenece al formulario seleccionado por el radio
-                const estaBloqueadoPorRadio = usarRelacion && radioSeleccionado && formRefId === radioSeleccionado.value;
+                const estaBloqueadoPorRadio = usarRelacion && radioSeleccionado && formRefId ===
+                    radioSeleccionado.value;
 
                 if (check?.checked && !selectOrigen.value) {
-                    mostrarAlerta('warning', 'Seleccione un campo de origen para todas las filas marcadas.');
+                    mostrarAlerta('warning',
+                    'Seleccione un campo de origen para todas las filas marcadas.');
 
                     return;
                 }
 
-                if (!check?.checked && !estaBloqueadoPorRadio && inputDestino?.hasAttribute('required') && !inputDestino.value) {
+                if (!check?.checked && !estaBloqueadoPorRadio && inputDestino?.hasAttribute('required') && !
+                    inputDestino.value) {
                     mostrarAlerta('warning', 'Complete todos los campos obligatorios de destino.');
 
                     return;
@@ -1178,11 +1190,4 @@
 
         await abrirContenedor()
     });
-
-
-
-
-
-
-
 </script>
