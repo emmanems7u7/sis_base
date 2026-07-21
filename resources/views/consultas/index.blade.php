@@ -9,7 +9,7 @@
                         Constructor de Consultas
                     </h4>
 
-                    <a href="{{ route('consultas.create') }}" class="btn btn-primary">
+                    <a href="{{ route('consultas.create', $formulario) }}" class="btn btn-primary">
 
                         <i class="fas fa-plus"></i>
                         Nueva Consulta
@@ -58,14 +58,20 @@
 
                             <td>
 
-                                <a href="{{ route('consultas.ejecutar', $consulta) }}" class="btn btn-success btn-xs">
+                                <a href="{{ route('consultas.show', $consulta) }}" class="btn btn-info btn-xs">
 
-                                    Ejecutar
+                                    Ver
 
                                 </a>
-                                <a href="{{ route('consultas.edit', $consulta) }}" class="btn btn-warning btn-xs">
+                                <a href="{{ route('consultas.edit', ['consulta' => $consulta, 'formulario' => $formulario]) }}"
+                                    class="btn btn-warning btn-xs">
 
                                     Editar
+
+                                </a>
+                                <a href="{{ route('consultas.destroy', $consulta) }}" class="btn btn-danger btn-xs">
+
+                                    Eliminar
 
                                 </a>
                             </td>

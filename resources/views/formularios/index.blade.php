@@ -93,14 +93,6 @@
                                         </div>
 
                                         <div class="col-4">
-                                            <a href="{{ route('formularios.config.edit', $formulario->id) }}"
-                                                class="btn w-100 btn-mobile-small  btn-xs btn-outline-dark">
-                                                <i class="fas fa-database"></i><br> Configuraciòn
-                                            </a>
-                                        </div>
-
-
-                                        <div class="col-4">
                                             <a href="{{ route('formularios.edit', $formulario->id) }}"
                                                 class="btn w-100 btn-mobile-small  btn-xs btn-outline-warning">
                                                 <i class="fas fa-pencil-alt"></i> <br> Editar
@@ -203,17 +195,14 @@
                                             class="btn btn-xs btn-success">
 
                                             <i class="fas fa-database"></i>
-                                            Ver Datos Registrados
+                                            Registros
 
                                         </a>
 
-                                        <a href="{{ route('formularios.config.edit', $formulario) }}"
-                                            class="btn btn-xs btn-dark">
-                                            <i class="fas fa-database"></i> Configuraciòn
+                                        <a href="{{ route('consultas.index', $formulario) }}" class="btn btn-xs btn-dark">
+                                            <i class="fas fa-chart-bar"></i>
+                                            Constructor de Reportes
                                         </a>
-
-
-
 
                                         <a href="{{ route('formularios.edit', $formulario) }}"
                                             class="btn btn-xs btn-warning">

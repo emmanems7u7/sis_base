@@ -2,25 +2,29 @@
 
 
 @section('content')
-
-
-    @include('formularios.modal_busqueda', ['formulario' => $formulario, 'campos' => $formulario->campos, 'modulo' => 0])
+    @include('formularios.modal_busqueda', [
+        'formulario' => $formulario,
+        'campos' => $formulario->campos,
+        'modulo' => 0,
+    ])
 
     <div class="row">
         <div class="col-md-6 mt-2 order-2 order-md-1">
             <div class="card shadow-lg">
                 <div class="card-body">
 
-                    <h5> {!!   configForm($formulario->id, 'titles.index')!!}</h5>
+                    <h5> {!! configForm($formulario->id, 'titles.index') !!}</h5>
 
                     <a href="{{ route('formularios.index') }}" class="btn btn-xs btn-secondary me-1">
                         {!! configForm($formulario->id, 'titles.back', null) !!}</a>
 
-                    <a href="{{ route('formularios.respuestas.formulario', $formulario) }}"
-                        class="btn btn-xs btn-secondary ">
+                    <a href="{{ route('formularios.respuestas.formulario', $formulario) }}" class="btn btn-xs btn-secondary ">
                         {!! configForm($formulario->id, 'titles.remove_filters', null) !!}</a>
 
-                    @include('formularios.partials.botones_accion', ['formulario' => $formulario, 'modulo' => 0])
+                    @include('formularios.partials.botones_accion', [
+                        'formulario' => $formulario,
+                        'modulo' => 0,
+                    ])
 
 
                 </div>
@@ -30,7 +34,7 @@
             <div class="card shadow-lg">
                 <div class="card-body">
                     <h5>{!! configForm($formulario->id, 'titles.info', null) !!}</h5>
-                    <p class="text-muted">{!!   $formulario->descripcion !!}</p>
+                    <p class="text-muted">{!! $formulario->descripcion !!}</p>
                 </div>
             </div>
         </div>
@@ -43,7 +47,7 @@
 
     {{-- Tabla para pantallas grandes --}}
 
-    @if($isMobile)
+    @if ($isMobile)
         @include('formularios.respuestas_movil')
     @else
         <div class="card mt-3 shadow-lg">
@@ -53,8 +57,4 @@
             </div>
         </div>
     @endif
-
-
-
-
 @endsection

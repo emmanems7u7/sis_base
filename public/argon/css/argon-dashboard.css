@@ -5811,7 +5811,7 @@ fieldset:disabled .btn {
   --bs-pagination-padding-x: 0.75rem;
   --bs-pagination-padding-y: 0.375rem;
   --bs-pagination-font-size: 1rem;
-  --bs-pagination-color:#566d64;
+  --bs-pagination-color:#192a69;
   --bs-pagination-bg: #121c41;
   --bs-pagination-border-width: 1px;
   --bs-pagination-border-color: #dee2e6;
@@ -5823,8 +5823,8 @@ fieldset:disabled .btn {
   --bs-pagination-focus-bg: #e9ecef;
   --bs-pagination-focus-box-shadow: 0 0 0 0.2rem rgba(94, 114, 228, 0.25);
   --bs-pagination-active-color: #fafafa;
-  --bs-pagination-active-bg: #566d64;
-  --bs-pagination-active-border-color: #566d64;
+  --bs-pagination-active-bg: #192a69;
+  --bs-pagination-active-border-color: #979797;
   --bs-pagination-disabled-color: #6c757d;
   --bs-pagination-disabled-bg: #212637;
   --bs-pagination-disabled-border-color: #dee2e6;
@@ -28721,4 +28721,25 @@ pre[class*=language-] {
 
 .mt-custom {
     margin-top: 0.17rem;
+}
+
+.tippy-content {
+  position: relative;
+  padding: 0px 0px !important;
+  z-index: 1;
+}
+
+.tippy-box {
+  position: relative;
+  background-color: #333;
+  color: #fff;
+  radius: 4px;
+  font-size: 14px;
+  line-height: 1.4;
+  white-space: normal;
+  outline: 0;
+  transition-property: transform, visibility, opacity;
+  width: 100%;
+  max-width: 320px !important;
+    transition-duration: 300ms !important;
 }

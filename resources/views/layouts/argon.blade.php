@@ -5,8 +5,8 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <link rel="apple-touch-icon" sizes="76x76" href="{{ asset('img/apple-icon.png')  }}">
-    <link rel="icon" type="image/png" href="{{ asset('logo.png')  }}">
+    <link rel="apple-touch-icon" sizes="76x76" href="{{ asset('img/apple-icon.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
     <title>{{ config('app.name', 'Laravel') }}</title>
     <!--     Fonts and icons     -->
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
@@ -16,7 +16,7 @@
 
     <script src="https://kit.fontawesome.com/42d5adcbca.js" crossorigin="anonymous"></script>
     <!-- CSS Files -->
-    <link id="pagestyle" href="{{ asset('argon/css/argon-dashboard.css?v=2.1.0')  }}" rel="stylesheet" />
+    <link id="pagestyle" href="{{ asset('argon/css/argon-dashboard.css?v=2.1.0') }}" rel="stylesheet" />
 
     <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.3/dist/leaflet.css" crossorigin="" />
 
@@ -64,7 +64,11 @@
 
 </head>
 
-
+@if ($isMobile)
+    <script src="https://unpkg.com/@popperjs/core@2"></script>
+    <script src="https://unpkg.com/tippy.js@6"></script>
+    <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/themes/light.css">
+@endif
 <style>
     #loader {
         position: fixed;
@@ -97,7 +101,8 @@
     }
 </style>
 
-<div id="overlay-spinner" style="
+<div id="overlay-spinner"
+    style="
     display:none;
     position:fixed;
     top:0; left:0;
@@ -122,7 +127,7 @@
             <i class="fas fa-times p-3 cursor-pointer text-secondary opacity-5 position-absolute end-0 top-0 d-none d-xl-none"
                 aria-hidden="true" id="iconSidenav"></i>
             <a class="navbar-brand m-0" href="{{ route('home') }}">
-                <img src="{{ asset('logo.png')}}" style="" alt="">
+                <img src="{{ asset('logo.png') }}" style="" alt="">
                 <span class="ms-1 font-weight-bold">{{ config('app.name', 'Laravel') }}</span>
             </a>
         </div>
@@ -131,28 +136,30 @@
             @include('layouts.lateral')
         </div>
         <!-- CDN de SortableJS -->
-        @if($configuracion->mantenimiento == 1)
+        @if ($configuracion->mantenimiento == 1)
             <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
             <script>
                 const lista = document.getElementById('secciones-list');
 
                 new Sortable(lista, {
                     animation: 150,
-                    onEnd: function () {
+                    onEnd: function() {
                         const orden = Array.from(document.querySelectorAll('.seccion-item'))
                             .map((el, index) => ({
                                 id: el.dataset.id,
                                 posicion: index + 1
                             }));
 
-                        fetch('{{ route("secciones.ordenar") }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            },
-                            body: JSON.stringify({ orden })
-                        }).then(res => res.json())
+                        fetch('{{ route('secciones.ordenar') }}', {
+                                method: 'POST',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                },
+                                body: JSON.stringify({
+                                    orden
+                                })
+                            }).then(res => res.json())
                             .then(data => {
                                 if (data.status === 'success') {
                                     mostrarAlerta('success', data.message);
@@ -163,8 +170,6 @@
                             })
                     }
                 });
-
-
             </script>
         @endif
 
@@ -179,21 +184,21 @@
 
 
             <script>
-                document.addEventListener('DOMContentLoaded', function () {
+                document.addEventListener('DOMContentLoaded', function() {
                     alertify.set('notifier', 'position', 'top-right');
 
                     @foreach (['status' => 'success', 'error' => 'error', 'warning' => 'warning'] as $msg => $type)
-                        @if(session($msg))
+                        @if (session($msg))
                             alertify.{{ $type }}(@json(session($msg)));
                         @endif
                     @endforeach
 
-                    @if($errors->any())
+                    @if ($errors->any())
                         @foreach ($errors->all() as $error)
                             alertify.error(@json($error));
                         @endforeach
                     @endif
-                 });
+                });
             </script>
 
             @yield('content')
@@ -207,11 +212,10 @@
     @include('layouts.personalizacion')
 
     <script>
-
-        document.addEventListener('DOMContentLoaded', function () {
+        document.addEventListener('DOMContentLoaded', function() {
             const overlay = document.getElementById('overlay-spinner');
 
-            document.addEventListener('submit', function (e) {
+            document.addEventListener('submit', function(e) {
 
                 const offcanvasEl = document.getElementById('offcanvasAcciones');
 
@@ -235,12 +239,12 @@
             }
         });
 
-        (function () {
+        (function() {
             const overlay = document.getElementById('overlay-spinner');
             const originalFetch = window.fetch;
             let activeFetches = 0;
 
-            window.fetch = async function (input, options = {}) {
+            window.fetch = async function(input, options = {}) {
 
                 const showOverlay = options?.showOverlay !== false;
 
@@ -276,7 +280,7 @@
             // Limpiar clases anteriores
             [
                 'primary', 'dark', 'info', 'success', 'warning', 'danger'
-            ].forEach(function (c) {
+            ].forEach(function(c) {
                 parent.classList.remove('bg-gradient-' + c);
             });
 
@@ -284,20 +288,22 @@
             parent.classList.add('bg-gradient-' + color);
 
             // Marcar badge activo
-            document.querySelectorAll('.badge.filter').forEach(function (el) {
+            document.querySelectorAll('.badge.filter').forEach(function(el) {
                 el.classList.remove('active');
             });
             a.classList.add('active');
 
             // Guardar en backend
             fetch('/guardar-color-sidebar', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                },
-                body: JSON.stringify({ color: color })
-            })
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({
+                        color: color
+                    })
+                })
                 .then(response => response.json())
                 .then(data => {
                     if (data.success) {
@@ -316,7 +322,9 @@
                     'Content-Type': 'application/json',
                     'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
                 },
-                body: JSON.stringify({ sidebar_type: selectedType }),
+                body: JSON.stringify({
+                    sidebar_type: selectedType
+                }),
             }).then(res => {
                 if (!res.ok) throw new Error('Error al guardar personalización');
                 return res.json();
@@ -327,11 +335,30 @@
             });
             for (
                 var t = e.parentElement.children, s = e.getAttribute("data-class"),
-                n = document.querySelector("body"),
-                a = document.querySelector("body:not(.dark-version)"),
-                n = n.classList.contains("dark-version"),
-                i = [], r = 0;
-                r < t.length; r++)t[r].classList.remove("active"), i.push(t[r].getAttribute("data-class")); e.classList.contains("active") ? e.classList.remove("active") : e.classList.add("active"); for (var l, o, c, d = document.querySelector(".sidenav"), r = 0; r < i.length; r++)d.classList.remove(i[r]); if (d.classList.add(s), "bg-transparent" == s || "bg-white" == s) { var u = document.querySelectorAll(".sidenav .text-white:not(.nav-link-text):not(.active)"); for (let e = 0; e < u.length; e++)u[e].classList.remove("text-white"), u[e].classList.add("text-dark") } else { var f = document.querySelectorAll(".sidenav .text-dark"); for (let e = 0; e < f.length; e++)f[e].classList.add("text-white"), f[e].classList.remove("text-dark") } if ("bg-transparent" == s && n) { f = document.querySelectorAll(".navbar-brand .text-dark"); for (let e = 0; e < f.length; e++)f[e].classList.add("text-white"), f[e].classList.remove("text-dark") } "bg-transparent" != s && "bg-white" != s || !a ? (o = (l = document.querySelector(".navbar-brand-img")).src).includes("logo-ct-dark.png") && (c = o.replace("logo-ct-dark", "logo-ct"), l.src = c) : (o = (l = document.querySelector(".navbar-brand-img")).src).includes("logo-ct.png") && (c = o.replace("logo-ct", "logo-ct-dark"), l.src = c), "bg-white" == s && n && (o = (l = document.querySelector(".navbar-brand-img")).src).includes("logo-ct.png") && (c = o.replace("logo-ct", "logo-ct-dark"), l.src = c)
+                    n = document.querySelector("body"),
+                    a = document.querySelector("body:not(.dark-version)"),
+                    n = n.classList.contains("dark-version"),
+                    i = [], r = 0; r < t.length; r++) t[r].classList.remove("active"), i.push(t[r].getAttribute(
+                "data-class"));
+            e.classList.contains("active") ? e.classList.remove("active") : e.classList.add("active");
+            for (var l, o, c, d = document.querySelector(".sidenav"), r = 0; r < i.length; r++) d.classList.remove(i[r]);
+            if (d.classList.add(s), "bg-transparent" == s || "bg-white" == s) {
+                var u = document.querySelectorAll(".sidenav .text-white:not(.nav-link-text):not(.active)");
+                for (let e = 0; e < u.length; e++) u[e].classList.remove("text-white"), u[e].classList.add("text-dark")
+            } else {
+                var f = document.querySelectorAll(".sidenav .text-dark");
+                for (let e = 0; e < f.length; e++) f[e].classList.add("text-white"), f[e].classList.remove("text-dark")
+            }
+            if ("bg-transparent" == s && n) {
+                f = document.querySelectorAll(".navbar-brand .text-dark");
+                for (let e = 0; e < f.length; e++) f[e].classList.add("text-white"), f[e].classList.remove("text-dark")
+            }
+            "bg-transparent" != s && "bg-white" != s || !a ? (o = (l = document.querySelector(".navbar-brand-img")).src)
+                .includes("logo-ct-dark.png") && (c = o.replace("logo-ct-dark", "logo-ct"), l.src = c) : (o = (l = document
+                    .querySelector(".navbar-brand-img")).src).includes("logo-ct.png") && (c = o.replace("logo-ct",
+                    "logo-ct-dark"), l.src = c), "bg-white" == s && n && (o = (l = document.querySelector(
+                    ".navbar-brand-img")).src).includes("logo-ct.png") && (c = o.replace("logo-ct", "logo-ct-dark"), l.src =
+                    c)
 
 
 
@@ -345,8 +372,7 @@
             var check;
             if (el.checked) {
                 check = 1;
-            }
-            else {
+            } else {
 
                 check = 0;
             }
@@ -374,7 +400,8 @@
             const bg_gray_100 = document.querySelectorAll('.bg-gray-100');
             const bg_gray_600 = document.querySelectorAll('.bg-gray-600');
             const btn_text_dark = document.querySelectorAll('.btn.btn-link.text-dark, .material-symbols-rounded.text-dark');
-            const btn_text_white = document.querySelectorAll('.btn.btn-link.text-white, .material-symbols-rounded.text-white');
+            const btn_text_white = document.querySelectorAll(
+                '.btn.btn-link.text-white, .material-symbols-rounded.text-white');
             const card_border = document.querySelectorAll('.card.border');
             const card_border_dark = document.querySelectorAll('.card.border.border-dark');
 
@@ -466,7 +493,8 @@
                     }
                 }
                 for (var i = 0; i < text_span_white.length; i++) {
-                    if (text_span_white[i].classList.contains('text-white') && !text_span_white[i].closest('.sidenav') && !text_span_white[i].closest('.card.bg-gradient-dark')) {
+                    if (text_span_white[i].classList.contains('text-white') && !text_span_white[i].closest('.sidenav') && !
+                        text_span_white[i].closest('.card.bg-gradient-dark')) {
                         text_span_white[i].classList.remove('text-white');
                         text_span_white[i].classList.add('text-dark');
                     }
@@ -478,7 +506,8 @@
                     }
                 }
                 for (var i = 0; i < text_nav_link_white.length; i++) {
-                    if (text_nav_link_white[i].classList.contains('text-white') && !text_nav_link_white[i].closest('.sidenav')) {
+                    if (text_nav_link_white[i].classList.contains('text-white') && !text_nav_link_white[i].closest(
+                            '.sidenav')) {
                         text_nav_link_white[i].classList.remove('text-white');
                         text_nav_link_white[i].classList.add('text-dark');
                     }
@@ -515,7 +544,6 @@
 
             }
         };
-
     </script>
 
 
@@ -523,20 +551,19 @@
     <script src="https://unpkg.com/leaflet@1.9.3/dist/leaflet.js" crossorigin=""></script>
     <!--   Core JS Files   -->
     <script src="{{ asset('argon/js/core/bootstrap.bundle.min.js') }}"></script>
-    <script src="{{asset('argon/js/plugins/perfect-scrollbar.min.js')}}"></script>
-    <script src="{{asset('argon/js/plugins/smooth-scrollbar.min.js')}}"></script>
-    <script src="{{asset('argon/js/plugins/chartjs.min.js')}}"></script>
-    <script src="{{asset('js/alertas.js')}}"></script>
-    <script src="{{asset('js/export.js')}}"></script>
+    <script src="{{ asset('argon/js/plugins/perfect-scrollbar.min.js') }}"></script>
+    <script src="{{ asset('argon/js/plugins/smooth-scrollbar.min.js') }}"></script>
+    <script src="{{ asset('argon/js/plugins/chartjs.min.js') }}"></script>
+    <script src="{{ asset('js/alertas.js') }}"></script>
+    <script src="{{ asset('js/export.js') }}"></script>
 
-    <script src="{{asset('js/campos.js')}}"></script>
-    <script src="{{asset('js/iconos.js')}}"></script>
-    <script src="{{asset('js/offcanvas.js')}}"></script>
+    <script src="{{ asset('js/campos.js') }}"></script>
+    <script src="{{ asset('js/iconos.js') }}"></script>
+    <script src="{{ asset('js/offcanvas.js') }}"></script>
 
 
 
     <script>
-
         alertify.defaults.theme.ok = "btn btn-danger";
         alertify.defaults.theme.cancel = "btn btn-secondary";
         alertify.defaults.theme.input = "form-control";
@@ -551,7 +578,7 @@
             alertify.confirm(
                 'Confirmar acción',
                 mensaje,
-                function () {
+                function() {
 
                     if (callback) {
                         callback();
@@ -560,10 +587,13 @@
 
                     document.getElementById(formId).submit();
                 },
-                function () {
+                function() {
                     alertify.error('Acción cancelada');
                 }
-            ).set('labels', { ok: 'Aceptar', cancel: 'Cancelar' });
+            ).set('labels', {
+                ok: 'Aceptar',
+                cancel: 'Cancelar'
+            });
         }
 
         var win = navigator.platform.indexOf('Win') > -1;
@@ -573,8 +603,6 @@
             }
             Scrollbar.init(document.querySelector('#sidenav-scrollbar'), options);
         }
-
-
     </script>
 
 
@@ -588,7 +616,7 @@
         }
     </script>
 
-    <script src="{{asset('argon/js/argon-dashboard.js?v=2.1.0')}}"></script>
+    <script src="{{ asset('argon/js/argon-dashboard.js?v=2.1.0') }}"></script>
 
 </body>
 

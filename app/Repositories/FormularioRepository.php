@@ -603,11 +603,9 @@ class FormularioRepository implements FormularioInterface
 
     public function obtenerFormulariosDelGrupo($formularioId, $moduloId)
     {
-        $grupo = FormularioAsociacion::where('modulo_id', $moduloId)->get()
-            ->first(function ($g) use ($formularioId) {
-                return collect($g->formularios)->pluck('id')->contains($formularioId);
-            });
-
+        $grupo = FormularioAsociacion::get()->first(function ($g) use ($formularioId) {
+            return collect($g->formularios)->pluck('id')->contains($formularioId);
+        });
         if (!$grupo) {
             return null;
         }

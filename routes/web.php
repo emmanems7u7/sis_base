@@ -551,14 +551,21 @@ Route::middleware(['auth'])->group(function () {
 
 
 
-    Route::resource('consultas', ConsultaController::class);
+    // Listado
+    Route::get('reportes/{formulario}', [ConsultaController::class, 'index'])->name('consultas.index');
+    Route::get('consultas/create/{formulario}', [ConsultaController::class, 'create'])->name('consultas.create');
+    Route::post('consultas/{formulario}', [ConsultaController::class, 'store'])->name('consultas.store');
+    Route::get('consultas/{consulta}/edit/{formulario}', [ConsultaController::class, 'edit'])->name('consultas.edit');
+    Route::put('consultas/{consulta}', [ConsultaController::class, 'update'])->name('consultas.update');
+    Route::delete('consultas/{consulta}', [ConsultaController::class, 'destroy'])->name('consultas.destroy');
 
-    Route::get(
+    Route::get('/consultas/{consulta}/ver', [ConsultaController::class, 'show'])->name('consultas.show');
+
+    Route::post(
         '/consultas/{consulta}/ejecutar',
         [ConsultaController::class, 'ejecutar']
-    )->name('consultas.ejecutar');
-
-    Route::get('/formularios/{formulario}/campos', [ConsultaController::class, 'campos']);
+    )
+        ->name('consultas.ejecutar');
 
 });
 

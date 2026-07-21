@@ -261,7 +261,31 @@
 
                     <div class="card-body p-2">
                         @include('formularios.campos.lista_campos', ['campo' => $campo])
+                        <div class="mt-2">
+                            <button class="btn btn-link btn-sm p-0" type="button" data-bs-toggle="collapse"
+                                data-bs-target="#detalleCampo{{ $campo->id }}" aria-expanded="false"
+                                aria-controls="detalleCampo{{ $campo->id }}">
+                                <i class="fas fa-chevron-down me-1"></i> Configuracion del campo
+                            </button>
+
+                            <div class="collapse mt-2" id="detalleCampo{{ $campo->id }}">
+                                <div class="card card-body bg-light p-2">
+                                    <div class="form-check form-switch">
+                                        <input class="form-check-input" type="checkbox"
+                                            id="auto_hora_{{ $campo->id }}"
+                                            onchange="guardarSoloLectura({{ $campo->id }}, 'solo_lectura', this.checked)"
+                                            {{ $campo->config['solo_lectura'] ?? false ? 'checked' : '' }}>
+
+                                        <label class="form-check-label">
+                                            Campo de tipo solo lectura
+                                        </label>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
                     </div>
+
 
                     <div class="card-footer p-2">
                         <div class="d-flex justify-content-between align-items-center">

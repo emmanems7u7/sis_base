@@ -2,22 +2,16 @@
 
 @section('content')
 
-    @if($isMobile)
 
-        <script src="https://unpkg.com/@popperjs/core@2"></script>
-        <script src="https://unpkg.com/tippy.js@6"></script>
-        <link rel="stylesheet" href="https://unpkg.com/tippy.js@6/themes/light.css">
-    @endif
 
 
     <div class="row">
         <div class="col-12 col-md-6 order-2 order-md-1">
             <div class="card shadow-lg mt-2">
                 <div class="card-body">
-                    @if($isMobile)
-
+                    @if ($isMobile)
                         <!-- ICONO ARRIBA A LA DERECHA -->
-                        <i class="fas fa-question-circle position-absolute top-0 end-0 m-2 text-primary" id="infoModulo"
+                        <i class="fas fa-question-circle position-absolute top-0 end-0 m-2" id="infoModulo"
                             style="cursor:pointer; font-size:18px;">
                         </i>
                     @endif
@@ -26,29 +20,29 @@
                     </div>
 
                     @role('admin')
-                    <h6 class="mt-2 d-flex align-items-center gap-2">
-                        Formularios asociados al Módulo
+                        <h6 class="mt-2 d-flex align-items-center gap-2">
+                            Formularios asociados al Módulo
 
-                        <i class="fas fa-question-circle btn-tooltip" data-bs-toggle="tooltip" data-bs-placement="top"
-                            title="Aquí se muestran los formularios asociados al módulo. Si alguno no aparece en la lista, es porque está inactivo. Puedes activarlo desde la configuración de módulos."
-                            data-container="body" data-animation="true" style="cursor: pointer;">
-                        </i>
-                    </h6>
+                            <i class="fas fa-question-circle btn-tooltip" data-bs-toggle="tooltip" data-bs-placement="top"
+                                title="Aquí se muestran los formularios asociados al módulo. Si alguno no aparece en la lista, es porque está inactivo. Puedes activarlo desde la configuración de módulos."
+                                data-container="body" data-animation="true" style="cursor: pointer;">
+                            </i>
+                        </h6>
 
-                    <div class="mb-2">
-                        @forelse ($formularios_asociados->formularios as $formulario)
-                            <small class="d-block">- {{ $formulario->nombre }}</small>
-                        @empty
-                            <small class="d-block">Sin Formularios Asociados</small>
-                        @endforelse
-                    </div>
+                        <div class="mb-2">
+                            @forelse ($formularios_asociados->formularios as $formulario)
+                                <small class="d-block">- {{ $formulario->nombre }}</small>
+                            @empty
+                                <small class="d-block">Sin Formularios Asociados</small>
+                            @endforelse
+                        </div>
                     @endrole
 
 
                     <a href="{{ route('formularios.index') }}" class="btn btn-xs btn-secondary "><i
                             class="fas fa-arrow-left me-1"></i>Volver</a>
 
-                    <a href="{{route('modulo.index', $modulo->id)  }}" class="btn btn-xs btn-secondary "><i
+                    <a href="{{ route('modulo.index', $modulo->id) }}" class="btn btn-xs btn-secondary "><i
                             class="fas fa-times"></i>
                         Quitar filtros</a>
 
@@ -56,24 +50,27 @@
             </div>
         </div>
 
-        @if(!$isMobile)
+        @if (!$isMobile)
             <div class="col-12 col-md-6 order-1 order-md-2">
                 <div class="card shadow-lg mt-2">
                     <div class="card-body">
 
-                        {!!   $modulo->descripcion !!}
+                        {!! $modulo->descripcion !!}
                     </div>
                 </div>
             </div>
         @endif
     </div>
-    @if($isMobile)
-
+    @if ($isMobile)
         <script>
             tippy('#infoModulo', {
-                content: `{!! $modulo->descripcion !!}`,
+                content: `
+        <div class="{{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }} p-2 rounded">
+            {!! $modulo->descripcion !!}
+        </div>
+    `,
                 allowHTML: true,
-                theme: 'light',
+                theme: 'light-border', // o incluso sin theme
                 placement: 'left',
                 animation: 'scale',
                 interactive: true,
@@ -85,7 +82,7 @@
     @include('formularios.partials.modal_ver')
 
     <div class="mt-2">
-        @if($isMobile)
+        @if ($isMobile)
             @include('modulosDinamicos.iteracion_movil')
         @else
             @include('modulosDinamicos.iteracion_desktop')

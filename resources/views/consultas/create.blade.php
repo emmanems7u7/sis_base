@@ -23,7 +23,7 @@
     <div class="card mt-3 shadow-lg">
         <div class="card-body">
 
-            <form method="POST" action="{{ route('consultas.store') }}" id="formConsulta">
+            <form method="POST" action="{{ route('consultas.store', $formulario) }}" id="formConsulta">
 
                 @csrf
 

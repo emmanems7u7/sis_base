@@ -133,7 +133,8 @@ class RespuestasFormController extends Controller
             'breadcrumb' => $breadcrumb,
             'moduloModelo' => $moduloModelo,
             'modulo' => $modulo,
-            'formulas' => $formulas
+            'formulas' => $formulas,
+            'edit' => 0
         ]);
     }
 
@@ -541,6 +542,7 @@ class RespuestasFormController extends Controller
             'moduloModelo' => $moduloModelo,
             'modulo' => $modulo,
             'formulas' => $formulas,
+            'edit' => 1
         ]);
     }
 

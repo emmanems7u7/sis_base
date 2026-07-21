@@ -34,23 +34,7 @@
 
                 <div class="mb-3">
 
-                    <label>
-                        Formulario
-                    </label>
 
-                    <select name="formulario_id" id="formulario" class="form-select" required>
-
-                        <option value="">
-                            Seleccione
-                        </option>
-
-                        @foreach ($formularios as $formulario)
-                            <option value="{{ $formulario->id }}" @selected(old('formulario_id', $consulta->formulario_id ?? '') == $formulario->id)>
-                                {{ $formulario->nombre }}
-                            </option>
-                        @endforeach
-
-                    </select>
 
                 </div>
 
@@ -72,7 +56,30 @@
 
                 <div id="campos-container">
 
-                    Seleccione formulario
+                    @foreach ($campos as $campo)
+                        @if ($campo['es_relacion'])
+                            <div class="mt-2 mb-1 border-start border-3 border-primary ps-2"
+                                style="margin-left: {{ ($campo['nivel'] ?? 0) * 20 }}px">
+
+                                <strong class="text-primary">
+                                    <i class="fas fa-folder-open"></i>
+                                    {{ $campo['etiqueta'] }}
+                                </strong>
+
+                            </div>
+                        @else
+                            <div class="form-check" style="margin-left: {{ ($campo['nivel'] ?? 0) * 20 }}px">
+
+                                <input class="form-check-input campo-select" type="checkbox"
+                                    value="{{ $campo['id'] }}">
+
+                                <label class="form-check-label">
+                                    {{ $campo['etiqueta_simple'] }}
+                                </label>
+
+                            </div>
+                        @endif
+                    @endforeach
 
                 </div>
 
@@ -83,20 +90,23 @@
     </div>
 
     <div class="col-md-5">
-
         <div class="card">
 
-            <div class="card-header d-flex justify-content-between">
+            <div class="card-header d-flex justify-content-between align-items-center">
 
-                <span>Filtros</span>
+                <strong>Filtros del reporte</strong>
 
-                <button type="button" class="btn btn-sm btn-primary" id="addFiltro">
-                    Agregar
+                <button type="button" id="btnAgregarFiltro" class="btn btn-primary btn-sm">
+
+                    <i class="fas fa-plus"></i>
+
+                    Agregar filtro
+
                 </button>
 
             </div>
 
-            <div class="card-body" id="filtros-container">
+            <div class="card-body" id="contenedorFiltros">
 
             </div>
 
@@ -104,416 +114,442 @@
 
     </div>
 
-</div>
+    <div class="card mt-3">
 
-<div class="card mt-3">
-
-    <div class="card-header">
-        Ordenamiento
-    </div>
-
-    <div class="card-body">
-
-        <div class="row">
-
-            <div class="col-md-6">
-
-                <select id="orderField" class="form-select">
-
-                </select>
-
-            </div>
-
-            <div class="col-md-3">
-
-                <select id="orderDirection" class="form-select">
-
-                    <option value="asc">
-                        Ascendente
-                    </option>
-
-                    <option value="desc">
-                        Descendente
-                    </option>
-
-                </select>
-
-            </div>
-
+        <div class="card-header">
+            Ordenamiento
         </div>
 
-    </div>
+        <div class="card-body">
 
+            <div class="row">
 
-</div>
+                <div class="col-md-6">
 
-<script>
-    let camposGlobal = [];
+                    <select id="orderField" class="form-select">
+                        @foreach ($campos as $campo)
+                            @continue($campo['nivel'] > 0)
 
-    let consultaConfig = @json($configuracion);
-
-    document.addEventListener('DOMContentLoaded', () => {
-
-        const formulario =
-            document.getElementById('formulario');
-
-        if (formulario.value) {
-
-            formulario.dispatchEvent(
-                new Event('change')
-            );
-
-        }
-
-    });
-
-    document
-        .getElementById('formulario')
-        .addEventListener('change', async function() {
-
-            const formularioId = this.value;
-
-            if (!formularioId) {
-
-                document
-                    .getElementById('campos-container')
-                    .innerHTML = 'Seleccione formulario';
-
-                return;
-            }
-
-            const response =
-                await fetch(
-                    `/formularios/${formularioId}/campos`
-                );
-
-            const campos =
-                await response.json();
-
-            camposGlobal = campos;
-
-            renderCampos();
-
-            aplicarConfiguracion();
-
-        });
-
-    function renderCampos() {
-
-        let html = '';
-
-        camposGlobal.forEach(campo => {
-
-            const margen =
-                (campo.nivel || 0) * 20;
-
-            if (campo.es_relacion) {
-
-                html += `
-                    <div
-                        class="mt-2 mb-1 border-start border-3 border-primary ps-2"
-                        style="margin-left:${margen}px">
-
-                        <strong class="text-primary">
-
-                            <i class="fas fa-folder-open"></i>
-
-                            ${campo.etiqueta}
-
-                        </strong>
-
-                    </div>
-                `;
-
-                return;
-            }
-
-            html += `
-                <div
-                    class="form-check"
-                    style="margin-left:${margen}px">
-
-                    <input
-                        class="form-check-input campo-select"
-                        type="checkbox"
-                        value="${campo.id}"
-                    >
-
-                    <label class="form-check-label">
-
-                        ${campo.etiqueta_simple}
-
-                    </label>
+                            <option value="{{ $campo['id'] }}">
+                                {{ $campo['etiqueta'] }}
+                            </option>
+                        @endforeach
+                    </select>
 
                 </div>
-            `;
-        });
 
-        document
-            .getElementById('campos-container')
-            .innerHTML = html;
+                <div class="col-md-3">
 
-        actualizarOrder();
-    }
+                    <select id="orderDirection" class="form-select">
 
-    function actualizarOrder() {
+                        <option value="asc">
+                            Ascendente
+                        </option>
 
-        let html = '';
+                        <option value="desc">
+                            Descendente
+                        </option>
 
-        camposGlobal.forEach(campo => {
+                    </select>
 
-            // Ignorar hijos y nietos
-            if (campo.nivel > 0) {
-                return;
-            }
+                </div>
 
-            html += `
-        <option value="${campo.id}">
+            </div>
+
+        </div>
+
+
+    </div>
+
+
+    <script>
+        const filtrosDisponibles = {
+
+            // CAMPF-012 -> Text
+            "CAMPF-012": [{
+                    valor: "contiene",
+                    texto: "Contiene"
+                },
+                {
+                    valor: "igual",
+                    texto: "Igual"
+                },
+                {
+                    valor: "empieza",
+                    texto: "Empieza con"
+                },
+                {
+                    valor: "termina",
+                    texto: "Termina con"
+                },
+                {
+                    valor: "vacio",
+                    texto: "Vacío"
+                },
+                {
+                    valor: "novacio",
+                    texto: "No vacío"
+                }
+            ],
+
+            // CAMPF-013 -> Number
+            "CAMPF-013": [{
+                    valor: "igual",
+                    texto: "Igual"
+                },
+                {
+                    valor: "mayor",
+                    texto: "Mayor que"
+                },
+                {
+                    valor: "menor",
+                    texto: "Menor que"
+                },
+                {
+                    valor: "rango",
+                    texto: "Desde / Hasta"
+                }
+            ],
+
+            // CAMPF-028 -> Campo autocompletado
+            "CAMPF-028": [{
+                    valor: "contiene",
+                    texto: "Contiene"
+                },
+                {
+                    valor: "igual",
+                    texto: "Igual"
+                }
+            ],
+
+            // Selector
+            "CAMPF-017": [{
+                    valor: "igual",
+                    texto: "Igual"
+                },
+                {
+                    valor: "multiple",
+                    texto: "Selección múltiple"
+                }
+            ],
+
+            // Checkbox
+            "CAMPF-015": [{
+                valor: "contiene",
+                texto: "Contiene"
+            }],
+
+            // Radio
+            "CAMPF-016": [{
+                valor: "igual",
+                texto: "Igual"
+            }],
+
+            // Fecha
+            "CAMPF-021": [{
+                    valor: "igual",
+                    texto: "Fecha exacta"
+                },
+
+                {
+                    valor: "rango",
+                    texto: "Desde / Hasta"
+                },
+                {
+                    valor: "hoy",
+                    texto: "Hoy"
+                },
+                {
+                    valor: "ayer",
+                    texto: "Ayer"
+                },
+                {
+                    valor: "7dias",
+                    texto: "Últimos 7 días"
+                },
+                {
+                    valor: "30dias",
+                    texto: "Últimos 30 días"
+                }
+            ],
+
+            // Hora
+            "CAMPF-022": [{
+                    valor: "igual",
+                    texto: "Hora exacta"
+                },
+                {
+                    valor: "desde",
+                    texto: "Desde"
+                },
+                {
+                    valor: "hasta",
+                    texto: "Hasta"
+                }
+            ],
+
+            "BOOLEAN": [{
+                    valor: "si",
+                    texto: "Sí"
+                },
+                {
+                    valor: "no",
+                    texto: "No"
+                }
+            ]
+
+        };
+        const camposGlobal = @json($campos);
+
+        function agregarFiltro_(data = null) {
+
+            let opcionesCampos = '';
+
+            camposGlobal.forEach(campo => {
+
+                if (campo.es_relacion)
+                    return;
+
+                opcionesCampos += `
+        <option
+            value="${campo.id}"
+            data-tipo="${campo.tipo}">
+
             ${campo.etiqueta}
+
         </option>
     `;
-        });
 
-        document
-            .getElementById('orderField')
-            .innerHTML = html;
-    }
+            });
 
-    function aplicarConfiguracion() {
+            document
+                .getElementById('contenedorFiltros')
+                .insertAdjacentHTML(
+                    'beforeend',
+                    `
+        <div class="row mb-3 filtro">
 
-        if (!consultaConfig) {
-            return;
-        }
+            <div class="col-md-5">
 
-        document.querySelectorAll('.campo-select').forEach(item => {
+                <select class="form-select campoFiltro">
 
-            item.checked = false;
+                    ${opcionesCampos}
 
-        });
+                </select>
 
-        (consultaConfig.select || []).forEach(id => {
+            </div>
 
-            const checkbox =
-                document.querySelector(
-                    `.campo-select[value="${id}"]`
+            <div class="col-md-5">
+
+                <select class="form-select tipoFiltro">
+
+                </select>
+
+            </div>
+
+            <div class="col-md-2">
+
+                <button
+                    type="button"
+                    class="btn btn-danger removeFiltro">
+
+                    <i class="fas fa-trash"></i>
+
+                </button>
+
+            </div>
+
+        </div>
+        `
                 );
 
-            if (checkbox) {
+            const fila = document.querySelector('#contenedorFiltros .filtro:last-child');
 
-                checkbox.checked = true;
+            cargarTiposFiltro(fila);
+
+            if (data) {
+
+                fila.querySelector('.campoFiltro').value = data.campo;
+
+                cargarTiposFiltro(fila);
+
+                fila.querySelector('.tipoFiltro').value = data.tipo;
+
+            }
+
+        }
+        document.addEventListener('change', function(e) {
+
+            if (e.target.classList.contains('campoFiltro')) {
+
+                cargarTiposFiltro(
+                    e.target.closest('.filtro')
+                );
 
             }
 
         });
 
-        if (consultaConfig.orderBy && consultaConfig.orderBy.length) {
+        function cargarTiposFiltro(fila) {
 
-            document.getElementById('orderField').value = consultaConfig.orderBy[0].campo;
+            const selectCampo = fila.querySelector('.campoFiltro');
 
-            document.getElementById('orderDirection').value = consultaConfig.orderBy[0].direccion;
+            const tipo = selectCampo.options[
+                selectCampo.selectedIndex
+            ].dataset.tipo;
+
+            let html = '';
+
+            (filtrosDisponibles[tipo] || []).forEach(item => {
+
+                html += `
+        <option value="${item.valor}">
+            ${item.texto}
+        </option>
+    `;
+
+            });
+
+            fila.querySelector('.tipoFiltro').innerHTML = html;
 
         }
 
-        const filtrosContainer = document.getElementById('filtros-container');
+        document
+            .getElementById('btnAgregarFiltro')
+            .addEventListener('click', () => {
 
-        filtrosContainer.innerHTML = '';
+                agregarFiltro_();
+
+            });
+        document.addEventListener('click', function(e) {
+
+            if (e.target.closest('.removeFiltro')) {
+
+                e.target
+                    .closest('.filtro')
+                    .remove();
+
+            }
+
+        });
+
+        const filtros = [];
+
+        document
+            .querySelectorAll('#contenedorFiltros .filtro')
+            .forEach(fila => {
+
+                filtros.push({
+
+                    campo: fila.querySelector('.campoFiltro').value,
+
+                    tipo: fila.querySelector('.tipoFiltro').value
+
+                });
+
+            });
+    </script>
+
+
+
+    <script>
+        let consultaConfig = @json($configuracion);
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            const formulario =
+                document.getElementById('formulario');
+
+            if (formulario.value) {
+
+                formulario.dispatchEvent(
+                    new Event('change')
+                );
+
+            }
+
+        });
+
+
+        const contenedor = document.getElementById('contenedorFiltros');
+
+        contenedor.innerHTML = '';
 
         (consultaConfig.where || []).forEach(filtro => {
 
-            agregarFiltro(filtro);
+            agregarFiltro_(filtro);
 
-        });
-
-    }
-
-    function agregarFiltro(data = null) {
-
-        let opciones = '';
-
-        camposGlobal.forEach(campo => {
-
-            if (campo.es_relacion) {
-                return;
-            }
-
-            opciones += `
-                <option value="${campo.id}">
-                    ${campo.etiqueta}
-                </option>
-            `;
         });
 
         document
-            .getElementById('filtros-container')
-            .insertAdjacentHTML(
-                'beforeend',
-                `
-                <div class="row mb-2 filtro">
+            .getElementById('formConsulta')
+            .addEventListener('submit', function() {
 
-                    <div class="col-md-4">
+                const select = [];
 
-                        <select
-                            class="form-select campo"
-                        >
+                document
+                    .querySelectorAll(
+                        '.campo-select:checked'
+                    )
+                    .forEach(item => {
 
-                            ${opciones}
-
-                        </select>
-
-                    </div>
-
-                    <div class="col-md-3">
-
-                        <select
-                            class="form-select operador"
-                        >
-
-                            <option value="=">=</option>
-
-                            <option value="!=">!=</option>
-
-                            <option value=">">></option>
-
-                            <option value="<"><</option>
-
-                            <option value="like">
-                                Contiene
-                            </option>
-
-                        </select>
-
-                    </div>
-
-                    <div class="col-md-4">
-
-                        <input
-                            type="text"
-                            class="form-control valor"
-                        >
-
-                    </div>
-
-                    <div class="col-md-1">
-
-                        <button
-                            type="button"
-                            class="btn btn-danger btn-sm removeFiltro"
-                        >
-                            X
-                        </button>
-
-                    </div>
-
-                </div>
-                `
-            );
-
-        const fila =
-            document.querySelector(
-                '#filtros-container .filtro:last-child'
-            );
-
-        if (data) {
-
-            fila.querySelector('.campo').value =
-                data.campo;
-
-            fila.querySelector('.operador').value =
-                data.operador;
-
-            fila.querySelector('.valor').value =
-                data.valor;
-
-        }
-
-    }
-
-    document
-        .getElementById('addFiltro')
-        .addEventListener('click', () => {
-
-            agregarFiltro();
-
-        });
-
-    document.addEventListener('click', function(e) {
-
-        if (
-            e.target.classList.contains(
-                'removeFiltro'
-            )
-        ) {
-
-            e.target
-                .closest('.filtro')
-                .remove();
-
-        }
-
-    });
-
-    document
-        .getElementById('formConsulta')
-        .addEventListener('submit', function() {
-
-            const select = [];
-
-            document
-                .querySelectorAll(
-                    '.campo-select:checked'
-                )
-                .forEach(item => {
-
-                    select.push(
-                        item.value
-                    );
-
-                });
-
-            const where = [];
-
-            document
-                .querySelectorAll('.filtro')
-                .forEach(item => {
-
-                    where.push({
-
-                        campo: item.querySelector('.campo').value,
-
-                        operador: item.querySelector('.operador').value,
-
-                        valor: item.querySelector('.valor').value
+                        select.push(
+                            item.value
+                        );
 
                     });
 
-                });
 
-            const config = {
+                const where = [];
 
-                select,
+                document
+                    .querySelectorAll('.filtro')
+                    .forEach(fila => {
 
-                where,
+                        const campoSelect = fila.querySelector('.campoFiltro');
 
-                orderBy: [
+                        const opcionSeleccionada =
+                            campoSelect.options[campoSelect.selectedIndex];
 
-                    {
-                        campo: document
-                            .getElementById('orderField')
-                            .value,
 
-                        direccion: document
-                            .getElementById('orderDirection')
-                            .value
-                    }
+                        where.push({
 
-                ]
+                            campo: campoSelect.value,
 
-            };
+                            tipo_campo: opcionSeleccionada.dataset.tipo,
 
-            document
-                .getElementById('configuracion')
-                .value =
-                JSON.stringify(config);
+                            tipo: fila.querySelector('.tipoFiltro').value
 
-        });
-</script>
+                        });
+
+                    });
+
+                const config = {
+
+                    select,
+
+                    where,
+
+                    orderBy: [
+
+                        {
+                            campo: document
+                                .getElementById('orderField')
+                                .value,
+
+                            direccion: document
+                                .getElementById('orderDirection')
+                                .value
+                        }
+
+                    ]
+
+                };
+
+                document
+                    .getElementById('configuracion')
+                    .value =
+                    JSON.stringify(config);
+
+            });
+    </script>

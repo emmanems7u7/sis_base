@@ -1145,12 +1145,12 @@
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 </button>
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 ${val > 1 ? `
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        <button class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            style="width:22px; height:22px;"
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            onclick="cambiarValor(${index}, '${key}', -1)">
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            -
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        </button>
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    ` : ''}
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <button class="btn btn-sm btn-outline-danger p-0 d-flex align-items-center justify-content-center"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        style="width:22px; height:22px;"
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        onclick="cambiarValor(${index}, '${key}', -1)">
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                        -
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    </button>
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                ` : ''}
 
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             </div>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         `;
@@ -1670,47 +1670,59 @@
             formData = ObtenerInfo(registro);
 
             const formId = @json($formulario->id);
+            @if ($edit)
+                fetch(`/formularios/${formId}/eliminar-registro`, {
+                        method: 'POST',
+                        body: formData,
+                    })
+                    .then(async response => {
 
-            fetch(`/formularios/${formId}/eliminar-registro`, {
-                    method: 'POST',
-                    body: formData,
-                })
-                .then(async response => {
-
-                    if (!response.ok) {
-                        const err = await response.json();
-                        throw err;
-                    }
-
-                    return response.json();
-                })
-                .then(data => {
-                    if (data.success) {
-
-                        registros.splice(index, 1);
-
-                        const thead = document.getElementById('thead-dinamico');
-
-                        if (registros.length === 0 && thead) {
-                            thead.innerHTML = `<th>#</th><th>Acciones</th>`;
+                        if (!response.ok) {
+                            const err = await response.json();
+                            throw err;
                         }
 
-                        ejecutarFormulas(registros, FORMULAS, index);
-                        render_informacion();
-                    } else {
+                        return response.json();
+                    })
+                    .then(data => {
+                        if (data.success) {
 
-                        if (data.message) {
-                            mostrarAlerta('error', data.message);
+                            registros.splice(index, 1);
 
+                            const thead = document.getElementById('thead-dinamico');
+
+                            if (registros.length === 0 && thead) {
+                                thead.innerHTML = `<th>#</th><th>Acciones</th>`;
+                            }
+
+                            ejecutarFormulas(registros, FORMULAS, index);
+                            render_informacion();
+                        } else {
+
+                            if (data.message) {
+                                mostrarAlerta('error', data.message);
+
+                            }
                         }
-                    }
 
-                })
-                .catch((error) => {
-                    console.error(error);
+                    })
+                    .catch((error) => {
+                        console.error(error);
 
 
-                });
+                    });
+            @else
+                registros.splice(index, 1);
+
+                const thead = document.getElementById('thead-dinamico');
+
+                if (registros.length === 0 && thead) {
+                    thead.innerHTML = `<th>#</th><th>Acciones</th>`;
+                }
+
+                ejecutarFormulas(registros, FORMULAS, index);
+                render_informacion();
+            @endif
 
         }
 

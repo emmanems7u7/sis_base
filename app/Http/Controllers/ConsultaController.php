@@ -7,61 +7,75 @@ use App\Models\CamposForm;
 use App\Models\Consulta;
 use App\Models\Formulario;
 use App\Models\RespuestasForm;
+use App\Reportes\SelectBuilder;
 use Illuminate\Http\Request;
+use PSpell\Config;
+use App\Interfaces\CamposFormInterface;
+use App\Reportes\FilterBuilder;
+use App\Reportes\RutaCompiler;
+use App\Reportes\JoinBuilder;
+use App\Reportes\QueryContext;
+use App\Reportes\QueryPlan;
 
 class ConsultaController extends Controller
 {
 
     protected $formularioRepository;
-    public function __construct(FormularioInterface $formularioRepository)
+    protected $CamposFormRepository;
+
+    public function __construct(FormularioInterface $formularioRepository, CamposFormInterface $CamposFormRepository)
     {
         $this->formularioRepository = $formularioRepository;
+        $this->CamposFormRepository = $CamposFormRepository;
+
     }
 
-    public function index()
+    public function index(Formulario $formulario)
     {
 
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
+            ['name' => 'Formularios', 'url' => route('formularios.index')],
             ['name' => 'Motor de consultas', 'url' => ''],
         ];
-        $consultas = Consulta::latest()->get();
 
-        return view(
-            'consultas.index',
-            compact('consultas', 'breadcrumb')
-        );
+        $consultas = Consulta::where('formulario_id', $formulario->id)
+            ->latest()
+            ->get();
+
+        return view('consultas.index', compact('consultas', 'breadcrumb', 'formulario'));
     }
 
-    public function create()
+    public function create(Formulario $formulario)
     {
 
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
-            ['name' => 'Motor de consultas', 'url' => route('consultas.index')],
+            ['name' => 'Motor de consultas', 'url' => route('consultas.index', $formulario)],
             ['name' => 'Crear Consulta', 'url' => ''],
         ];
-        $formularios = Formulario::all();
 
-        return view(
-            'consultas.create',
-            compact('formularios', 'breadcrumb')
-        );
+
+
+        $campos = $this->obtenerCamposRelacionados($formulario);
+
+
+        return view('consultas.create', compact('formulario', 'breadcrumb', 'campos'));
     }
 
-    public function store(Request $request)
+    public function store(Request $request, Formulario $formulario)
     {
+
         Consulta::create([
             'nombre' => $request->nombre,
-            'formulario_id' => $request->formulario_id,
+            'formulario_id' => $formulario->id,
             'configuracion' => json_decode(
                 $request->configuracion,
                 true
             )
         ]);
 
-        return redirect()
-            ->route('consultas.index');
+        return redirect()->route('consultas.index', $formulario);
     }
     public function edit(Consulta $consulta)
     {
@@ -98,29 +112,174 @@ class ConsultaController extends Controller
             ->route('consultas.index');
     }
 
-    public function ejecutar(Consulta $consulta)
+    public function destroy(Consulta $consulta)
     {
+
+        $consulta->delete();
+
+        return redirect()->back()->with('status', 'Consulta eliminada correctamente.');
+    }
+    public function show(Consulta $consulta)
+    {
+
+
+
+
+
+
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
-            ['name' => 'Motor de consultas', 'url' => route('consultas.index')],
+            ['name' => 'Formularios', 'url' => route('formularios.index')],
+            ['name' => 'Reporte Formulario', 'url' => route('consultas.index', $consulta->formulario_id)],
             ['name' => 'Consulta', 'url' => ''],
         ];
 
-        $resultado = $this->execute($consulta);
+
+        $formulario = Formulario::find($consulta->formulario_id);
+
+
+        $filtros = $consulta->configuracion;
+
+
+        if (is_string($filtros)) {
+            $filtros = json_decode($filtros, true);
+        }
+
+
+
+        $campos = $this->obtenerCamposRelacionados($formulario);
+
+        $mapaCampos = collect($campos)->keyBy('id');
+
+
+        $where = [];
+
+        foreach ($filtros['where'] ?? [] as $filtro) {
+
+
+            $campoInfo = $mapaCampos->get($filtro['campo']);
+
+
+            if ($campoInfo) {
+
+                $filtro['etiqueta'] = $campoInfo['etiqueta'];
+                $filtro['tipo_campo'] = $campoInfo['tipo'];
+
+                $campoModel = CamposForm::find($campoInfo['campo_id']);
+
+                $filtro['opciones'] = [];
+
+
+                if ($campoModel) {
+
+
+                    if ($campoModel->categoria_id || $campoModel->form_ref_id) {
+
+                        $campoProcesado = $this->CamposFormRepository->CamposFormCat(collect([$campoModel]))->first();
+
+                        if ($campoProcesado) {
+
+                            $filtro['opciones'] = $campoProcesado->opciones_catalogo->values()->all();
+
+                        }
+
+                    }
+
+                }
+
+            }
+
+
+            $where[] = $filtro;
+
+        }
+
+
+        $filtros['where'] = $where;
+
+
+        unset($filtro);
+
+
+
+
+        return view('consultas.show', compact(
+            'consulta',
+            'breadcrumb',
+            'formulario',
+            'filtros',
+            'campos'
+        ));
+
+    }
+    public function ejecutar(
+        Request $request,
+        Consulta $consulta
+    ) {
         $config = $consulta->configuracion;
 
-        $columnas = $this->obtenerEtiquetasColumnas($config['select'] ?? []);
+
+        if (is_string($config)) {
+
+            $config = json_decode(
+                $config,
+                true
+            );
+
+        }
 
 
-        return view(
-            'consultas.resultado',
-            compact(
-                'columnas',
-                'consulta',
-                'resultado',
-                'breadcrumb'
-            )
+        /*
+        |--------------------------------------------------------------------------
+        | Agregar valores ingresados al where
+        |--------------------------------------------------------------------------
+        */
+
+        $filtrosRequest = $request->input('filtros', []);
+
+
+        foreach (($config['where'] ?? []) as $i => $where) {
+
+            $campo = $where['campo'];
+
+            if (array_key_exists($campo, $filtrosRequest)) {
+                $config['where'][$i]['valor'] = $filtrosRequest[$campo];
+            }
+        }
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ejecutar consulta
+        |--------------------------------------------------------------------------
+        */
+
+        $resultado = $this->execute(
+            $consulta,
+            $config
         );
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Obtener columnas
+        |--------------------------------------------------------------------------
+        */
+
+        $columnas =
+            $this->obtenerEtiquetasColumnas(
+                $config['select'] ?? []
+            );
+
+
+        return response()->json([
+
+            'columnas' => $columnas,
+
+            'datos' => $resultado
+
+        ]);
+
     }
     protected function obtenerEtiquetasColumnas(array $ids)
     {
@@ -135,37 +294,112 @@ class ConsultaController extends Controller
             ];
         });
     }
-    public function execute($consulta)
-    {
+    public function execute(
+        $consulta,
+        array $config
+    ) {
+
         $formulario = $consulta->formulario;
-        $config = $consulta->configuracion;
 
-        $query = $this->buildQuery($formulario, $config);
+        /*
+        |--------------------------------------------------------------------------
+        | Construir consulta SQL (solo filtros del formulario principal)
+        |--------------------------------------------------------------------------
+        */
 
-        $camposNecesarios = $this->obtenerCamposNecesarios($config);
+        $query = $this->buildQuery(
+            $formulario,
+            $config
+        );
+        dd($query);
+        /*
+        |--------------------------------------------------------------------------
+        | Obtener respuestas
+        |--------------------------------------------------------------------------
+        */
 
+        $camposNecesarios = $this->obtenerCamposNecesarios(
+            $config
+        );
 
+        $respuestas = $query
+            ->with([
+                'camposRespuestas' => function ($q) use ($camposNecesarios) {
 
-        $respuestas = $query->with([
-            'camposRespuestas' => function ($q) use ($camposNecesarios) {
-                $q->whereIn('cf_id', $camposNecesarios);
-            },
-            'camposRespuestas.campo'
-        ])->get();
+                    $q->whereIn(
+                        'cf_id',
+                        $camposNecesarios
+                    );
 
+                },
 
+                'camposRespuestas.campo'
+            ])
+            ->get();
 
-        $rows = $this->transform($respuestas);
+        /*
+        |--------------------------------------------------------------------------
+        | Aplicar filtros relacionados
+        |--------------------------------------------------------------------------
+        */
 
+        $respuestas = $respuestas->filter(function ($respuesta) use ($config) {
 
+            foreach ($config['where'] ?? [] as $filter) {
 
-        $rows = $this->applySelect(
+                if (
+                    !isset($filter['valor']) ||
+                    $filter['valor'] === '' ||
+                    $filter['valor'] === null
+                ) {
+                    continue;
+                }
+
+                /*
+                |--------------------------------------------------------------------------
+                | Si es un campo del formulario principal
+                |--------------------------------------------------------------------------
+                */
+
+                if (!str_contains($filter['campo'], '.')) {
+                    continue;
+                }
+
+                if (
+                    !$this->cumpleFiltroRelacionado(
+                        $respuesta,
+                        $filter
+                    )
+                ) {
+                    return false;
+                }
+            }
+
+            return true;
+
+        })->values();
+
+        /*
+        |--------------------------------------------------------------------------
+        | Transformar filas
+        |--------------------------------------------------------------------------
+        */
+
+        $rows = $this->transform(
+            $respuestas
+        );
+
+        /*
+        |--------------------------------------------------------------------------
+        | Select
+        |--------------------------------------------------------------------------
+        */
+
+        return $this->applySelect(
             $rows,
             $config['select'] ?? []
         );
 
-
-        return $rows->values();
     }
 
     protected function obtenerCamposNecesarios(array $config)
@@ -198,84 +432,385 @@ class ConsultaController extends Controller
             ->values()
             ->all();
     }
+    protected function buildQuery(
+        $formulario,
+        array $config
+    ) {
 
-    protected function buildQuery($formulario, array $config)
-    {
-        $query = $formulario->respuestas();
+        $query = $formulario
+            ->respuestas()
+            ->getQuery();
 
-        // WHERE
+
+        $context = new QueryContext();
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Crear plan de joins
+        |--------------------------------------------------------------------------
+        */
+
+        $plan = new QueryPlan();
+
+
+        $compiler = new RutaCompiler();
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Relaciones de filtros
+        |--------------------------------------------------------------------------
+        */
+
         foreach ($config['where'] ?? [] as $filter) {
 
-            $campoId = $filter['campo'];
-            $operador = $filter['operador'];
-            $valor = $filter['valor'];
 
-            $query->whereHas('camposRespuestas', function ($q) use ($campoId, $operador, $valor) {
-
-                $q->where('cf_id', $campoId);
-
-                match ($operador) {
-                    '=' => $q->where('valor', '=', $valor),
-                    '!=' => $q->where('valor', '!=', $valor),
-                    '>' => $q->where('valor', '>', $valor),
-                    '>=' => $q->where('valor', '>=', $valor),
-                    '<' => $q->where('valor', '<', $valor),
-                    '<=' => $q->where('valor', '<=', $valor),
-                    'like' => $q->where('valor', 'like', "%{$valor}%"),
-                    'not like' => $q->where('valor', 'not like', "%{$valor}%"),
-                    'starts_with' => $q->where('valor', 'like', "{$valor}%"),
-                    'ends_with' => $q->where('valor', 'like', "%{$valor}"),
-                    'is_null' => $q->whereNull('valor'),
-                    'is_not_null' => $q->whereNotNull('valor'),
-                    'empty' => $q->where(function ($sub) {
-                            $sub->whereNull('valor')
-                            ->orWhere('valor', '');
-                        }),
-                    'not_empty' => $q->where(function ($sub) {
-                            $sub->whereNotNull('valor')
-                            ->where('valor', '!=', '');
-                        }),
-                    default => null
-                };
-            });
-        }
-
-        // ORDER BY
-        $joins = [];
-
-        foreach ($config['orderBy'] ?? [] as $order) {
-
-            $campoId = $order['campo'];
-            $direccion = strtolower($order['direccion']);
-
-            $alias = 'ord_' . $campoId;
-
-            if (!isset($joins[$alias])) {
-
-                $query->leftJoin(
-                    'respuestas_campos as ' . $alias,
-                    function ($join) use ($alias, $campoId) {
-
-                        $join->on($alias . '.respuesta_id', '=', 'respuestas_forms.id')
-                            ->where($alias . '.cf_id', $campoId);
-                    }
-                );
-
-                $joins[$alias] = true;
+            if (
+                !isset($filter['valor']) ||
+                $filter['valor'] === '' ||
+                $filter['valor'] === null
+            ) {
+                continue;
             }
 
-            $query->orderBy(
-                $alias . '.valor',
-                $direccion
+
+            $ruta = $compiler->compile(
+                $formulario,
+                $filter['campo']
             );
+
+
+            $plan->agregar(
+                $ruta,
+                $filter
+            );
+
         }
 
-        $query->select('respuestas_forms.*');
 
-        return $query;
+
+        /*
+        |--------------------------------------------------------------------------
+        | Relaciones de campos seleccionados
+        |--------------------------------------------------------------------------
+        */
+
+        foreach ($config['select'] ?? [] as $campo) {
+
+
+            $ruta = $compiler->compile(
+                $formulario,
+                $campo
+            );
+
+
+            $plan->agregar(
+                $ruta,
+                []
+            );
+
+        }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Construir joins
+        |--------------------------------------------------------------------------
+        */
+
+
+        $joinBuilder = new JoinBuilder(
+            $query,
+            $context
+        );
+
+
+        $query = $joinBuilder->apply(
+            $plan
+        );
+
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Seleccionar columnas
+        |--------------------------------------------------------------------------
+        */
+
+
+        $selectBuilder = new SelectBuilder(
+            $query,
+            $context,
+            $formulario
+        );
+
+
+        $query = $selectBuilder->aplicar(
+            $config['select']
+        );
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Ejecutar consulta
+        |--------------------------------------------------------------------------
+        */
+
+
+        return $query->get();
+
     }
 
+    protected function cumpleFiltroRelacionado(
+        RespuestasForm $respuesta,
+        array $filter
+    ): bool {
 
+        /*
+        |--------------------------------------------------------------------------
+        | Construir el mismo row que usa applySelect()
+        |--------------------------------------------------------------------------
+        */
+
+        $row = [
+            '_id' => $respuesta->id
+        ];
+
+        foreach ($respuesta->camposRespuestas as $campo) {
+
+            $row[$campo->cf_id] = $campo->valor;
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | Resolver cualquier ruta:
+        | 15
+        | 15.11
+        | 16.3.26
+        | 16.3.4.7
+        |--------------------------------------------------------------------------
+        */
+
+        $valorActual = $this->resolverCampo(
+            $row,
+            $filter['campo']
+        );
+
+        return $this->compararValor(
+            $valorActual,
+            $filter
+        );
+
+    }
+
+    protected function compararValor(
+        $valorActual,
+        array $filter
+    ): bool {
+
+        $tipoCampo = $filter['tipo_campo'];
+
+        $tipoFiltro = $filter['tipo'];
+
+        $valor = $filter['valor'];
+
+        /*
+        |--------------------------------------------------------------------------
+        | Si no existe valor
+        |--------------------------------------------------------------------------
+        */
+
+        if ($valorActual === null) {
+
+            return in_array(
+                $tipoFiltro,
+                [
+                    'vacio'
+                ]
+            );
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | TEXTO
+        |--------------------------------------------------------------------------
+        */
+
+        if ($tipoCampo == 'CAMPF-012') {
+
+            return match ($tipoFiltro) {
+
+                'contiene'
+                => str_contains(
+                    mb_strtolower($valorActual),
+                    mb_strtolower($valor)
+                ),
+
+                'igual'
+                => $valorActual == $valor,
+
+                'empieza'
+                => str_starts_with(
+                    mb_strtolower($valorActual),
+                    mb_strtolower($valor)
+                ),
+
+                'termina'
+                => str_ends_with(
+                    mb_strtolower($valorActual),
+                    mb_strtolower($valor)
+                ),
+
+                'vacio'
+                => $valorActual === null || $valorActual === '',
+
+                'novacio'
+                => $valorActual !== null && $valorActual !== '',
+
+                default => true
+
+            };
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | NUMERO
+        |--------------------------------------------------------------------------
+        */
+
+        if ($tipoCampo == 'CAMPF-013') {
+
+            return match ($tipoFiltro) {
+
+                'igual'
+                => $valorActual == $valor,
+
+                'mayor'
+                => $valorActual > $valor,
+
+                'menor'
+                => $valorActual < $valor,
+
+                'rango'
+                =>
+
+                (
+                    (!isset($valor['desde']) || $valorActual >= $valor['desde'])
+                    &&
+                    (!isset($valor['hasta']) || $valorActual <= $valor['hasta'])
+                ),
+
+                default => true
+
+            };
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | SELECT / RADIO / CHECKBOX
+        |--------------------------------------------------------------------------
+        */
+
+        if (
+            in_array($tipoCampo, [
+
+                'CAMPF-015',
+
+                'CAMPF-016',
+
+                'CAMPF-017'
+
+            ])
+        ) {
+
+            return match ($tipoFiltro) {
+
+                'igual'
+                => $valorActual == $valor,
+
+                'contiene'
+                => str_contains(
+                    mb_strtolower($valorActual),
+                    mb_strtolower($valor)
+                ),
+
+                default => true
+
+            };
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | FECHA
+        |--------------------------------------------------------------------------
+        */
+
+        if ($tipoCampo == 'CAMPF-021') {
+
+            if ($tipoFiltro == 'rango') {
+
+                if (
+                    !empty($valor['desde']) &&
+                    $valorActual < $valor['desde']
+                ) {
+
+                    return false;
+
+                }
+
+                if (
+                    !empty($valor['hasta']) &&
+                    $valorActual > $valor['hasta']
+                ) {
+
+                    return false;
+
+                }
+
+                return true;
+
+            }
+
+        }
+
+        /*
+        |--------------------------------------------------------------------------
+        | HORA
+        |--------------------------------------------------------------------------
+        */
+
+        if ($tipoCampo == 'CAMPF-022') {
+
+            return match ($tipoFiltro) {
+
+                'igual'
+                => $valorActual == $valor,
+
+                'desde'
+                => $valorActual >= $valor,
+
+                'hasta'
+                => $valorActual <= $valor,
+
+                default => true
+
+            };
+
+        }
+
+        return true;
+
+    }
     protected function transform($respuestas)
     {
 
@@ -314,13 +849,6 @@ class ConsultaController extends Controller
 
             return $resultado;
         });
-    }
-    public function campos(Formulario $formulario)
-    {
-
-        $formulario->load('campos');
-
-        return response()->json($this->obtenerCamposRelacionados($formulario));
     }
 
     protected function obtenerCamposRelacionados(
