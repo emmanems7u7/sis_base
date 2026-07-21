@@ -1,15 +1,13 @@
 @php
     $checkedValues = (array) old($inputName, $valoresCampo);
 
-    $inputNameArray = $prefix
-        ? "{$prefix}[{$campo->nombre}][]"
-        : "{$campo->nombre}[]";
+    $inputNameArray = $prefix ? "{$prefix}[{$campo->id}][]" : "{$campo->id}[]";
 @endphp
 
 <div class="opciones-container {{ $errors->has($inputName) ? 'border border-danger p-2' : '' }}"
     data-campo-id="{{ $campo->id }}">
     <div class="row">
-        @foreach($campo->opciones_catalogo as $opcion)
+        @foreach ($campo->opciones_catalogo as $opcion)
             @php
                 $inputId = $prefix
                     ? "{$prefix}_{$campo->nombre}_{$opcion->catalogo_codigo}"
@@ -21,7 +19,8 @@
                     <input type="checkbox" data-etiqueta="{{ $etiqueta }}" data-tipo="{{ $campo->campo_nombre }}"
                         name="{{ $inputNameArray }}" value="{{ $opcion->catalogo_codigo }}"
                         class="form-check-input campo-formulario {{ $errors->has($inputName) ? 'is-invalid' : '' }}"
-                        id="{{ $inputId }}" {{ in_array($opcion->catalogo_codigo, $checkedValues) ? 'checked' : '' }}>
+                        id="{{ $inputId }}"
+                        {{ in_array($opcion->catalogo_codigo, $checkedValues) ? 'checked' : '' }}>
 
                     <label class="form-check-label" for="{{ $inputId }}">
                         {{ $opcion->catalogo_descripcion }}
@@ -31,7 +30,7 @@
         @endforeach
     </div>
 
-    @if($errors->has($inputName))
+    @if ($errors->has($inputName))
         <div class="invalid-feedback d-block">
             {{ $errors->first($inputName) }}
         </div>
