@@ -404,15 +404,16 @@ class FormularioController extends Controller
         }
         if ($asociado) {
 
-
-            $campoAsociado = collect($camposRespuestaPrincipal)
-                ->firstWhere('tipo', 'asociado');
+            //CAMPF-031 asociado
+            $campoAsociado = collect($camposRespuestaPrincipal)->firstWhere('tipo', 'CAMPF-031');
 
 
             $valorAsociado = $campoAsociado['valores'][0] ?? null;
 
-            $resp = RespuestasCampo::where('cf_id', $campoRefId)->where('valor', $valorAsociado)->first()->respuesta_id ?? null;
 
+
+
+            $resp = RespuestasCampo::where('cf_id', $campoRefId)->where('valor', $valorAsociado)->first()->respuesta_id ?? null;
 
 
             $respuesta = RespuestasForm::with(['camposRespuestas.campo'])
@@ -635,5 +636,25 @@ class FormularioController extends Controller
             'message' => 'Filtros actualizados correctamente.',
             'config' => $config
         ]);
+    }
+
+    public function formulariosRelacionados(Formulario $formulario)
+    {
+        $formularios = CamposForm::where('form_id', $formulario->id)
+            ->whereNotNull('form_ref_id')
+            ->with('formularioReferencia:id,nombre')
+            ->get()
+            ->pluck('formularioReferencia')
+            ->filter()
+            ->unique('id')
+            ->values()
+            ->map(function ($f) {
+                return [
+                    'id' => $f->id,
+                    'nombre' => $f->nombre
+                ];
+            });
+
+        return response()->json($formularios);
     }
 }

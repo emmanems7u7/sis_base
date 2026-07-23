@@ -573,6 +573,7 @@ function NotificacionLeida(event, notificacion_id) {
             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
             'Content-Type': 'application/json'
         },
+        showOverlay: false
     })
         .then(response => {
             if (!response.ok) {
@@ -589,4 +590,73 @@ function NotificacionLeida(event, notificacion_id) {
             console.error('Error al marcar la notificación como leída:', error);
 
         });
+}
+
+function MarcarNotificacionLeida(id, boton) {
+
+  fetch('/notification/' + id + '/markAsRead', {
+      showOverlay: false
+  })
+  .then(r => r.json())
+  .then(data => {
+
+      if (!data.success) {
+          return;
+      }
+
+      const item = document.getElementById('notification-' + id);
+
+      item.classList.add('fade-out');
+
+      setTimeout(() => {
+
+          item.remove();
+
+          actualizarContador();
+
+      }, 350);
+
+  });
+
+}
+
+function actualizarContador(){
+
+  const badge = document.getElementById('notificationCount');
+
+  if(!badge){
+      return;
+  }
+
+  let cantidad = parseInt(badge.innerText);
+
+  cantidad--;
+
+  if(cantidad<=0){
+
+      badge.remove();
+
+      document.getElementById('notificationFooter')?.remove();
+
+      document.getElementById('notificationList').innerHTML=
+      `<li class="list-group-item text-center">
+          No hay notificaciones nuevas
+      </li>`;
+
+      return;
+  }
+
+  badge.innerText=cantidad;
+
+}
+function MarcarTodasLeidas() {
+
+  fetch('/notification/markAllAsRead')
+      .then(r => r.json())
+      .then(() => {
+
+          location.reload();
+
+      });
+
 }

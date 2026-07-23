@@ -211,7 +211,6 @@ class RespuestasFormController extends Controller
                             DB::rollBack();
                             return back()->withErrors($validator)->withInput();
                         }
-
                         try {
 
                             $res = $this->RespuestasFormInterface->procesarFormularioMultipleDesdeArray(
@@ -566,11 +565,9 @@ class RespuestasFormController extends Controller
             // INICIO ACTUALIZAR MÚLTIPLES
             $registrosRaw = json_decode($request->registros_json, true) ?? [];
             $registros = $this->RespuestasFormInterface->normalizarRegistros($registrosRaw);
-
             if ($grupo && !empty($registros)) {
 
-                $respuestasMultiples = $grupo->respuestas
-                    ->groupBy('form_id');
+                $respuestasMultiples = $grupo->respuestas->groupBy('form_id');
 
                 foreach ($registros as $index => $registro) {
 
@@ -579,6 +576,7 @@ class RespuestasFormController extends Controller
                         ->map(fn($k) => explode('[', $k)[0])
                         ->unique();
 
+
                     foreach ($formulariosEnRegistro as $formPrefix) {
 
                         if (!is_string($formPrefix)) {
@@ -586,6 +584,7 @@ class RespuestasFormController extends Controller
                         }
 
                         $formId = (int) str_replace('form_', '', $formPrefix);
+
 
                         $formularioModelo = $formularios->firstWhere('id', $formId);
                         if (!$formularioModelo)
@@ -621,34 +620,75 @@ class RespuestasFormController extends Controller
 
                         $respuestaTarget = $respuestasMultiples[$formId][$index] ?? null;
 
+                        if ($respuestaTarget) {
 
-                        if (!$respuestaTarget)
-                            continue;
+                            // ==========================
+                            // UPDATE
+                            // ==========================
 
-                        $filasOriginales = $this->RespuestasCampoRepository->filaDesdeRespuesta($respuestaTarget, $campos);
+                            $filasOriginales = $this->RespuestasCampoRepository->filaDesdeRespuesta($respuestaTarget, $campos);
 
-                        foreach ($campos as $campo) {
+                            foreach ($campos as $campo) {
 
-                            $this->CamposFormRepository->actualizarCampo($campo, $respuestaTarget->id, $datosFormulario, $formId, $formPrefix);
+                                $this->CamposFormRepository->actualizarCampo(
+                                    $campo,
+                                    $respuestaTarget->id,
+                                    $datosFormulario,
+                                    $formId,
+                                    $formPrefix
+                                );
+
+                            }
+
+                            $filas = $this->RespuestasCampoRepository->filaDesdeArray($respuestaTarget, $datosFormulario, $campos);
+                            $errores = array_filter($this->FormLogicInterface->ValidarLogica($respuestaTarget, $filas, $evento), fn($msg) => !empty(trim($msg)));
+
+
+                            if (!empty($errores)) {
+
+                                DB::rollBack();
+                                throw new \Exception(implode('<br>', $errores));
+                            }
+
+
+                            $respuestasActualizadas[] = [
+                                'respuesta_id' => $respuestaTarget->id,
+                                'filas' => $filas,
+                                'filas_originales' => $filasOriginales,
+                                'form_id' => $formId
+                            ];
+
+                        } else {
+
+                            // ==========================
+                            // CREATE
+                            // ==========================
+                            $respuestasCreadas = [];
+
+                            try {
+
+                                $res = $this->RespuestasFormInterface->procesarFormularioMultipleDesdeArray(
+                                    $datosFormulario,
+                                    $formId,
+                                    $campos,
+                                    $formPrefix,
+                                    $grupo,
+                                    $evento
+                                );
+
+                                $respuestasCreadas = array_merge($respuestasCreadas, $res);
+
+                            } catch (\Exception $e) {
+                                DB::rollBack();
+                                return back()->withErrors($e->getMessage())->withInput();
+
+                            }
+
                         }
 
 
-                        $filas = $this->RespuestasCampoRepository->filaDesdeArray($respuestaTarget, $datosFormulario, $campos);
-                        $errores = array_filter($this->FormLogicInterface->ValidarLogica($respuestaTarget, $filas, $evento), fn($msg) => !empty(trim($msg)));
 
 
-                        if (!empty($errores)) {
-                            DB::rollBack();
-                            throw new \Exception(implode('<br>', $errores));
-                        }
-
-
-                        $respuestasActualizadas[] = [
-                            'respuesta_id' => $respuestaTarget->id,
-                            'filas' => $filas,
-                            'filas_originales' => $filasOriginales,
-                            'form_id' => $formId
-                        ];
                     }
                 }
 
@@ -781,22 +821,21 @@ class RespuestasFormController extends Controller
         DB::beginTransaction();
 
         try {
-
-            $resultado = $this->FormLogicInterface->LogicaEliminarRespuesta($respuesta);
-
+            $evento = 'on_delete';
+            $resultado = $this->FormLogicInterface->LogicaEliminarRespuesta($evento, $respuesta);
             if (!$resultado['success']) {
                 DB::rollBack();
-                return redirect()->back()->with('error', implode('<br>', $resultado['errores']));
+                return redirect()->back()->with('error', implode('<br>', $resultado['errores']))->with('formulario_id', $respuesta->form_id);
             }
             DB::commit();
 
-            return redirect()->back()->with('status', $resultado['mensaje']);
+            return redirect()->back()->with('status', $resultado['mensaje'])->with('formulario_id', $respuesta->form_id);
 
         } catch (\Throwable $e) {
 
             DB::rollBack();
 
-            return redirect()->back()->with('error', 'Error al eliminar la respuesta.');
+            return redirect()->back()->with('error', 'Error al eliminar la respuesta.')->with('formulario_id', $respuesta->form_id);
         }
     }
 
@@ -830,25 +869,23 @@ class RespuestasFormController extends Controller
 
             $evento = 'on_delete_group';
 
-            $campos = $this->CamposFormRepository->GetCamposByForm($respuesta->form_id);
+            $resultado = $this->FormLogicInterface->LogicaEliminarRespuesta($evento, $respuesta);
 
-            $filas = $this->RespuestasCampoRepository->filaDesdeRespuesta($respuesta, $campos);
+            if (!$resultado['success']) {
+                DB::rollBack();
 
-            $agrupadas = collect([
-                $respuesta->form_id => collect([
-                    [
-                        'respuesta_id' => $respuesta->id,
-                        'filas' => $filas,
-                        'filas_originales' => []
-                    ]
-                ])
-            ]);
+                return response()->json([
+                    'success' => false,
+                    'message' => implode('<br>', $resultado['errores'])
+                ]);
+            }
 
-            $this->FormLogicInterface->EjecutarAcciones($agrupadas, $evento);
+            DB::commit();
+
 
             return response()->json([
                 'success' => true,
-                'message' => configForm($formId, 'messages.success_delete')
+                'message' => $resultado['mensaje']
             ]);
 
         } else {

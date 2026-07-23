@@ -287,10 +287,7 @@ class CamposFormRepository implements CamposFormInterface
             return;
         }
 
-        if (
-            in_array($campo->tipo, ['CAMPF-018', 'CAMPF-019', 'CAMPF-023'])
-            && $valor instanceof \Illuminate\Http\UploadedFile
-        ) {
+        if (in_array($campo->tipo, ['CAMPF-018', 'CAMPF-019', 'CAMPF-023']) && $valor instanceof \Illuminate\Http\UploadedFile) {
 
             $filename = uniqid($campo->tipo . '_') . '.' . $valor->getClientOriginalExtension();
 
@@ -307,31 +304,23 @@ class CamposFormRepository implements CamposFormInterface
             $valor->move($path, $filename);
 
             // actualizar valor archivo
-            $this->actualizarValorSimple(
-                $campo,
-                $respuesta_id,
-                $filename
-            );
+            $this->actualizarValorSimple($campo, $respuesta_id, $filename);
 
             return;
         }
 
 
-        $this->actualizarValorSimple(
-            $campo,
-            $respuesta_id,
-            $valor
-        );
+        $this->actualizarValorSimple($campo, $respuesta_id, $valor);
     }
 
     public function actualizarValorSimple($campo, $respuestaId, $valor)
     {
+
         if (is_array($valor)) {
 
             $registros = RespuestasCampo::where('respuesta_id', $respuestaId)
                 ->where('cf_id', $campo->id)
                 ->get();
-
             foreach ($valor as $index => $v) {
 
                 // actualizar existente

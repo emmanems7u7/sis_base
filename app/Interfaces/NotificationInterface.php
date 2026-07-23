@@ -2,9 +2,10 @@
 namespace App\Interfaces;
 
 interface NotificationInterface
- {
-    public function markAsRead ($notificationId);
- 
-   
+{
+    public function markAsRead($notificationId);
+    public function markAllAsRead();
+
+
 
 }

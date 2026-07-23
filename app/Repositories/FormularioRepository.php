@@ -501,7 +501,7 @@ class FormularioRepository implements FormularioInterface
             foreach ($valores as $v) {
                 $valorResuelto = $this->obtenerValorReal($campo, $v);
 
-                $tipoCampo = strtolower($campo->campo_nombre);
+                $tipoCampo = $campo->tipo;
                 switch ($campo->tipo) {
                     case 'CAMPF-018': // IMAGEN
                         $displayValores[] = asset("archivos/formulario_{$formulario->id}/imagenes/{$valorResuelto}");

@@ -209,15 +209,23 @@ class ModuloController extends Controller
 
 
         if ($request->filled('id')) {
-            session(['formulario_id' => $request->id]);
+            $formularioActivo = $request->id;
+        } elseif (session()->has('formulario_id')) {
+            $formularioActivo = session('formulario_id');
         } else {
-            $formularioId = $modulo->formularios->first()?->id;
-            session(['formulario_id' => $formularioId]);
-
+            $formularioActivo = $modulo->formularios->first()?->id;
         }
+
         return view(
             'modulosDinamicos.index',
-            compact('formulariosConRespuestas', 'modulo', 'breadcrumb', 'formularios_asociados', 'modo')
+            compact(
+                'formulariosConRespuestas',
+                'modulo',
+                'breadcrumb',
+                'formularios_asociados',
+                'modo',
+                'formularioActivo'
+            )
         );
     }
 

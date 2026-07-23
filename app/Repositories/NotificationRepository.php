@@ -6,7 +6,7 @@ use App\Interfaces\NotificationInterface;
 
 class NotificationRepository implements NotificationInterface
 {
-    public function markAsRead ($notificationId)
+    public function markAsRead($notificationId)
     {
         $user = Auth::user();
 
@@ -17,6 +17,9 @@ class NotificationRepository implements NotificationInterface
         }
 
     }
-    
-   
+
+    public function markAllAsRead()
+    {
+        auth()->user()->unreadNotifications->markAsRead();
+    }
 }

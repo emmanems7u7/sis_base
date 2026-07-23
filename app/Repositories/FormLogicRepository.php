@@ -337,7 +337,8 @@ class FormLogicRepository implements FormLogicInterface
         $reglas,
         $respuestas,
         $evento,
-        $usuario
+        $usuario,
+        $esCascada = false
     ): array {
 
         $esMultiple = $respuestas instanceof \Illuminate\Support\Collection;
@@ -363,12 +364,13 @@ class FormLogicRepository implements FormLogicInterface
 
         foreach ($reglas as $regla) {
             foreach ($regla->actions as $action) {
-
+                //if ($action->id == 64) { //////SOLO PARA VALIDAR UNA ACCION/////////////////
                 $resultadoAccion = $this->ejecutarAccion(
                     $respuestas,
                     $action,
                     $usuario,
-                    $form->config['registro_multiple'] ?? false
+                    $form->config['registro_multiple'] ?? false,
+                    $esCascada
                 );
 
 
@@ -382,7 +384,7 @@ class FormLogicRepository implements FormLogicInterface
                         'errores' => $resultadoAccion['errores'],
                     ];
                 }
-
+                //}
             }
         }
         if ($resultados['ok']) {
@@ -416,11 +418,17 @@ class FormLogicRepository implements FormLogicInterface
 
         foreach ($reglas as $regla) {
             foreach ($regla->actions as $action) {
+
+
+
+
                 $msg = $this->validarAccion($respuesta, $filasSeleccionadas, $action);
 
                 if (!empty($msg)) {
                     $resultado[] = trim($msg);
                 }
+
+
             }
         }
 
@@ -478,7 +486,14 @@ class FormLogicRepository implements FormLogicInterface
 
             $valorEvaluar = $this->resolverValorEvaluar($condicion['campo_condicion_origen'], $filasSeleccionadas, $parametros['form_origen_id']);
 
+            if (isset($condicion['tipo_condicion']) && $condicion['tipo_condicion'] === 'campo_relacionado' && $valorEvaluar['valor'] === null) {
+                //CASO PARA CAMPO RELACIONADO, PARA DONDE SE PIDE VALIDAR CON EL VALOR RELACIONADO DEL FORMULARIO PRINCIPAL
+                $valorEvaluar = $this->resolverValorEvaluar($condicion['campo_condicion_origen'], $filasSeleccionadas, $condicion['formulario_relacion_origen']);
+
+            }
             $resultado = $this->resolverValorEvaluar($condicion['campo_condicion_destino'], $filasSeleccionadas, $parametros['form_ref_id'], $valorEvaluar['valor']);
+
+
             if ($valorEvaluar['valor'] === null || $valorEvaluar['valor'] === '') {
 
                 $mensaje = "El valor origen está vacío";
@@ -499,6 +514,8 @@ class FormLogicRepository implements FormLogicInterface
 
                 break;
             }
+
+
         }
 
 
@@ -564,7 +581,6 @@ class FormLogicRepository implements FormLogicInterface
 
     public function validarAccion(RespuestasForm $respuestaOrigen, $filasSeleccionadas, $action): string
     {
-
         $parametros = $action->parametros ?? [];
 
         $formDestino = $action->formularioDestino;
@@ -683,6 +699,7 @@ class FormLogicRepository implements FormLogicInterface
                 }
 
                 $mensaje = $this->ValidarOtrasCondiciones($otrasCondiciones, $filasSeleccionadas, $parametros, $respuestaOrigen, $valor_principal);
+
                 if ($mensaje != '') {
                     break;
                 }
@@ -894,7 +911,7 @@ class FormLogicRepository implements FormLogicInterface
                 return false;
         }
     }
-    public function ejecutarAccion($respuestas, $action, $usuario, $esMultiple)
+    public function ejecutarAccion($respuestas, $action, $usuario, $esMultiple, $esCascada = false): array
     {
         try {
 
@@ -910,8 +927,6 @@ class FormLogicRepository implements FormLogicInterface
                 'mensaje' => '',
                 'errores' => [],
             ];
-
-            Log::info($tipoAccion);
 
             switch ($tipoAccion) {
 
@@ -933,6 +948,7 @@ class FormLogicRepository implements FormLogicInterface
                             $otrasCondiciones[] = $condicion;
                         }
                     }
+
                     $resultado = $this->EjecutarModificarCampo($respuestas, $esMultiple, $parametros, $action, $condicionesIgual);
 
                     if (!$resultado['success']) {
@@ -967,46 +983,69 @@ class FormLogicRepository implements FormLogicInterface
 
                 case 'TAC-006':
 
-                    $respuesta = $respuestas->first();
+                    if (!$esCascada) {
 
 
-                    $filasSeleccionadas = $respuesta->filasSeleccionadas;
+                        $respuesta = $respuestas->first();
 
-                    $condicionesIgual = [];
-                    foreach ($parametros['condiciones'] ?? [] as $condicion) {
-                        if (($condicion['operador'] ?? '=') === '=') {
-                            if (!isset($condicion['tipo_condicion']) || $condicion['tipo_condicion'] !== 'form_valor') {
 
-                                $condicionesIgual[] = $condicion;
+                        $filasSeleccionadas = $respuesta->filasSeleccionadas;
+
+                        $condicionesIgual = [];
+                        foreach ($parametros['condiciones'] ?? [] as $condicion) {
+                            if (($condicion['operador'] ?? '=') === '=') {
+                                if (!isset($condicion['tipo_condicion']) || $condicion['tipo_condicion'] !== 'form_valor') {
+
+                                    $condicionesIgual[] = $condicion;
+                                } else {
+                                    $otrasCondiciones[] = $condicion;
+
+                                }
                             } else {
                                 $otrasCondiciones[] = $condicion;
-
                             }
+                        }
+
+
+                        $respuestaIds = $this->GetRespuestaIdsByCondicion($condicionesIgual, $filasSeleccionadas, $parametros);
+
+                        $respuestaIds = array_values($respuestaIds);
+
+
+
+
+                        if (!collect($respuestaIds)->filter()->isEmpty()) {
+
+                            $respuestas = RespuestasForm::whereIn('id', $respuestaIds)->get();
+
+                            $errores = [];
+
+                            foreach ($respuestas as $respuesta) {
+
+                                $resultado = $this->LogicaEliminarRespuesta('on_delete', $respuesta);
+
+                                if (!$resultado['success']) {
+                                    $errores = array_merge($errores, $resultado['errores'] ?? []);
+                                }
+                            }
+
+                            $errores = array_values(array_unique($errores));
+
+                            $resultado = [
+                                'audit' => [
+                                    'mensaje' => implode(' | ', $errores),
+                                    'detalle' => [],
+                                ]
+                            ];
                         } else {
-                            $otrasCondiciones[] = $condicion;
+                            $resultado = [
+                                'audit' => [
+                                    'mensaje' => 'No existen respuestas para ejecutar la acción de eliminar registros',
+                                    'detalle' => [],
+                                ]
+                            ];
                         }
                     }
-
-
-                    $resultados = [];
-
-                    $respuestaIds = $this->GetRespuestaIdsByCondicion($condicionesIgual, $filasSeleccionadas, $parametros);
-
-                    $respuestaIds = array_values($respuestaIds);
-
-
-
-                    if (!collect($respuestaIds)->filter()->isEmpty()) {
-
-                        $respuestas = RespuestasForm::whereIn('id', $respuestaIds)->get();
-
-                        foreach ($respuestas as $respuesta) {
-                            $this->LogicaEliminarRespuesta($respuesta);
-
-                        }
-
-                    }
-
                     break;
             }
 
@@ -1045,14 +1084,78 @@ class FormLogicRepository implements FormLogicInterface
             ];
         }
     }
+    public function esRegistroPadreDe(
+        RespuestasForm $respuestaActual,
+        RespuestasForm $respuestaObjetivo
+    ) {
+        $asociaciones = FormularioAsociacion::all();
+
+        foreach ($asociaciones as $asociacion) {
+
+            foreach ($asociacion->config ?? [] as $regla) {
+
+                if (
+                    empty($regla['relacion_multiple']) ||
+                    ($regla['modo'] ?? null) !== 'asignacion'
+                ) {
+                    continue;
+                }
+
+
+                $campoRelacion = collect($regla['formula'] ?? [])
+                    ->first(
+                        fn($item) =>
+                        ($item['tipo'] ?? null) === 'campo'
+                    );
+
+
+                if (!$campoRelacion) {
+                    continue;
+                }
+
+
+                $formPadre = (int) $campoRelacion['form'];
+                $campoPadre = (int) $campoRelacion['campo_id'];
+
+                $formHijo = (int) $regla['destino']['form'];
+                $campoHijo = (int) $regla['destino']['campo_id'];
+
+
+                // La relación es:
+                // padre -> hijo
+
+                if (
+                    $respuestaActual->form_id == $formHijo &&
+                    $respuestaObjetivo->form_id == $formPadre
+                ) {
+
+                    $valorPadre = $respuestaObjetivo
+                        ->camposRespuestas
+                        ->firstWhere('cf_id', $campoPadre)
+                            ?->valor;
+
+
+                    $valorHijo = $respuestaActual
+                        ->camposRespuestas
+                        ->firstWhere('cf_id', $campoHijo)
+                            ?->valor;
+
+
+                    if ($valorPadre == $valorHijo) {
+                        return true;
+                    }
+                }
+            }
+        }
+
+
+        return false;
+    }
     private function GetRespuestaIdsByCondicion($condicionesIgual, $filasSeleccionadas, $parametros)
     {
         foreach ($condicionesIgual as $condicion) {
 
-            if (
-                isset($condicion['tipo_condicion']) &&
-                $condicion['tipo_condicion'] === 'form_valor'
-            ) {
+            if (isset($condicion['tipo_condicion']) && $condicion['tipo_condicion'] === 'form_valor') {
                 continue;
             }
 
@@ -1062,13 +1165,18 @@ class FormLogicRepository implements FormLogicInterface
                 $parametros['form_origen_id']
             );
 
+            if (isset($condicion['tipo_condicion']) && $condicion['tipo_condicion'] === 'campo_relacionado' && $valorEvaluar['valor'] === null) {
+                //CASO PARA CAMPO RELACIONADO, PARA DONDE SE PIDE VALIDAR CON EL VALOR RELACIONADO DEL FORMULARIO PRINCIPAL
+                $valorEvaluar = $this->resolverValorEvaluar($condicion['campo_condicion_origen'], $filasSeleccionadas, $condicion['formulario_relacion_origen']);
+
+            }
+
             $resultado = $this->resolverValorEvaluar(
                 $condicion['campo_condicion_destino'],
                 $filasSeleccionadas,
                 $parametros['form_ref_id'],
                 $valorEvaluar['valor']
             );
-
             if ($valorEvaluar['valor'] === null || $valorEvaluar['valor'] === '') {
                 break;
             }
@@ -1078,6 +1186,7 @@ class FormLogicRepository implements FormLogicInterface
             }
 
             $respuestaIds[$resultado['respuesta_id']] = $resultado['respuesta_id'];
+
         }
         return $respuestaIds ?? [];
     }
@@ -1500,13 +1609,9 @@ class FormLogicRepository implements FormLogicInterface
     private function EjecutarModificarCampo($respuestas, $esMultiple, $parametros, $action, $condicionesIgual)
     {
 
-        $audit = [
-            'detalle' => []
-        ];
+        $audit = ['detalle' => []];
 
-        $respuestasCollection = $esMultiple
-            ? $respuestas
-            : collect([$respuestas->first() ?? $respuestas]);
+        $respuestasCollection = $esMultiple ? $respuestas : collect([$respuestas->first() ?? $respuestas]);
 
         $CampoDestinoId = $parametros['campo_ref_id'] ?? null;
         $CampoDestino = CamposForm::find($CampoDestinoId);
@@ -1519,6 +1624,7 @@ class FormLogicRepository implements FormLogicInterface
         }
 
         $tipoValor = $parametros['tipo_valor'] ?? null;
+
         $valorRaw = $parametros['valor'] ?? null;
 
         $campoOrigenId = null;
@@ -1551,10 +1657,11 @@ class FormLogicRepository implements FormLogicInterface
                 }
 
                 $valor = $resultadoOrigen['valor'];
-
             } else {
                 $valor = $valorRaw;
             }
+
+            // $valor => corresponde al valor de origen a procesarse
 
             $resultadoDestino = $this->GetResultadoByCampoOrigen(
                 $filasSeleccionadas,
@@ -1564,12 +1671,14 @@ class FormLogicRepository implements FormLogicInterface
             );
 
             if (collect($resultadoDestino)->filter()->isEmpty()) {
+
                 //SI NO ENCUENTRA RESPUESTA DESTINO CON LAS FILAS SELECCIONADAS, 
                 //INTENTA OBTENER RESPUESTAS QUE CUMPLAN CON LAS CONDICIONES DE IGUALDAD PARA MODIFICAR EL CAMPO EN ESAS RESPUESTAS
                 $respuestaIds = $this->GetRespuestaIdsByCondicion($condicionesIgual, $filasSeleccionadas, $parametros);
                 $respuestaIds = array_values($respuestaIds);
 
             }
+
 
             if (!collect($resultadoDestino)->filter()->isEmpty() || count($respuestaIds ?? []) > 0) {
 
@@ -1578,39 +1687,40 @@ class FormLogicRepository implements FormLogicInterface
                     'cf_id' => $CampoDestinoId,
                 ]);
 
+
                 if ($respuestaDestino == null) {
 
                     $respuestaDestino = RespuestasCampo::whereIn('respuesta_id', $respuestaIds)
                         ->where('cf_id', $CampoDestinoId)
                         ->first();
                 }
-
                 $valorAnterior = $respuestaDestino->valor;
 
                 switch ($parametros['operacion']) {
 
-                    case 'OPC-001':
+                    case 'OPC-001': // SUMAR
 
                         $respuestaDestino->valor += (float) $valor;
 
                         break;
 
-                    case 'OPC-002':
+                    case 'OPC-002': // RESTAR
+
                         $respuestaDestino->valor -= (float) $valor;
                         break;
 
-                    case 'OPC-003':
+                    case 'OPC-003': // MULTIPLICAR
                         $respuestaDestino->valor *= (float) $valor;
                         break;
 
-                    case 'OPC-004':
+                    case 'OPC-004': // DIVIDIR
                         if ((float) $valor !== 0.0) {
                             $respuestaDestino->valor /= (float) $valor;
                         }
                         break;
 
                     case 'OPC-005':
-                    case 'OPC-006':
+                    case 'OPC-006': //ASIGNAR VALOR
                         $respuestaDestino->valor = $valor;
                         break;
 
@@ -1708,7 +1818,7 @@ class FormLogicRepository implements FormLogicInterface
         return $result;
     }
 
-    public function EjecutarReglaLogica($reglas, array $respuestas, string $evento, $usuario, $url)
+    public function EjecutarReglaLogica($reglas, array $respuestas, string $evento, $usuario, $url, $esCascada = false)
     {
         $user = User::find($usuario);
 
@@ -1729,7 +1839,8 @@ class FormLogicRepository implements FormLogicInterface
             $reglas,
             $respuestasModelos,
             $evento,
-            $usuario
+            $usuario,
+            $esCascada
         );
         if ($user && !empty($resultado['acciones_ejecutadas'])) {
 
@@ -1767,7 +1878,7 @@ class FormLogicRepository implements FormLogicInterface
 
     }
 
-    public function EjecutarAcciones($agrupadas, $evento)
+    public function EjecutarAcciones($agrupadas, $evento, $esCascada = false)
     {
 
 
@@ -1803,7 +1914,8 @@ class FormLogicRepository implements FormLogicInterface
                     $respuestasForm->toArray(),
                     $evento,
                     auth()->id(),
-                    env('APP_URL')
+                    env('APP_URL'),
+                    $esCascada
                 );
             }
 
@@ -1815,21 +1927,32 @@ class FormLogicRepository implements FormLogicInterface
                     $respuestasForm->toArray(),
                     $evento,
                     auth()->id(),
-                    env('APP_URL')
+                    env('APP_URL'),
+                    $esCascada
                 );
             }
         }
 
     }
 
-    public function LogicaEliminarRespuesta($respuesta)
+    public function LogicaEliminarRespuesta($evento, $respuesta, $esCascada = false, &$visitados = [])
     {
+        if (isset($visitados[$respuesta->id])) {
+            return [
+                'success' => true
+            ];
+        }
+
+        $visitados[$respuesta->id] = true;
+
+
         $form = $respuesta->form_id;
-        $evento = 'on_delete';
 
         $campos = $this->CamposFormRepository->GetCamposByForm($respuesta->form_id);
 
+
         $filas = $this->RespuestasCampoRepository->filaDesdeRespuesta($respuesta, $campos);
+
 
         $agrupadas = collect([
             $respuesta->form_id => collect([
@@ -1841,7 +1964,12 @@ class FormLogicRepository implements FormLogicInterface
             ])
         ]);
 
-        $errores = array_filter($this->ValidarLogica($respuesta, $filas, $evento), fn($msg) => !empty(trim($msg)));
+
+        $errores = array_filter(
+            $this->ValidarLogica($respuesta, $filas, $evento),
+            fn($msg) => !empty(trim($msg))
+        );
+
 
         if (!empty($errores)) {
             return [
@@ -1850,7 +1978,36 @@ class FormLogicRepository implements FormLogicInterface
             ];
         }
 
-        $this->EjecutarAcciones($agrupadas, $evento);
+
+
+        $this->EjecutarAcciones($agrupadas, $evento, $esCascada);
+
+
+        $respuestasHijas = $this->obtenerRespuestasHijas($respuesta);
+
+        $errores = [];
+
+        foreach ($respuestasHijas as $respuestaHija) {
+
+            $resultado = $this->LogicaEliminarRespuesta(
+                $evento,
+                $respuestaHija,
+                true,
+                $visitados
+            );
+
+            if (!$resultado['success']) {
+                $errores = array_merge($errores, $resultado['errores'] ?? []);
+            }
+        }
+        $errores = array_values(array_unique($errores));
+
+        if (!empty($errores)) {
+            return [
+                'success' => false,
+                'errores' => $errores,
+            ];
+        }
 
         $this->FormularioRepository->EliminarArchivos($respuesta);
 
@@ -1858,9 +2015,93 @@ class FormLogicRepository implements FormLogicInterface
 
         $respuesta->delete();
 
+
         return [
             'success' => true,
             'mensaje' => configForm($form, 'messages.success_delete')
         ];
+    }
+
+    public function obtenerRespuestasHijas(RespuestasForm $respuestaPadre)
+    {
+        $respuestaPadre->loadMissing('camposRespuestas');
+
+        $resultado = collect();
+
+        // Buscar asociaciones donde participa el formulario
+        $asociaciones = FormularioAsociacion::all()->filter(function ($asoc) use ($respuestaPadre) {
+
+            return collect($asoc->formularios)
+                ->pluck('id')
+                ->contains($respuestaPadre->form_id);
+
+        });
+
+        foreach ($asociaciones as $asociacion) {
+
+            foreach ($asociacion->config ?? [] as $regla) {
+
+                // Solo reglas de relación
+                if (
+                    empty($regla['relacion_multiple']) ||
+                    ($regla['modo'] ?? '') !== 'asignacion'
+                ) {
+                    continue;
+                }
+
+                $destino = $regla['destino'] ?? [];
+                $formula = $regla['formula'][1] ?? null;
+
+                if (!$formula || $formula['tipo'] !== 'campo') {
+                    continue;
+                }
+
+                /*
+                 * Ejemplo:
+                 *
+                 * destino.form = 4
+                 * destino.campo = 15
+                 *
+                 * formula.form = 3
+                 * formula.campo = 11
+                 */
+
+                $formPadre = (int) $formula['form'];
+                $campoPadre = (int) $formula['campo_id'];
+
+                $formHijo = (int) $destino['form'];
+                $campoHijo = (int) $destino['campo_id'];
+
+                // Esta regla no corresponde a esta respuesta
+                if ($respuestaPadre->form_id != $formPadre) {
+                    continue;
+                }
+
+                // Valor del campo padre
+                $campoRespuesta = $respuestaPadre->camposRespuestas
+                    ->firstWhere('cf_id', $campoPadre);
+
+                if (!$campoRespuesta) {
+                    continue;
+                }
+
+                $valor = $campoRespuesta->valor;
+
+                // Buscar respuestas hijas
+                $ids = RespuestasCampo::where('cf_id', $campoHijo)
+                    ->where('valor', $valor)
+                    ->pluck('respuesta_id');
+
+                $resultado = $resultado->merge(
+
+                    RespuestasForm::where('form_id', $formHijo)
+                        ->whereIn('id', $ids)
+                        ->get()
+
+                );
+            }
+        }
+
+        return $resultado->unique('id')->values();
     }
 }

@@ -19,42 +19,6 @@
 
 <div id="condiciones-container"></div>
 
-<template id="condicion-modal-template">
-    <div class="condicion-block mb-2 p-2 border rounded">Condición <strong id="num_condicion"></strong>
-        <div class="row g-2 align-items-center">
-            <div class="col-md-4">
-                <select class="form-select cond-form-origen">
-                    <option value="">-- Seleccione campo origen --</option>
-                </select>
-            </div>
-            <div class="col-md-2">
-                <select class="form-select cond-operador">
-                    <option value="=">=</option>
-                    <option value="!=">!=</option>
-                    <option value=">">></option>
-                    <option value="<">
-                        < </option>
-                    <option value=">=">>=</option>
-                    <option value="<=">
-                        <= </option>
-                </select>
-            </div>
-            <div class="col-md-4">
-                <select class="form-select cond-form-destino">
-                    <option value="">-- Seleccione campo destino --</option>
-                </select>
-            </div>
-            <div class="col-md-2 d-flex justify-content-center">
-                <button type="button" class="btn btn-sm btn-danger remove-condicion-modal">x</button>
-            </div>
-        </div>
-        <div class="mt-2">
-            <input type="text" class="form-control cond-mensaje"
-                placeholder="Ej: La cantidad ingresada supera el stock disponible">
-        </div>
-    </div>
-</template>
-
 
 
 
@@ -63,7 +27,7 @@
 <!-- ========================================= -->
 <template id="condicion-form-valor-template">
 
-    <div class="condicion-form-valor-block mb-2 p-2 border rounded">
+    <div class="condicion-form-valor-block condicion-origen-destino  mb-2 p-2 border rounded">
 
         Condición <strong class="num-condicion"></strong>
 
@@ -168,6 +132,111 @@
 
         <!-- hidden -->
         <input type="hidden" class="condicion-config-hidden">
+
+    </div>
+
+</template>
+
+
+<template id="condicion-modal-template">
+    <div class="condicion-block condicion-normal mb-2 p-2 border rounded">Condición <strong id="num_condicion"></strong>
+        <div class="row g-2 align-items-center">
+            <div class="col-md-4">
+                <select class="form-select cond-form-origen">
+                    <option value="">-- Seleccione campo origen --</option>
+                </select>
+            </div>
+            <div class="col-md-2">
+                <select class="form-select cond-operador">
+                    <option value="=">=</option>
+                    <option value="!=">!=</option>
+                    <option value=">">></option>
+                    <option value="<">
+                        < </option>
+                    <option value=">=">>=</option>
+                    <option value="<=">
+                        <= </option>
+                </select>
+            </div>
+            <div class="col-md-4">
+                <select class="form-select cond-form-destino">
+                    <option value="">-- Seleccione campo destino --</option>
+                </select>
+            </div>
+            <div class="col-md-2 d-flex justify-content-center">
+                <button type="button" class="btn btn-sm btn-danger remove-condicion-modal">x</button>
+            </div>
+        </div>
+        <div class="mt-2">
+            <input type="text" class="form-control cond-mensaje"
+                placeholder="Ej: La cantidad ingresada supera el stock disponible">
+        </div>
+    </div>
+</template>
+
+
+<template id="condicion-modal-relacion-template">
+
+    <div class="condicion-block condicion-relacion mb-2 p-2 border rounded">
+
+        Condición <strong class="num_condicion"></strong>
+
+        <div class="row g-2 align-items-center">
+
+            <div class="col-md-3">
+
+                <select class="form-select cond-form-relacion">
+                    <option value="">Formulario relacionado</option>
+                </select>
+
+            </div>
+
+            <div class="col-md-3">
+
+                <select class="form-select cond-form-origen">
+                    <option value="">Campo origen</option>
+                </select>
+
+            </div>
+
+            <div class="col-md-2">
+
+                <select class="form-select cond-operador">
+                    <option value="=">=</option>
+                    <option value="!=">!=</option>
+                    <option value=">">></option>
+                    <option value="<">
+                        << /option>
+                    <option value=">=">>=</option>
+                    <option value="<=">
+                        <=< /option>
+                </select>
+
+            </div>
+
+            <div class="col-md-3">
+
+                <select class="form-select cond-form-destino">
+                    <option value="">Campo destino</option>
+                </select>
+
+            </div>
+
+            <div class="col-md-1">
+
+                <button class="btn btn-danger btn-sm remove-condicion-modal">
+                    x
+                </button>
+
+            </div>
+
+        </div>
+
+        <div class="mt-2">
+
+            <input class="form-control cond-mensaje" placeholder="Mensaje">
+
+        </div>
 
     </div>
 

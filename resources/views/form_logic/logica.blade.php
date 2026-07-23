@@ -283,16 +283,14 @@
         const tipoAccion_id = document.getElementById('modal-tipo-accion').value;
 
         var form_ref_id = document.getElementById('modal-form-ref_crear_registros').value;
-        const accionObj = editingIndex !== null ?
-            {
-                ...accionesArray[editingIndex],
-                condiciones: []
-            } :
-            {
-                tipo_accion_id: tipoAccion_id,
-                form_ref_id: form_ref_id,
-                condiciones: []
-            };
+        const accionObj = editingIndex !== null ? {
+            ...accionesArray[editingIndex],
+            condiciones: []
+        } : {
+            tipo_accion_id: tipoAccion_id,
+            form_ref_id: form_ref_id,
+            condiciones: []
+        };
 
         if (tipoAccion_id === 'TAC-001') {
             const tipoAccion = document.getElementById('modal-tipo-accion');
@@ -539,7 +537,7 @@
 
         if (tipoAccion_id != 'TAC-006') {
             // Condiciones
-            document.querySelectorAll('#condiciones-container .condicion-block').forEach(cond => {
+            document.querySelectorAll('#condiciones-container .condicion-block .condicion-normal').forEach(cond => {
                 const origen = cond.querySelector('.cond-form-origen');
                 const operador = cond.querySelector('.cond-operador');
                 const destino = cond.querySelector('.cond-form-destino');
@@ -557,14 +555,71 @@
 
             });
         }
-        document.querySelectorAll('#condiciones-container .condicion-form-valor-block')
+        document.querySelectorAll('#condiciones-container .condicion-normal')
+            .forEach(cond => {
+
+                const origen = cond.querySelector('.cond-form-origen');
+                const operador = cond.querySelector('.cond-operador');
+                const destino = cond.querySelector('.cond-form-destino');
+                const mensaje = cond.querySelector('.cond-mensaje');
+
+                accionObj.condiciones.push({
+
+                    tipo_condicion: 'campo',
+
+                    campo_condicion_origen: origen.value,
+                    campo_condicion_origen_text: origen.options[origen.selectedIndex]?.text || '',
+
+                    operador: operador.value,
+                    operador_text: operador.options[operador.selectedIndex]?.text || '',
+
+                    campo_condicion_destino: destino.value,
+                    campo_condicion_destino_text: destino.options[destino.selectedIndex]?.text || '',
+
+                    mensaje: mensaje.value
+
+                });
+
+            });
+        document.querySelectorAll('#condiciones-container .condicion-relacion')
+            .forEach(cond => {
+
+                const relacion = cond.querySelector('.cond-form-relacion');
+                const origen = cond.querySelector('.cond-form-origen');
+                const operador = cond.querySelector('.cond-operador');
+                const destino = cond.querySelector('.cond-form-destino');
+                const mensaje = cond.querySelector('.cond-mensaje');
+
+                accionObj.condiciones.push({
+
+                    tipo_condicion: 'campo_relacionado',
+
+                    formulario_relacion_origen: relacion.value,
+                    formulario_relacion_origen_text: relacion.options[relacion.selectedIndex]?.text || '',
+
+                    campo_condicion_origen: origen.value,
+                    campo_condicion_origen_text: origen.options[origen.selectedIndex]?.text || '',
+
+                    operador: operador.value,
+                    operador_text: operador.options[operador.selectedIndex]?.text || '',
+
+                    campo_condicion_destino: destino.value,
+                    campo_condicion_destino_text: destino.options[destino.selectedIndex]?.text || '',
+
+                    mensaje: mensaje.value
+
+                });
+
+            });
+
+        document.querySelectorAll('#condiciones-container .condicion-origen-destino')
             .forEach(cond => {
 
                 const tipoFormulario = cond.querySelector('.cond-tipo-formulario');
                 const campo = cond.querySelector('.cond-campo');
                 const operador = cond.querySelector('.cond-operador');
                 const valor = cond.querySelector('.cond-valor');
-
+                const mensaje = cond.querySelector('.cond-mensaje');
                 accionObj.condiciones.push({
 
                     tipo_condicion: 'form_valor',
@@ -578,11 +633,11 @@
                     operador: operador.value,
                     operador_text: operador.options[operador.selectedIndex]?.text || '',
 
-                    valor: valor.value
+                    valor: valor.value,
+                    mensaje: mensaje.value
                 });
 
             });
-
         return accionObj;
     }
 
@@ -815,8 +870,7 @@
         container.innerHTML = '';
 
         const condiciones = Array.isArray(accion.condiciones) ?
-            accion.condiciones :
-            [];
+            accion.condiciones : [];
 
         for (const condicion of condiciones) {
 
@@ -1019,7 +1073,7 @@
 
                 if (check?.checked && !selectOrigen.value) {
                     mostrarAlerta('warning',
-                    'Seleccione un campo de origen para todas las filas marcadas.');
+                        'Seleccione un campo de origen para todas las filas marcadas.');
 
                     return;
                 }

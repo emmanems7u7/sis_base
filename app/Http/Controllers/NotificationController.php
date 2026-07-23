@@ -17,6 +17,16 @@ class NotificationController extends Controller
 
         $this->NotificationRepository->markAsRead($notificationId);
 
+        return response()->json([
+            'success' => true
+        ]);
+    }
+    public function markAllAsRead()
+    {
+        $this->NotificationRepository->markAllAsRead();
 
+        return response()->json([
+            'success' => true
+        ]);
     }
 }

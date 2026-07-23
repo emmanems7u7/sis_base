@@ -1,28 +1,22 @@
 <div class="modal fade" id="modalVerRespuesta" tabindex="-1">
-    <div class="modal-dialog modal-lg modal-dialog-centered">
+    <div class="modal-dialog modal-lg modal-dialog-centered modal-dialog-scrollable">
         <div
-            class="modal-content {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }} ">
-            <div class=" contenido-ajustado">
+            class="modal-content shadow border-0 rounded-4
+            {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : '' }}">
 
+            <div class="modal-header py-2 px-3">
+                <h6 class="modal-title fw-semibold flex-grow-1" id="modal_titulo">
+                    Información
+                </h6>
 
-
-                <div class="modal-header">
-                    <h5 class="modal-title" id="modal_titulo"></h5>
-
-
-                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                </div>
-                <div class="modal-body">
-                    <div id="contenidoRespuesta">
-                        <div class="text-center">
-
-                        </div>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn bg-gradient-secondary" data-bs-dismiss="modal">Cerrar</button>
-                </div>
+                <button type="button" class="btn-close" data-bs-dismiss="modal">
+                </button>
             </div>
+
+            <div class="modal-body p-3" id="contenidoRespuesta">
+                <!-- Contenido dinámico -->
+            </div>
+
         </div>
     </div>
 </div>
@@ -157,7 +151,7 @@
 
                         html += `<div class="table-responsive">
                         <table class="table table-sm table-bordered mb-1 text-center align-middle">
-                            <thead class="table-light small"><tr>`;
+                            <thead class="table-dark small"><tr>`;
 
                         Object.keys(data.datos_asociados).forEach(key => {
                             html +=

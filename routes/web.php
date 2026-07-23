@@ -497,12 +497,12 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/notification/{notification}/markAsRead', [NotificationController::class, 'markAsRead'])->name('notification.markAsRead');
 
 
+    Route::get('/notification/{notification}/markAsRead', [NotificationController::class, 'markAsRead'])->name('notification.markAsRead');
+    Route::get('/notification/markAllAsRead', [NotificationController::class, 'markAllAsRead'])->name('notification.markAllAsRead');
 
-    Route::get('/seeders/explorador', [SeederController::class, 'index'])
-        ->name('seeders.index');
+    Route::get('/seeders/explorador', [SeederController::class, 'index'])->name('seeders.index');
 
-    Route::get('/seeders/ver', [SeederController::class, 'verSeeder'])
-        ->name('seeders.ver');
+    Route::get('/seeders/ver', [SeederController::class, 'verSeeder'])->name('seeders.ver');
 
 
 
@@ -561,12 +561,9 @@ Route::middleware(['auth'])->group(function () {
 
     Route::get('/consultas/{consulta}/ver', [ConsultaController::class, 'show'])->name('consultas.show');
 
-    Route::post(
-        '/consultas/{consulta}/ejecutar',
-        [ConsultaController::class, 'ejecutar']
-    )
-        ->name('consultas.ejecutar');
+    Route::post('/consultas/{consulta}/ejecutar', [ConsultaController::class, 'ejecutar'])->name('consultas.ejecutar');
 
+    Route::get('/formularios/{formulario}/relacionados', [FormularioController::class, 'formulariosRelacionados']);
 });
 
 

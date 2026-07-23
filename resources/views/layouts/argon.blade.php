@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <link rel="apple-touch-icon" sizes="76x76" href="{{ asset('img/apple-icon.png') }}">
-    <link rel="icon" type="image/png" href="{{ asset('logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('monito.png') }}">
     <title>{{ config('app.name', 'Laravel') }}</title>
     <!--     Fonts and icons     -->
     <link href="https://fonts.googleapis.com/css?family=Open+Sans:300,400,600,700" rel="stylesheet">
@@ -127,7 +127,7 @@
             <i class="fas fa-times p-3 cursor-pointer text-secondary opacity-5 position-absolute end-0 top-0 d-none d-xl-none"
                 aria-hidden="true" id="iconSidenav"></i>
             <a class="navbar-brand m-0" href="{{ route('home') }}">
-                <img src="{{ asset('logo.png') }}" style="" alt="">
+                <img src="{{ asset('monito.png') }}" style="" alt="">
                 <span class="ms-1 font-weight-bold">{{ config('app.name', 'Laravel') }}</span>
             </a>
         </div>

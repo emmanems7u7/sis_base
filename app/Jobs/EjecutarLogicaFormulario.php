@@ -28,17 +28,26 @@ class EjecutarLogicaFormulario implements ShouldQueue
     protected $usuario;
     protected $url;
     protected $reglas;
-    public function __construct($reglas, array $respuestas, string $evento, $usuario, $url)
+    protected $esCascada;
+    public function __construct($reglas, array $respuestas, string $evento, $usuario, $url, $esCascada)
     {
         $this->reglas = $reglas;
         $this->respuestas = $respuestas;
         $this->evento = $evento;
         $this->usuario = $usuario;
         $this->url = $url;
+        $this->esCascada = $esCascada
     }
     public function handle(FormLogicInterface $formLogic)
     {
-        $formLogic->EjecutarReglaLogica($this->reglas, $this->respuestas, $this->evento, auth()->id(), env('APP_URL'));
+        $formLogic->EjecutarReglaLogica(
+            $this->reglas,
+            $this->respuestas,
+            $this->evento,
+            auth()->id(),
+            env('APP_URL'),
+            $this->esCascada
+        );
 
     }
 
