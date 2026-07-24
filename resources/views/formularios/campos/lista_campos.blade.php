@@ -181,7 +181,7 @@
         <input type="text" name="{{ $campo->nombre }}" class="form-control form-control-sm mb-1 campo-autocompletado"
             data-campo-id="{{ $campo->id }}" placeholder="{{ $campo->config['placeholder'] ?? '' }}"
             value="{{ $campo->config['autocompletar'] ?? '' }}">
-        <button class="btn btn-xs btn-dark btn_autocompletado">Guardar</button>´
+        <button class="btn btn-xs btn-dark btn_autocompletado">Guardar</button>
 
 
         <script>

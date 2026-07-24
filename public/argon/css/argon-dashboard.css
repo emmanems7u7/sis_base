@@ -28743,3 +28743,6 @@ pre[class*=language-] {
   max-width: 320px !important;
     transition-duration: 300ms !important;
 }
+        .drag-ghost {
+            background-color: rgba(108, 117, 125, 0.25);
+        }

@@ -1,13 +1,15 @@
-<form action="{{ route('formularios.config.update', $formulario->id) }}" method="POST">
-    @csrf
-    @method('PUT')
+<div>
+    <form action="{{ route('formularios.config.update', $formulario->id) }}" method="POST">
+        @csrf
+        @method('PUT')
 
 
-    @include('form_configurations._form')
+        @include('form_configurations._form')
 
-    <button type="submit" class="btn btn-sm btn-primary">
+        <button type="submit" class="btn btn-sm btn-primary">
 
-        Guardar Configuración
+            Guardar Configuración
 
-    </button>
-</form>
+        </button>
+    </form>
+</div>
