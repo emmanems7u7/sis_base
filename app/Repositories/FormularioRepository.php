@@ -152,44 +152,133 @@ class FormularioRepository implements FormularioInterface
         return $valorUsuario;
     }
 
-
-    /**
-     * Obtiene el valor real para reemplazo o filtrado según el tipo de campo.
-     *
-     * @param CamposForm $campo
-     * @param mixed $valorUsuario
-     * @return mixed
-     */
     public function obtenerValorReal(CamposForm $campo, $valorUsuario)
     {
 
+        /*
+        |--------------------------------------------------------------------------
+        | Catálogos
+        |--------------------------------------------------------------------------
+        */
+
         if (!empty($campo->categoria_id)) {
-            $catalogo = $this->CatalogoRepository->buscarPorCodigo($campo->categoria_id, $valorUsuario);
-            return $catalogo ? $catalogo->catalogo_descripcion : null;
+
+            $catalogo = $this->CatalogoRepository
+                ->buscarPorCodigo(
+                    $campo->categoria_id,
+                    $valorUsuario
+                );
+
+            return $catalogo
+                ? $catalogo->catalogo_descripcion
+                : $valorUsuario;
         }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Referencia a otro formulario
+        |--------------------------------------------------------------------------
+        */
+
         if (!empty($campo->form_ref_id)) {
 
-            // Si no es numérico, ya es el valor real
+
+            // Si ya viene texto no buscamos
             if (!is_numeric($valorUsuario)) {
                 return $valorUsuario;
             }
 
-            $campoReferencia = CamposForm::where('form_id', $campo->form_ref_id)->orderBy('posicion', 'asc')->first();
 
-            if (!$campoReferencia) {
-                return null;
+
+            $respuestaReferencia = RespuestasForm::with(
+                'camposRespuestas.campo'
+            )->find($valorUsuario);
+
+
+
+            if (!$respuestaReferencia) {
+                return $valorUsuario;
             }
 
-            $respuestaCampo = RespuestasCampo::where('respuesta_id', $valorUsuario)
-                ->where('cf_id', $campoReferencia->id)
+
+
+            /*
+            |----------------------------------------------------------------------
+            | Buscar campo principal del formulario relacionado
+            |----------------------------------------------------------------------
+            */
+
+            $campoPrincipal = $respuestaReferencia
+                ->camposRespuestas
+                ->map(fn($item) => $item->campo)
+                ->filter()
+                ->sortBy('posicion')
                 ->first();
 
-            return optional($respuestaCampo)->valor;
+
+
+            if (!$campoPrincipal) {
+
+                return $valorUsuario;
+
+            }
+
+
+
+            $campoRespuesta = $respuestaReferencia
+                ->camposRespuestas
+                ->where(
+                    'cf_id',
+                    $campoPrincipal->id
+                )
+                ->first();
+
+
+
+            if (!$campoRespuesta) {
+
+                return $valorUsuario;
+
+            }
+
+
+
+            /*
+            |----------------------------------------------------------------------
+            | Si ese campo apunta nuevamente a otro formulario
+            | seguimos bajando
+            |----------------------------------------------------------------------
+            */
+
+            if ($campoPrincipal->form_ref_id) {
+
+
+                return $this->obtenerValorReal(
+                    $campoPrincipal,
+                    $campoRespuesta->valor
+                );
+
+
+            }
+
+
+
+            /*
+            |----------------------------------------------------------------------
+            | Llegamos al campo final
+            |----------------------------------------------------------------------
+            */
+
+            return $campoRespuesta->valor;
+
         }
+
+
 
         return $valorUsuario;
     }
-
 
     public function procesarFormularioConFiltros($formulario, Request $request, $pageName = null)
     {
@@ -243,7 +332,9 @@ class FormularioRepository implements FormularioInterface
 
         $formulariosMap = Formulario::whereIn('id', array_unique($formIds))->get()->keyBy('id');
 
-        $respuestasMap = RespuestasForm::with('camposRespuestas')
+        $respuestasMap = RespuestasForm::with(
+            'camposRespuestas.campo'
+        )
             ->whereIn('id', array_unique($respuestaIds))
             ->get()
             ->keyBy('id');
@@ -311,63 +402,209 @@ class FormularioRepository implements FormularioInterface
         $campoRespOrCampo,
         $valor = null,
         $formulariosMap = [],
-        $respuestasMap = [],
+        &$respuestasMap = [],
         $catalogosMap = []
     ) {
 
+
         if ($valor === null) {
+
             $campoResp = $campoRespOrCampo;
+
             $campo = $campoResp->campo;
+
             $valor = $campoResp->valor;
+
         } else {
 
             $campo = $campoRespOrCampo;
+
         }
+
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Referencia a formulario
+        |--------------------------------------------------------------------------
+        */
 
         if ($campo && $campo->form_ref_id) {
 
+
             $formulario = $formulariosMap[$campo->form_ref_id] ?? null;
-            $respuestaReferencia = $respuestasMap[$valor] ?? null;
 
-            $camposRespuesta = $respuestaReferencia?->camposRespuestas;
 
-            $configConcatenado = $formulario->config['configuracion_concatenado'] ?? null;
+            if (!$formulario) {
 
-            if (!$configConcatenado || !$camposRespuesta) {
-                return $respuestaReferencia?->camposRespuestas?->first()?->valor ?? $valor;
+                $formulario = Formulario::find($campo->form_ref_id);
+
+                if ($formulario) {
+                    $formulariosMap[$formulario->id] = $formulario;
+                }
+
             }
 
-            $valoresPorId = $camposRespuesta->pluck('valor', 'cf_id')->toArray();
 
-            $estructura = $configConcatenado['estructura'];
 
-            $resultado = preg_replace_callback(
-                '/\d+/', // coincidimos números que son cf_id
-                function ($matches) use ($valoresPorId) {
-                    $id = $matches[0];
-                    return $valoresPorId[$id] ?? $id; // si no existe, dejamos el id
-                },
-                $estructura
-            );
+            /*
+            | Cargamos la respuesta relacionada
+            */
 
-            return $resultado;
+            $respuestaReferencia = $respuestasMap[$valor] ?? null;
 
+
+            if (!$respuestaReferencia) {
+
+
+                $respuestaReferencia = RespuestasForm::with(
+                    'camposRespuestas.campo'
+                )->find($valor);
+
+
+                if ($respuestaReferencia) {
+
+                    $respuestasMap[$valor] = $respuestaReferencia;
+
+                }
+
+            }
+
+
+
+            if (!$respuestaReferencia) {
+
+                return $valor;
+
+            }
+
+
+
+            $camposRespuesta = $respuestaReferencia->camposRespuestas;
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Concatenado configurado
+            |--------------------------------------------------------------------------
+            */
+
+            $configConcatenado = $formulario?->config['configuracion_concatenado'] ?? null;
+
+
+            if ($configConcatenado) {
+
+
+                $valoresPorId = $camposRespuesta
+                    ->pluck('valor', 'cf_id')
+                    ->toArray();
+
+
+
+                return preg_replace_callback(
+                    '/\d+/',
+                    function ($matches) use ($valoresPorId) {
+
+                        return $valoresPorId[$matches[0]]
+                            ?? $matches[0];
+
+                    },
+                    $configConcatenado['estructura']
+                );
+
+            }
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Buscar campo principal del formulario relacionado
+            |--------------------------------------------------------------------------
+            */
+
+            $campoPrincipal = $camposRespuesta
+                ->map(fn($c) => $c->campo)
+                ->filter()
+                ->sortBy('posicion')
+                ->first();
+
+
+
+            if (!$campoPrincipal) {
+
+                return $valor;
+
+            }
+
+
+
+            $campoPrincipalRespuesta = $camposRespuesta
+                ->where('cf_id', $campoPrincipal->id)
+                ->first();
+
+
+
+            if (!$campoPrincipalRespuesta) {
+
+                return $valor;
+
+            }
+
+
+
+            /*
+            |--------------------------------------------------------------------------
+            | Si ese campo vuelve a apuntar a otro formulario
+            | seguimos bajando
+            |--------------------------------------------------------------------------
+            */
+
+            if ($campoPrincipal->form_ref_id) {
+
+
+                return $this->resolverValor(
+                    $campoPrincipal,
+                    $campoPrincipalRespuesta->valor,
+                    $formulariosMap,
+                    $respuestasMap,
+                    $catalogosMap
+                );
+
+            }
+
+
+
+            return $campoPrincipalRespuesta->valor;
 
 
         }
 
+
+
+        /*
+        |--------------------------------------------------------------------------
+        | Catálogo
+        |--------------------------------------------------------------------------
+        */
 
         if ($campo && $campo->categoria_id) {
 
+
             $key = $campo->categoria_id . '_' . $valor;
+
 
             $catalogo = $catalogosMap[$key] ?? null;
 
+
             return $catalogo?->catalogo_descripcion ?? $valor;
+
         }
 
 
+
         return $valor;
+
     }
 
 

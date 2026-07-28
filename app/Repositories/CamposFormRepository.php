@@ -7,6 +7,7 @@ use App\Models\CamposForm;
 use App\Interfaces\CatalogoInterface;
 use App\Models\Formulario;
 use App\Models\RespuestasCampo;
+use App\Models\RespuestasForm;
 use Illuminate\Support\Str;
 use Illuminate\Http\Request;
 
@@ -149,40 +150,55 @@ class CamposFormRepository implements CamposFormInterface
             if ($campoReferencia) {
 
                 $formulario = Formulario::find($campo->form_ref_id);
+
                 $configConcatenado = $formulario->config['configuracion_concatenado'] ?? null;
 
                 $campo->opciones_catalogo = $campo->opcionesFormularioQuery()
                     ->offset($offset)
                     ->limit($limit)
                     ->get()
-                    ->map(function ($respuesta) use ($configConcatenado, $campoReferencia) {
+                    ->map(function ($respuesta) use ($configConcatenado, $formulario) {
 
-                        $respuestaReferencia = RespuestasCampo::find($respuesta->id);
-                        $camposRespuesta = $respuestaReferencia?->camposRespuestas;
+
+                        $camposRespuesta = $respuesta->camposRespuestas;
+
 
                         if (!$configConcatenado || !$camposRespuesta) {
-                            $valorCampo = optional($respuesta->camposRespuestas
-                                ->where('cf_id', $campoReferencia->id)
-                                ->first())->valor ?? $respuesta->valor;
+
+                            $valorCampo = $this->obtenerValorReferencia(
+                                $respuesta,
+                                $formulario
+                            );
+
                         } else {
 
-                            $valoresPorId = $camposRespuesta->pluck('valor', 'cf_id')->toArray();
+                            $valoresPorId = $camposRespuesta
+                                ->pluck('valor', 'cf_id')
+                                ->toArray();
+
+
                             $estructura = $configConcatenado['estructura'];
 
-                            // Reemplazamos cada cf_id por su valor
+
                             $valorCampo = preg_replace_callback(
                                 '/\d+/',
-                                fn($matches) => $valoresPorId[$matches[0]] ?? $matches[0],
+                                fn($matches) =>
+                                $valoresPorId[$matches[0]] ?? $matches[0],
                                 $estructura
                             );
+
                         }
+
 
                         return (object) [
                             'catalogo_codigo' => $respuesta->id,
                             'resp_valor' => $respuesta->valor,
                             'catalogo_descripcion' => $valorCampo ?? 'Sin nombre',
                         ];
+
                     });
+
+
 
             } else {
                 $campo->opciones_catalogo = collect();
@@ -194,6 +210,93 @@ class CamposFormRepository implements CamposFormInterface
         return $campo;
     }
 
+
+
+    private function obtenerValorReferencia($respuesta, $formulario)
+    {
+        $campoPrincipal = CamposForm::where('form_id', $formulario->id)
+            ->orderBy('posicion', 'asc')
+            ->first();
+
+
+        if (!$campoPrincipal) {
+            return $respuesta->id;
+        }
+
+
+        /*
+         * $respuesta puede ser:
+         * RespuestasForm
+         * o RespuestasCampo
+         */
+
+        if ($respuesta instanceof RespuestasCampo) {
+
+            $respuestasCampos = $respuesta->respuesta
+                ? $respuesta->respuesta->camposRespuestas
+                : collect();
+
+        } else {
+
+            $respuesta->loadMissing('camposRespuestas');
+
+            $respuestasCampos = $respuesta->camposRespuestas;
+
+        }
+
+
+        $campoRespuesta = $respuestasCampos
+            ->where('cf_id', $campoPrincipal->id)
+            ->first();
+
+
+
+        if (!$campoRespuesta) {
+            return $respuesta->id;
+        }
+
+
+
+        /*
+         * El valor contiene el ID de la respuesta relacionada
+         */
+
+        $respuestaRelacionada = RespuestasForm::find(
+            $campoRespuesta->valor
+        );
+
+
+        if (!$respuestaRelacionada) {
+            return $campoRespuesta->valor;
+        }
+
+
+
+        /*
+         * Si el campo apunta a otro formulario seguimos navegando
+         */
+
+        if ($campoPrincipal->form_ref_id) {
+
+            $siguienteFormulario = Formulario::find(
+                $campoPrincipal->form_ref_id
+            );
+
+
+            if ($siguienteFormulario) {
+
+                return $this->obtenerValorReferencia(
+                    $respuestaRelacionada,
+                    $siguienteFormulario
+                );
+
+            }
+
+        }
+
+
+        return $campoRespuesta->valor;
+    }
     public function guardarCampo($campo, $respuesta_id, $datosFormulario, $form, $prefix = null)
     {
         $name = $campo->id;

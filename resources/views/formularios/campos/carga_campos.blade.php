@@ -1,4 +1,4 @@
-<div class="config-relacion" data-relacion='@json($campo->config['asociacion'] ?? $campo->config['relacion'])'>
+<div class="config-relacion" data-relacion='@json($campo->config['asociacion'] ?? ($campo->config['relacion'] ?? []))'>
 
     <script>
         window.formulariosRef = window.formulariosRef ?? @json($formularios_ref);

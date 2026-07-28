@@ -201,38 +201,39 @@ class RespuestasFormRepository implements RespuestasFormInterface
 
                     break;
             }
+            $humanRules[] = "";
+            /*
+                        $humanRules[] = "
 
-            $humanRules[] = "
+                    <div class='mb-3'>
 
-        <div class='mb-3'>
+                        <i class='fas fa-project-diagram text-primary me-1'></i>
 
-            <i class='fas fa-project-diagram text-primary me-1'></i>
+                        <strong>Formulario:</strong>
 
-            <strong>Formulario:</strong>
+                        {$formOrigen}
 
-            {$formOrigen}
+                        <br><br>
 
-            <br><br>
+                        <strong>Condiciones:</strong>
 
-            <strong>Condiciones:</strong>
+                        <ul class='mb-2'>";
 
-            <ul class='mb-2'>";
+                        foreach ($textoCondiciones as $texto) {
 
-            foreach ($textoCondiciones as $texto) {
+                            $humanRules[count($humanRules)] .=
+                                "<li>{$texto}</li>";
+                        }
 
-                $humanRules[count($humanRules)] .=
-                    "<li>{$texto}</li>";
-            }
+                        $humanRules[count($humanRules) - 1] .= "
 
-            $humanRules[count($humanRules) - 1] .= "
+                        </ul>
 
-            </ul>
+                        <strong>Acción:</strong>
 
-            <strong>Acción:</strong>
+                        {$accionTexto}
 
-            {$accionTexto}
-
-        </div>";
+                    </div>";*/
 
         }
 
@@ -644,7 +645,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
 
             return [
                 "error" => 0,
-                "lineasTotales" => $lineasTotales,
+                "total_lineas" => $lineasTotales,
 
             ];
 
