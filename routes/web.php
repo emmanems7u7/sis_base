@@ -470,6 +470,9 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/{rule}/delete', [FormLogicController::class, 'destroy'])->name('form-logic.delete');
     });
 
+    Route::get('/tareas-programadas', [FormLogicController::class, 'indexTareas'])->name('tasks.index');
+    Route::get('/tareas/{rule}/historial', [FormLogicController::class, 'historial'])->name('tasks.historial');
+
     Route::get('/formularios/{id}/obtiene/campos', [FormularioController::class, 'obtenerCampos'])
         ->name('formularios.campos');
 

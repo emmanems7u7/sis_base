@@ -238,21 +238,17 @@ class ModuloController extends Controller
 
         ];
 
-        $modulo = Modulo::with([
-            'formularios.campos',
-        ])->findOrFail($modulo);
-
+        $modulo = Modulo::with(['formularios.campos',])->findOrFail($modulo);
 
 
         // Obtenemos los IDs de los formularios asociados
         $formIds = $modulo->formularios->pluck('id');
 
-
-        // Ahora filtramos las reglas solo de esos formularios
         $rules = FormLogicRule::with(['formulario'])
             ->whereIn('form_id', $formIds)
-            ->get();
-
+            ->orWhere('modulo_id', $modulo->id)
+            ->get()
+            ->unique('id');
 
         $rules->operacion = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Operaciones de Campo', true);
 

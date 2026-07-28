@@ -16,7 +16,7 @@ interface RespuestasFormInterface
     public function procesarFormularioMultipleDesdeArray($datosFormulario, $form, $campos, $prefix, $grupo, $evento);
 
     public function cargarFormularioCompleto($formularioId);
-    public function obtenerReglasHumanas($campos);
+    public function obtenerReglasHumanas($formulario);
     public function ProcesarArchivo($archivo);
     public function procesarChunk($form);
     public function LogicaActualizacion($formId, $formPrefix, $respuestaTarget, $formularioModelo, $request, $evento);

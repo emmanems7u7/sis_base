@@ -122,7 +122,7 @@ class RespuestasFormController extends Controller
 
         foreach ($formulariosFinales as $formulario) {
             $humanRules = $humanRules->merge(
-                $this->RespuestasFormInterface->obtenerReglasHumanas($formulario->campos)
+                $this->RespuestasFormInterface->obtenerReglasHumanas($formulario->id)
             );
         }
 
@@ -389,7 +389,7 @@ class RespuestasFormController extends Controller
 
         foreach ($formulariosFinales as $formulario) {
             $humanRules = $humanRules->merge(
-                $this->RespuestasFormInterface->obtenerReglasHumanas($formulario->campos)
+                $this->RespuestasFormInterface->obtenerReglasHumanas($formulario->id)
             );
         }
 

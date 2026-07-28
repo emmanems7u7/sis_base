@@ -15,7 +15,8 @@ use App\Interfaces\FormLogicInterface;
 
 use App\Interfaces\CamposFormInterface;
 use App\Interfaces\RespuestasCampoInterface;
-use App\Models\FormLogicCondition;
+use App\Models\FormLogicAction;
+use App\Models\FormLogicRule;
 
 class RespuestasFormRepository implements RespuestasFormInterface
 {
@@ -39,52 +40,202 @@ class RespuestasFormRepository implements RespuestasFormInterface
     }
 
 
-    public function GetHumanRules($rules)
+    public function GetHumanRules($acciones)
     {
         $humanRules = [];
 
-        foreach ($rules as $condicion) {
-            $campoCond = $condicion->campoCondicion;
-            $campoVal = $condicion->campoValor;
+        foreach ($acciones as $accion) {
 
-            $formOrigen = $campoCond ? $campoCond->formulario->nombre ?? 'Formulario desconocido' : 'Campo desconocido';
-            $formValor = $campoVal ? $campoVal->formulario->nombre ?? 'Formulario desconocido' : null;
+            $parametros = $accion->parametros ?? [];
 
-            $valorTexto = $campoVal
-                ? "<strong>{$campoVal->etiqueta}</strong> del formulario <em>'{$formValor}'</em>"
-                : "<strong>{$condicion->valor}</strong>";
+            $tipoAccion = $parametros['tipo_accion_text']
+                ?? $accion->tipoAccionCatalogo
+                ?? 'acción';
 
-            // Convertir operadores a texto entendible
-            $operadorTexto = match ($condicion->operador) {
-                '=' => '<strong> es igual a</strong>',
-                '!=' => '<strong> es distinto de</strong>',
-                '>' => '<strong> es mayor que</strong>',
-                '<' => '<strong> es menor que</strong>',
-                '>=' => '<strong> es mayor o igual que</strong>',
-                '<=' => '<strong> es menor o igual que</strong>',
-                'in' => '<strong> es contenido en</strong>',
-                default => "<strong>{$condicion->operador}</strong>"
-            };
+            $formOrigen = $accion->formularioOrigen?->nombre ?? 'Formulario origen';
 
-            $accionTexto = '<em>Sin acción definida</em>';
-            if ($condicion->action && $condicion->action->campoDestino) {
-                $campoAccion = $condicion->action->campoDestino;
-                $formAccion = $campoAccion->formulario ?? null;
-                $accionTexto = $formAccion
-                    ? "Aplicar acción <strong>'{$condicion->action->operacion}'</strong> al campo <strong>'{$campoAccion->etiqueta}'</strong> del formulario <em>'{$formAccion->nombre}'</em>"
-                    : "Aplicar acción <strong>'{$condicion->action->operacion}'</strong> al campo <strong>'{$campoAccion->etiqueta}'</strong>";
+            $formDestino = $accion->formularioDestino?->nombre ?? 'Formulario destino';
+
+            $condiciones = $parametros['condiciones'] ?? [];
+
+            $textoCondiciones = [];
+
+            foreach ($condiciones as $condicion) {
+
+                $tipoCondicion = $condicion['tipo_condicion'] ?? 'campo';
+
+                switch ($tipoCondicion) {
+
+                    case 'campo':
+
+                        $textoCondiciones[] =
+                            "el campo <strong>{$condicion['campo_condicion_origen_text']}</strong>
+                        {$condicion['operador_text']}
+                        <strong>{$condicion['campo_condicion_destino_text']}</strong>";
+
+                        break;
+
+                    case 'campo_relacionado':
+
+                        $textoCondiciones[] =
+                            "el campo <strong>{$condicion['campo_condicion_origen_text']}</strong>
+                        del formulario relacionado
+                        <em>{$condicion['formulario_relacion_origen_text']}</em>
+                        {$condicion['operador_text']}
+                        <strong>{$condicion['campo_condicion_destino_text']}</strong>";
+
+                        break;
+
+                    case 'form_valor':
+
+                        $textoCondiciones[] =
+                            "el campo <strong>{$condicion['campo_condicion_text']}</strong>
+                        del {$condicion['formulario_tipo_text']}
+                        {$condicion['operador_text']}
+                        <strong>{$condicion['valor']}</strong>";
+
+                        break;
+
+                    default:
+
+                        if (($condicion['tipo_valor'] ?? '') == 'campo') {
+
+                            $textoCondiciones[] =
+                                "el campo <strong>{$condicion['campo_condicion_origen_text']}</strong>
+                            {$condicion['operador_text']}
+                            <strong>{$condicion['campo_condicion_destino_text']}</strong>";
+
+                        } else {
+
+                            $valor = $condicion['valor']
+                                ?? $condicion['campo_condicion_destino_text']
+                                ?? '';
+
+                            $textoCondiciones[] =
+                                "el campo <strong>{$condicion['campo_condicion_origen_text']}</strong>
+                            {$condicion['operador_text']}
+                            <strong>{$valor}</strong>";
+                        }
+
+                        break;
+                }
+
+                if (!empty($condicion['mensaje'])) {
+
+                    $textoCondiciones[] =
+                        "<span class='text-danger'>
+                        <i class='fas fa-exclamation-circle'></i>
+                        {$condicion['mensaje']}
+                    </span>";
+                }
             }
 
-            // Icono de contexto al inicio de la regla
+            if (empty($textoCondiciones)) {
+
+                $textoCondiciones[] = "sin condiciones.";
+            }
+
+            // ---------------------------
+            // Acción
+            // ---------------------------
+
+            switch ($tipoAccion) {
+
+                case 'modificar_campo':
+
+                    $accionTexto =
+                        "Modificar el campo
+                    <strong>{$parametros['campo_ref_text']}</strong>
+                    del formulario
+                    <em>{$parametros['form_ref_text']}</em>
+                    aplicando la operación
+                    <strong>{$parametros['operacion_text']}</strong>";
+
+                    if (($parametros['tipo_valor'] ?? '') == 'campo') {
+
+                        $accionTexto .=
+                            " usando el valor del campo
+                        <strong>{$parametros['valor_text']}</strong>";
+                    } else {
+
+                        $accionTexto .=
+                            " con el valor
+                        <strong>{$parametros['valor']}</strong>";
+                    }
+
+                    break;
+
+                case 'crear_registro':
+
+                case 'crear_registros':
+
+                    $accionTexto =
+                        "Crear un nuevo registro en el formulario
+                    <em>{$formDestino}</em>";
+
+                    break;
+
+                case 'eliminar_registro':
+
+                case 'eliminar_registros':
+
+                    $accionTexto =
+                        "Eliminar el registro del formulario
+                    <em>{$formDestino}</em>";
+
+                    break;
+
+                case 'enviar_email':
+
+                    $accionTexto =
+                        "Enviar un correo con asunto
+                    <strong>{$parametros['email_subject']}</strong>";
+
+                    break;
+
+                default:
+
+                    $accionTexto =
+                        "Ejecutar la acción
+                    <strong>{$tipoAccion}</strong>";
+
+                    break;
+            }
+
             $humanRules[] = "
-                <div class='mb-2'>
-                    <i class='fas fa-clipboard-list me-1'></i>
-                    Si el campo <strong>'{$campoCond->etiqueta}'</strong> del formulario <em>'{$formOrigen}'</em>  
-                     {$operadorTexto} {$valorTexto},<br>
-                    entonces {$accionTexto} <strong> caso contrario no proceder con el registro hasta cumplir con la regla.  </strong>
-                </div>
-            ";
+
+        <div class='mb-3'>
+
+            <i class='fas fa-project-diagram text-primary me-1'></i>
+
+            <strong>Formulario:</strong>
+
+            {$formOrigen}
+
+            <br><br>
+
+            <strong>Condiciones:</strong>
+
+            <ul class='mb-2'>";
+
+            foreach ($textoCondiciones as $texto) {
+
+                $humanRules[count($humanRules)] .=
+                    "<li>{$texto}</li>";
+            }
+
+            $humanRules[count($humanRules) - 1] .= "
+
+            </ul>
+
+            <strong>Acción:</strong>
+
+            {$accionTexto}
+
+        </div>";
+
         }
+
         return $humanRules;
     }
 
@@ -447,21 +598,15 @@ class RespuestasFormRepository implements RespuestasFormInterface
 
         return $formulario;
     }
-    public function obtenerReglasHumanas($campos)
+    public function obtenerReglasHumanas($formulario)
     {
-        $rules = collect();
+        $acciones = FormLogicAction::with('rule')
+            ->whereHas('rule', function ($q) use ($formulario) {
+                $q->where('form_id', $formulario);
+            })
+            ->get();
 
-        foreach ($campos as $campo) {
-            $reglasCampo = FormLogicCondition::with([
-                'campoCondicion.formulario',
-                'campoValor.formulario',
-                'action.campoDestino.formulario'
-            ])->where('campo_condicion', $campo->id)->get();
-
-            $rules = $rules->merge($reglasCampo);
-        }
-
-        return $this->GetHumanRules($rules);
+        return $this->GetHumanRules($acciones);
     }
 
 

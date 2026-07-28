@@ -48,18 +48,28 @@ class FormLogicRepository implements FormLogicInterface
 
     }
 
-    public function CrearRegla($request)
+    public function CrearRegla($request, $modulo_id)
     {
 
         $acciones = json_decode($request->acciones_json, true);
 
+        $parametros = null;
+        $segundo_plano = $request->has('segundo_plano');
+        if ($request->evento === 'scheduled') {
+            $parametros = [
+                'programacion' => $request->programacion,
+            ];
+            $segundo_plano = 1;
+        }
+
         $rule = FormLogicRule::create([
             'nombre' => $request->nombre,
             'form_id' => $request->formulario_id_disparador,
+            'modulo_id' => $modulo_id,
             'evento' => $request->evento,
             'activo' => $request->has('activo'),
-            'segundo_plano' => $request->has('segundo_plano'),
-            'parametros' => $request->parametros ?? null,
+            'segundo_plano' => $segundo_plano,
+            'parametros' => $parametros
         ]);
 
 

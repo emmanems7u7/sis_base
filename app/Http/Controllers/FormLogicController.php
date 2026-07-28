@@ -6,10 +6,13 @@ use App\Models\FormLogicRule;
 use Illuminate\Http\Request;
 use App\Interfaces\CatalogoInterface;
 use App\Interfaces\FormLogicInterface;
+use App\Models\FormLogicExecution;
 use App\Models\Modulo;
 use App\Models\PlantillaCorreo;
 use App\Models\User;
 use Spatie\Permission\Models\Role;
+use Illuminate\Validation\Rule;
+
 class FormLogicController extends Controller
 {
 
@@ -25,6 +28,67 @@ class FormLogicController extends Controller
 
     }
 
+    public function indexTareas()
+    {
+        $breadcrumb = [
+            ['name' => 'Inicio', 'url' => route('home')],
+            ['name' => 'Tareas Programadas', 'url' => ''],
+        ];
+        $tareas = FormLogicRule::where('evento', 'scheduled')
+            ->with('actions')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+
+        return view('tareas_programadas.index', compact('tareas', 'breadcrumb'));
+    }
+    public function historial(FormLogicRule $rule)
+    {
+
+        $historial = FormLogicExecution::where(
+            'rule_id',
+            $rule->id
+        )
+            ->latest()
+            ->limit(100)
+            ->get()
+            ->map(function ($item) {
+
+
+                return [
+
+                    'inicio' => $item->inicio
+                        ? $item->inicio->format('Y-m-d H:i:s')
+                        : null,
+
+
+                    'fin' => $item->fin
+                        ? $item->fin->format('Y-m-d H:i:s')
+                        : null,
+
+
+                    'estado' => $item->estado,
+
+
+                    'registros_afectados' =>
+                        $item->registros_afectados,
+
+
+                    'mensaje' => $item->mensaje,
+
+
+                    'error' => $item->error,
+
+
+                ];
+
+
+            });
+
+
+        return response()->json($historial);
+
+    }
 
     public function create(Modulo $modulo)
     {
@@ -64,13 +128,39 @@ class FormLogicController extends Controller
     {
         $request->validate([
             'nombre' => 'required|string|max:255',
-            'formulario_id_disparador' => 'required|exists:formularios,id',
+
             'evento' => 'required|string',
-            'activo' => 'nullable',
+
+            'formulario_id_disparador' => [
+                Rule::requiredIf($request->evento !== 'scheduled'),
+                'nullable',
+                'exists:formularios,id',
+            ],
+
+            'programacion.tipo' => [
+                Rule::requiredIf($request->evento === 'scheduled'),
+                'nullable',
+                'in:once,daily,weekly,monthly,interval',
+            ],
+
+            'programacion.hora' => [
+                Rule::requiredIf($request->evento === 'scheduled'),
+                'nullable',
+                'date_format:H:i',
+            ],
+
+            'programacion.inicio' => [
+                Rule::requiredIf($request->evento === 'scheduled'),
+                'nullable',
+                'date',
+            ],
+
+            'programacion.fin' => 'nullable|date|after_or_equal:programacion.inicio',
+
             'acciones_json' => 'required|string',
         ]);
 
-        $rule = $this->FormLogicRepository->CrearRegla($request);
+        $rule = $this->FormLogicRepository->CrearRegla($request, $modulo->id);
 
         return redirect()->route('modulo.administrar', $modulo->id)->with('success', 'Regla creada correctamente.');
     }

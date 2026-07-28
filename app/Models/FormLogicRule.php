@@ -10,6 +10,7 @@ class FormLogicRule extends Model
 
     protected $fillable = [
         'form_id',
+        'modulo_id',
         'nombre',
         'evento',
         'activo',
@@ -30,5 +31,9 @@ class FormLogicRule extends Model
     public function actions()
     {
         return $this->hasMany(FormLogicAction::class, 'rule_id');
+    }
+    public function ejecuciones()
+    {
+        return $this->hasMany(FormLogicExecution::class, 'rule_id');
     }
 }

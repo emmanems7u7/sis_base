@@ -7,7 +7,7 @@ use App\Models\RespuestasForm;
 
 interface FormLogicInterface
 {
-    public function CrearRegla($request);
+    public function CrearRegla($request, $modulo_id);
     public function EditarRegla($request, $form_logic);
     public function ejecutarLogica($reglas, $respuestas, $evento, $usuario, $esCascada = false): array;
     public function ejecutarAccion($respuestas, $action, $usuario, $esMultiple, $esCascada = false): array;

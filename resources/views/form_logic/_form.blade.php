@@ -6,7 +6,8 @@
 
 <div class="modal fade" id="modalVerAccion" tabindex="-1"data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
-        <div class="modal-content {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }}">
+        <div
+            class="modal-content {{ auth()->user()->preferences && auth()->user()->preferences->dark_mode ? 'bg-dark text-white' : 'bg-white text-dark' }}">
             <div class="modal-header">
                 <h5 class="modal-title">Detalle de Acción</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -24,126 +25,118 @@
 
 <div class="row mt-2">
 
-<div class="col-md-3">
-<div class="card shadow-sm border-0">
-        
-       
-        <div class="card-body">
+    <div class="col-md-4">
+        <div class="card shadow-sm border-0">
 
-            <div class="row g-3">
 
-                <!-- Nombre -->
-                <div class="col-12">
-                    <label class="form-label small text-muted">Nombre de la Regla</label>
-                    <input type="text" 
-                           name="nombre" 
-                           class="form-control shadow-sm"
-                           placeholder="Ej: Enviar correo al crear registro"
-                           value="{{ old('nombre', $rule->nombre ?? '') }}" 
-                           required>
-                </div>
+            <div class="card-body">
 
-                <!-- Formulario disparador -->
-                <div class="col-12">
-                    <label class="form-label small text-muted">Formulario disparador</label>
-                    <select class="form-select shadow-sm" 
-                            id="formulario_id_disparador" 
-                            name="formulario_id_disparador" 
-                            required>
-                        <option value="">Seleccione un formulario...</option>
+                <div class="row g-3">
 
-                        @foreach ($formularios as $form)
-                            <option value="{{ $form->id }}" 
-                                {{ (old('formulario_id_disparador', $rule->formulario_id ?? '') == $form->id) ? 'selected' : '' }}>
-                                {{ $form->nombre }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                <!-- Evento -->
-                <div class="col-12">
-                    <label class="form-label small text-muted">Evento</label>
-                    <select name="evento" 
-                            class="form-select shadow-sm tipo_valor_principal" 
-                            required>
-                        @php
-                            $eventos = [
-                                'on_create' => 'Al Crear',
-                                'on_update' => 'Al Actualizar',
-                                'on_delete' => 'Al Eliminar',
-                                'on_delete_group' => 'Al Eliminar en grupo'
-
-                            ];
-                        @endphp
-
-                        @foreach($eventos as $key => $label)
-                            <option value="{{ $key }}" 
-                                {{ (old('evento', $rule->evento ?? '') == $key) ? 'selected' : '' }}>
-                                {{ $label }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-                {{-- Tipo de acción --}}
-                <div class="col-12">
-                    <label class="form-label small text-muted">Tipo de Acción</label>
-                    <i class="fas fa-info-circle ms-1" data-bs-toggle="tooltip"
-                        data-bs-placement="top"
-                        data-bs-original-title="Para crear una nueva Accion en la regla actual debe seleccionar primero el tipo de acción.">
-                    </i>
-                    <select id="modal-tipo-accion" class="form-select shadow-sm" required>
-                        <option value="" disabled selected>Seleccionar tipo de Acción</option>
-                        @foreach ($tipo_acciones as $tipo_accion)
-                            <option value="{{ $tipo_accion->catalogo_codigo }}">{{ $tipo_accion->catalogo_descripcion }}
-                            </option>
-                        @endforeach
-                    </select>
-                </div>
-
-                   <!-- Segundo plano -->
-                   <div class="col-12">
-                    <div class="form-check form-switch mt-2">
-                        <input class="form-check-input" 
-                               type="checkbox" 
-                               name="segundo_plano" 
-                               id="segundo_plano"
-                               {{ old('segundo_plano', $rule->segundo_plano ?? false) ? 'checked' : '' }}>
-                        <label class="form-check-label fw-semibold" for="segundo_plano">
-                            Ejecutar en cola
-                        </label>
+                    <!-- Nombre -->
+                    <div class="col-12">
+                        <label class="form-label small text-muted">Nombre de la Regla</label>
+                        <input type="text" name="nombre" class="form-control shadow-sm"
+                            placeholder="Ej: Enviar correo al crear registro"
+                            value="{{ old('nombre', $rule->nombre ?? '') }}" required>
                     </div>
-                </div>
-                <!-- Activo -->
-                <div class="col-12">
-                    <div class="form-check form-switch mt-2">
-                        <input class="form-check-input" 
-                               type="checkbox" 
-                               name="activo" 
-                               id="activo"
-                               {{ old('activo', $rule->activo ?? true) ? 'checked' : '' }}>
-                        <label class="form-check-label fw-semibold" for="activo">
-                            Regla Activa
-                        </label>
+
+                    <!-- Formulario disparador -->
+                    <div class="col-12" id="bloque-formulario-disparador">
+                        <label class="form-label small text-muted">Formulario disparador</label>
+                        <select class="form-select shadow-sm" id="formulario_id_disparador"
+                            name="formulario_id_disparador" required>
+                            <option value="">Seleccione un formulario...</option>
+
+                            @foreach ($formularios as $form)
+                                <option value="{{ $form->id }}"
+                                    {{ old('formulario_id_disparador', $rule->formulario_id ?? '') == $form->id ? 'selected' : '' }}>
+                                    {{ $form->nombre }}
+                                </option>
+                            @endforeach
+                        </select>
                     </div>
+
+                    <!-- Evento -->
+                    <div class="col-12">
+                        <label class="form-label small text-muted">Evento</label>
+                        <select name="evento" class="form-select shadow-sm tipo_valor_principal" required>
+                            @php
+                                $eventos = [
+                                    'on_create' => 'Al Crear',
+                                    'on_update' => 'Al Actualizar',
+                                    'on_delete' => 'Al Eliminar',
+                                    'on_delete_group' => 'Al Eliminar en grupo',
+                                    'scheduled' => 'Tarea programada',
+                                ];
+                            @endphp
+
+                            @foreach ($eventos as $key => $label)
+                                <option value="{{ $key }}"
+                                    {{ old('evento', $rule->evento ?? '') == $key ? 'selected' : '' }}>
+                                    {{ $label }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+                    {{-- Programacion de tarea  --}}
+                    <div id="contenedor-programacion" class="d-none mt-3">
+                        @include('form_logic.programacion')
+                    </div>
+
+                    {{-- Tipo de acción --}}
+                    <div class="col-12">
+                        <label class="form-label small text-muted">Tipo de Acción</label>
+                        <i class="fas fa-info-circle ms-1" data-bs-toggle="tooltip" data-bs-placement="top"
+                            data-bs-original-title="Para crear una nueva Accion en la regla actual debe seleccionar primero el tipo de acción.">
+                        </i>
+                        <select id="modal-tipo-accion" class="form-select shadow-sm" required>
+                            <option value="" disabled selected>Seleccionar tipo de Acción</option>
+                            @foreach ($tipo_acciones as $tipo_accion)
+                                <option value="{{ $tipo_accion->catalogo_codigo }}">
+                                    {{ $tipo_accion->catalogo_descripcion }}
+                                </option>
+                            @endforeach
+                        </select>
+                    </div>
+
+                    <!-- Segundo plano -->
+                    <div class="col-12">
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" name="segundo_plano" id="segundo_plano"
+                                {{ old('segundo_plano', $rule->segundo_plano ?? false) ? 'checked' : '' }}>
+                            <label class="form-check-label fw-semibold" for="segundo_plano">
+                                Ejecutar en cola
+                            </label>
+                        </div>
+                    </div>
+                    <!-- Activo -->
+                    <div class="col-12">
+                        <div class="form-check form-switch mt-2">
+                            <input class="form-check-input" type="checkbox" name="activo" id="activo"
+                                {{ old('activo', $rule->activo ?? true) ? 'checked' : '' }}>
+                            <label class="form-check-label fw-semibold" for="activo">
+                                Regla Activa
+                            </label>
+                        </div>
+                    </div>
+
                 </div>
 
             </div>
-
         </div>
+
+        <h5>Acciones</h5>
+        <div id="acciones-list" class=" row mb-3"></div>
+
+
     </div>
+    <div class="col-md-8">
 
-    <h5>Acciones</h5>
-<div id="acciones-list" class=" row mb-3"></div>
+        <div class="card shadow-sm border-0 h-100">
+            <div class="card-body d-flex flex-column">
 
 
-</div>
-    <div class="col-md-9">
-
-    <div class="card shadow-sm border-0 h-100">
-        <div class="card-body d-flex flex-column">
-              
-    
                 {{-- Bloque modificar campo --}}
                 @include('form_logic.modificar_campo')
 
@@ -157,9 +150,9 @@
                 @include('form_logic.enviar_email')
 
                 {{-- Bloque Eliminar registro --}}
-                
+
                 @include('form_logic.eliminar_registro')
-             
+
                 <div id="contenedor_mensaje"
                     class="flex-fill d-flex flex-column justify-content-center align-items-center text-center text-muted">
 
@@ -177,29 +170,108 @@
 
                 <div id="contenedor_condiciones" class="d-none">
                     @include('form_logic.condiciones')
-                
+
                 </div>
 
-                <div class="d-flex gap-2 justify-content-center d-none" id="contenedor_botones" >
-                    <button 
-                        type="button" 
-                        class="btn btn-secondary" 
-                        id="cancelar-edicion-accion">
+                <div class="d-flex gap-2 justify-content-center d-none" id="contenedor_botones">
+                    <button type="button" class="btn btn-secondary" id="cancelar-edicion-accion">
                         Cancelar
                     </button>
 
-                    <button 
-                        type="button" 
-                        class="btn btn-primary" 
-                        id="guardar-accion-logica">
+                    <button type="button" class="btn btn-primary" id="guardar-accion-logica">
                         Agregar Acción
                     </button>
                 </div>
 
             </div>
-    </div>
+        </div>
     </div>
 
 </div>
 
+<script>
+    // CONFIGURACIÓN DEL EVENTO
 
+    const evento = document.querySelector('select[name="evento"]');
+    const formulario = document.getElementById("formulario_id_disparador");
+    const bloqueFormulario = document.getElementById("bloque-formulario-disparador");
+    const programacion = document.getElementById("contenedor-programacion");
+    const segundoPlano = document.getElementById("segundo_plano");
+
+    // Inicializar
+    evento.addEventListener("change", actualizarVistaEvento);
+    actualizarVistaEvento();
+
+    function actualizarVistaEvento() {
+
+        const esProgramado = evento.value === "scheduled";
+
+        // Mostrar/Ocultar formulario disparador
+        bloqueFormulario.classList.toggle("d-none", esProgramado);
+
+        // Mostrar/Ocultar configuración de programación
+        programacion.classList.toggle("d-none", !esProgramado);
+
+        // Ejecutar en cola
+        if (esProgramado) {
+
+            segundoPlano.checked = true;
+            segundoPlano.disabled = true;
+
+        } else {
+
+            segundoPlano.disabled = false;
+            segundoPlano.checked = false;
+        }
+    }
+
+
+
+    // CONFIGURACIÓN DEL TIPO DE PROGRAMACIÓN
+
+    const tipoProgramacion = document.getElementById("programacion_tipo");
+
+    if (tipoProgramacion) {
+
+        tipoProgramacion.addEventListener("change", actualizarTipoProgramacion);
+
+        actualizarTipoProgramacion();
+
+    }
+
+    function actualizarTipoProgramacion() {
+
+        const tipo = tipoProgramacion.value;
+
+        document.getElementById("bloque-fecha-unica").classList.add("d-none");
+        document.getElementById("bloque-semanal").classList.add("d-none");
+        document.getElementById("bloque-mensual").classList.add("d-none");
+        document.getElementById("bloque-intervalo").classList.add("d-none");
+        document.getElementById("bloque-intervalo2").classList.add("d-none");
+
+        switch (tipo) {
+
+            case "once":
+
+                document.getElementById("bloque-fecha-unica").classList.remove("d-none");
+                break;
+
+            case "weekly":
+
+                document.getElementById("bloque-semanal").classList.remove("d-none");
+                break;
+
+            case "monthly":
+
+                document.getElementById("bloque-mensual").classList.remove("d-none");
+                break;
+
+            case "interval":
+
+                document.getElementById("bloque-intervalo").classList.remove("d-none");
+                document.getElementById("bloque-intervalo2").classList.remove("d-none");
+                break;
+        }
+
+    }
+</script>

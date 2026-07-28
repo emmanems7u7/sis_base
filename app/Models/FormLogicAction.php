@@ -43,10 +43,7 @@ class FormLogicAction extends Model
             ? Formulario::find($id)
             : null;
     }
-    public function conditions()
-    {
-        return $this->hasMany(FormLogicCondition::class, 'action_id');
-    }
+
 
     // Accesores para obtener descripciones desde el catálogo
     public function getTipoAccionCatalogoAttribute()

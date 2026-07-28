@@ -12,7 +12,7 @@ return new class extends Migration {
     {
         Schema::create('form_logic_rules', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('form_id')->constrained('formularios')->onDelete('cascade');
+            $table->foreignId('form_id')->nullable()->constrained('formularios')->onDelete('cascade');
             $table->string('nombre');
             $table->string('evento');
             $table->boolean('activo')->default(true);

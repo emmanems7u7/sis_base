@@ -3,7 +3,7 @@
         <thead>
             <tr>
                 <th>Nombre</th>
-                <th>Formulario Origen</th>
+                <th>Formulario disparador</th>
                 <th>Evento</th>
                 <th>Acciones</th>
                 <th>Estado</th>
@@ -13,19 +13,20 @@
         </thead>
         <tbody>
 
-            @foreach($rules as $rule)
+            @foreach ($rules as $rule)
                 <tr>
                     <td>{{ $rule->nombre }}</td>
-                    <td>{{ $rule->formulario->nombre }}</td>
+                    <td>{{ $rule->formulario->nombre ?? 'No Corresponde' }}</td>
                     <td>{{ $rule->evento }}</td>
                     <td>
-                        @foreach($rule->actions as $act)
+                        @foreach ($rule->actions as $act)
                             <div>
-                                {{ $act->OperacionCatalogo }} → {{ $act->formularioDestino->nombre ?? 'Sin formulario' }}
+                                {{ $act->OperacionCatalogo }} →
+                                {{ $act->formularioDestino->nombre ?? 'Sin formulario' }}
                             </div>
                         @endforeach
                     </td>
-                    <td>{{ $rule->activo ? 'Activo' : 'Inactivo'}}</td>
+                    <td>{{ $rule->activo ? 'Activo' : 'Inactivo' }}</td>
                     <td>{{ $rule->segundo_plano ? 'Segundo Plano' : 'Primer Plano' }}</td>
 
                     <td>
@@ -38,6 +39,8 @@
                     </td>
                 </tr>
             @endforeach
+
+
         </tbody>
     </table>
 </div>

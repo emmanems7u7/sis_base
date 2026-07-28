@@ -923,7 +923,7 @@
             mostrarAlerta('error', 'Ingrese el nombre de la regla');
             return;
         }
-        if (!FormularioDisparador) {
+        if (evento !== 'scheduled' && !FormularioDisparador) {
             mostrarAlerta('error', 'Seleccione el formulario disparador');
             return;
         }
