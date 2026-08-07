@@ -36,7 +36,7 @@
         </div>
     @endif
 
-    <button type="button" class="btn btn-sm btn-outline-primary mt-2 btn-ver-mas-checkbox"
+    <button type="button" class="btn btn-xs btn-outline-primary mt-2 btn-ver-mas-checkbox"
         data-campo-id="{{ $campo->id }}">
         Ver más...
     </button>

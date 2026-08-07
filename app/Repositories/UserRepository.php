@@ -2,6 +2,7 @@
 namespace App\Repositories;
 
 use App\Interfaces\UserInterface;
+use App\Models\ConfiguracionCredenciales;
 use App\Models\User;
 use Illuminate\Support\Facades\Hash;
 
@@ -19,11 +20,11 @@ class UserRepository extends BaseRepository implements UserInterface
     public function CrearUsuario($request)
     {
         $this->validar_datos($request);
-
+        $configuracion = ConfiguracionCredenciales::first();
         $user = User::create(attributes: [
             'name' => $this->cleanHtml($request->input('name')),
             'email' => $this->cleanHtml($request->input('email')),
-            'password' => Hash::make($this->configuracion->conf_defecto),
+            'password' => Hash::make($$configuracion->conf_defecto),
             'usuario_fecha_ultimo_acceso' => null,
             'usuario_fecha_ultimo_password' => null,
             'usuario_nombres' => $this->cleanHtml($request->input('usuario_nombres')),
