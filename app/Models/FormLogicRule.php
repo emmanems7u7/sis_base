@@ -36,4 +36,6 @@ class FormLogicRule extends Model
     {
         return $this->hasMany(FormLogicExecution::class, 'rule_id');
     }
+
+
 }

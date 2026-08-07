@@ -81,36 +81,23 @@ class FormLogicRepository implements FormLogicInterface
 
     public function EditarRegla($request, $form_logic)
     {
+
         $acciones = json_decode($request->acciones_json, true);
-
         $form_logic = FormLogicRule::findOrFail($form_logic);
-
-        $parametros = null;
-        $segundo_plano = $request->has('segundo_plano');
-
-        if ($request->evento === 'scheduled') {
-            $parametros = [
-                'programacion' => $request->programacion,
-            ];
-
-            // Las tareas programadas siempre se ejecutan en segundo plano
-            $segundo_plano = 1;
-        }
-
         $form_logic->update([
             'nombre' => $request->nombre,
             'form_id' => $request->formulario_id_disparador,
             'evento' => $request->evento,
             'activo' => $request->has('activo'),
-            'segundo_plano' => $segundo_plano,
-            'parametros' => $parametros,
+            'segundo_plano' => $request->has('segundo_plano'),
+
+            'parametros' => $request->parametros ?? null,
         ]);
 
         // Eliminar acciones existentes y sus condiciones
         $form_logic->actions()->delete();
-        $this->guardarAccionesYCondiciones($form_logic, $acciones);
 
-        return $form_logic;
+        $this->guardarAccionesYCondiciones($form_logic, $acciones);
     }
     // Función para guardar acciones y condiciones
     protected function guardarAccionesYCondiciones(FormLogicRule $rule, array $acciones)
@@ -120,33 +107,26 @@ class FormLogicRepository implements FormLogicInterface
             $parametrosExtra = [];
 
             switch ($actionData['tipo_accion_id']) {
-                case 'TAC-001': // modificar campos
-
+                case 'TAC-001': // modificar_campo
                     $parametrosExtra = [
 
-                        // Formulario donde se ejecuta la acción
-                        'form_origen_id' => $actionData['form_origen_id'] ?? null,
-
-
-                        // Formulario donde se modifican datos
-                        'form_ref_id' => $actionData['form_ref_id'] ?? null,
-
-
-                        // Condiciones para ejecutar
+                        'form_origen_id' => $actionData['form_origen_id'] ?? [],
+                        'operacion' => $actionData['operacion'] ?? 'actualizar',
+                        'tipo_valor' => $actionData['tipo_valor'] ?? 'static',
+                        'valor' => $actionData['valor'] ?? null,
+                        'valor_text' => $actionData['valor_text'] ?? null,
+                        'filtros_relacion' => $actionData['filtros_relacion'] ?? [],
+                        'campo_ref_id' => $actionData['campo_ref_id'] ?? [],
+                        'tipo_accion_text' => $actionData['tipo_accion_text'] ?? [],
+                        'form_ref_id' => $actionData['form_ref_id'] ?? [],
+                        'form_ref_text' => $actionData['form_ref_text'] ?? [],
+                        'campo_ref_text' => $actionData['campo_ref_text'] ?? [],
+                        'operacion_rev' => $actionData['operacion_rev'] ?? 0,
+                        'operacion_text' => $actionData['operacion_text'] ?? [],
                         'condiciones' => $actionData['condiciones'] ?? [],
 
 
-                        // Campos que serán modificados
-                        'asignaciones' => $actionData['asignaciones'] ?? [],
-
-
-                        // Datos descriptivos
-                        'tipo_accion_text' => $actionData['tipo_accion_text'] ?? '',
-
-                        'form_ref_text' => $actionData['form_ref_text'] ?? '',
-
                     ];
-
                     break;
 
 
@@ -368,9 +348,12 @@ class FormLogicRepository implements FormLogicInterface
         $usuario,
         $esCascada = false
     ): array {
+
         $esMultiple = $respuestas instanceof \Illuminate\Support\Collection;
 
-        $respuestas = $esMultiple ? collect($respuestas) : collect($respuestas ? [$respuestas] : []);
+        $respuestas = $esMultiple
+            ? collect($respuestas)
+            : collect($respuestas ? [$respuestas] : []);
 
         $respuesta = $respuestas->first();
 
@@ -386,10 +369,9 @@ class FormLogicRepository implements FormLogicInterface
             'mensaje' => ''
         ];
 
-
         foreach ($reglas as $regla) {
             foreach ($regla->actions as $action) {
-                //if ($action->id == 91) { //////SOLO PARA VALIDAR UNA ACCION/////////////////
+                //if ($action->id == 64) { //////SOLO PARA VALIDAR UNA ACCION/////////////////
                 $resultadoAccion = $this->ejecutarAccion(
                     $regla,
                     $respuestas,
@@ -430,6 +412,7 @@ class FormLogicRepository implements FormLogicInterface
 
     public function ValidarLogica($respuesta, $filasSeleccionadas, $evento)
     {
+
         $resultado[] = '';
         $reglas = FormLogicRule::where('form_id', $respuesta->form_id)
             ->where('evento', $evento)
@@ -438,6 +421,9 @@ class FormLogicRepository implements FormLogicInterface
 
         foreach ($reglas as $regla) {
             foreach ($regla->actions as $action) {
+
+
+
 
                 $msg = $this->validarAccion($respuesta, $filasSeleccionadas, $action);
 
@@ -448,6 +434,7 @@ class FormLogicRepository implements FormLogicInterface
 
             }
         }
+
         $mensaje = collect($resultado)
             ->unique()
             ->values()
@@ -507,11 +494,10 @@ class FormLogicRepository implements FormLogicInterface
                 $valorEvaluar = $this->resolverValorEvaluar($condicion['campo_condicion_origen'], $filasSeleccionadas, $condicion['formulario_relacion_origen']);
 
             }
-
             $resultado = $this->resolverValorEvaluar($condicion['campo_condicion_destino'], $filasSeleccionadas, $parametros['form_ref_id'], $valorEvaluar['valor']);
 
-            if ($valorEvaluar['valor'] === null || $valorEvaluar['valor'] === '') {
 
+            if ($valorEvaluar['valor'] === null || $valorEvaluar['valor'] === '') {
 
                 $mensaje = "El valor origen está vacío";
 
@@ -595,278 +581,9 @@ class FormLogicRepository implements FormLogicInterface
 
         return $mensaje;
     }
-    private function resolverFormulaAsignacion(
-        $formula,
-        $filasSeleccionadas,
-        $respuestaDestino = null,
-        $filasOriginales = [],
-        $parametros = []
-    ) {
-        $tokens = [];
 
-        $tieneFuncion = false;
-        $funcionActual = null;
-
-        /*
-        |--------------------------------------------------------------------------
-        | Detectar funciones
-        |--------------------------------------------------------------------------
-        */
-
-        foreach ($formula as $elemento) {
-
-            if (($elemento['tipo'] ?? null) === 'funcion') {
-
-                $tieneFuncion = true;
-
-                $funcionActual = $elemento['nombre'] ?? null;
-
-                break;
-            }
-
-        }
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Procesar funciones
-        |--------------------------------------------------------------------------
-        */
-
-        if ($tieneFuncion) {
-
-
-            switch ($funcionActual) {
-
-
-                case 'DELTA':
-                    return $this->resolverFuncionDelta(
-                        $formula,
-                        $filasSeleccionadas,
-                        $filasOriginales,
-                        $respuestaDestino,
-                        $parametros
-                    );
-
-
-                default:
-
-                    return null;
-
-            }
-
-        }
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | Procesar expresión normal
-        |
-        | Ejemplo:
-        |
-        | campo + campo - campo
-        |
-        |--------------------------------------------------------------------------
-        */
-
-        foreach ($formula as $elemento) {
-
-
-            switch ($elemento['tipo'] ?? null) {
-
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Campo
-                |--------------------------------------------------------------------------
-                */
-
-                case 'campo':
-
-
-                    $contexto = $elemento['contexto'] ?? 'origen';
-
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Campo formulario origen
-                    |--------------------------------------------------------------------------
-                    */
-
-                    if ($contexto === 'origen') {
-
-
-                        $resultado = $this->GetResultadoByCampoOrigen(
-                            $filasSeleccionadas,
-                            $elemento['campo_id'],
-                            $elemento['form'] ?? null
-                        );
-
-
-
-                        if (
-                            !is_array($resultado) ||
-                            !isset($resultado['valor'])
-                        ) {
-
-                            return null;
-
-                        }
-
-
-
-                        $tokens[] = $resultado['valor'];
-
-
-
-                    }
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Campo formulario destino
-                    |--------------------------------------------------------------------------
-                    */ else {
-
-
-
-                        if (!$respuestaDestino) {
-                            return null;
-                        }
-
-
-
-                        $campoDestino = RespuestasCampo::where([
-                            'respuesta_id' => $respuestaDestino['respuesta_id'],
-                            'cf_id' => $elemento['campo_id']
-                        ])
-                            ->first();
-
-
-
-
-                        if (!$campoDestino) {
-                            return null;
-                        }
-
-                        $tokens[] = $campoDestino->valor ?? 0;
-
-
-                    }
-
-
-
-                    break;
-
-
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Operadores
-                |--------------------------------------------------------------------------
-                */
-
-                case 'operador':
-
-                    $tokens[] = $elemento['valor'];
-
-                    break;
-
-
-
-
-                /*
-                |--------------------------------------------------------------------------
-                | Valores fijos
-                |--------------------------------------------------------------------------
-                */
-
-                case 'valor':
-
-                    $tokens[] = $elemento['valor'];
-
-                    break;
-
-
-
-            }
-
-        }
-
-
-
-        return $this->evaluarExpresionLineal($tokens);
-
-    }
-    private function evaluarExpresionLineal($tokens)
-    {
-
-        if (empty($tokens)) {
-            return null;
-        }
-
-
-        $resultado = array_shift($tokens);
-
-
-
-        while (count($tokens) >= 2) {
-
-
-            $operador = array_shift($tokens);
-
-            $valor = array_shift($tokens);
-
-
-
-            switch ($operador) {
-
-
-                case '+':
-                    $resultado += $valor;
-                    break;
-
-
-                case '-':
-                    $resultado -= $valor;
-                    break;
-
-
-                case '*':
-                    $resultado *= $valor;
-                    break;
-
-
-                case '/':
-
-                    if ($valor == 0) {
-                        return null;
-                    }
-
-                    $resultado /= $valor;
-
-                    break;
-
-
-                default:
-                    return null;
-
-            }
-
-        }
-
-
-        return $resultado;
-
-    }
     public function validarAccion(RespuestasForm $respuestaOrigen, $filasSeleccionadas, $action): string
     {
-
         $parametros = $action->parametros ?? [];
 
         $formDestino = $action->formularioDestino;
@@ -880,218 +597,115 @@ class FormLogicRepository implements FormLogicInterface
              * TAC-001 modificar_campo
              * ============================== */
             case 'TAC-001':
-
                 if (!$formDestino) {
                     $mensaje = "No existe formulario destino para la acción {$action->id}";
                     break;
                 }
 
+                // Validar valor origen si viene de campo
+
                 $condicionesIgual = [];
                 $otrasCondiciones = [];
-
                 foreach ($parametros['condiciones'] ?? [] as $condicion) {
-
                     if (($condicion['operador'] ?? '=') === '=') {
-
-                        if (
-                            !isset($condicion['tipo_condicion']) ||
-                            $condicion['tipo_condicion'] !== 'form_valor'
-                        ) {
+                        if (!isset($condicion['tipo_condicion']) || $condicion['tipo_condicion'] !== 'form_valor') {
 
                             $condicionesIgual[] = $condicion;
-
                         } else {
-
                             $otrasCondiciones[] = $condicion;
+
                         }
-
                     } else {
-
                         $otrasCondiciones[] = $condicion;
                     }
                 }
 
-
-
-                $mensaje = $this->ValidarCondicionesIgualdad(
-                    $condicionesIgual,
-                    $filasSeleccionadas,
-                    $parametros,
-                    $respuestaOrigen
-                );
-
+                $mensaje = $this->ValidarCondicionesIgualdad($condicionesIgual, $filasSeleccionadas, $parametros, $respuestaOrigen);
 
                 if ($mensaje != '') {
                     break;
                 }
 
+                // OBTENER EL VALOR PRINCIPAL PARA EVALUAR LA CONDICION
+                $CampoDestinoId = $parametros['campo_ref_id'] ?? null;
+                $tipoValor = $parametros['tipo_valor'] ?? null;
+                $valorRaw = $parametros['valor'] ?? null;
 
-                foreach ($parametros['asignaciones'] ?? [] as $asignacion) {
+                $CampoDestino = CamposForm::find($CampoDestinoId);
 
 
-                    $campoDestinoId =
-                        $asignacion['destino']['campo_id'] ?? null;
 
-
-                    if (!$campoDestinoId) {
-
-                        $mensaje = "No existe campo destino en asignación de acción {$action->id}";
-                        break;
-                    }
-
-
-                    $campoDestino = CamposForm::find($campoDestinoId);
-
-
-                    if (!$campoDestino) {
-
-                        $mensaje = "No existe campo destino ID {$campoDestinoId} para {$accionNombre}, acción {$action->id}";
-                        break;
-                    }
-
-
-
-                    $valor_principal = null;
-
-
-                    $modo = $asignacion['modo'] ?? null;
-
-
-
-                    switch ($modo) {
-
-
-                        case 'valor':
-
-                            $valor_principal = $asignacion['valor'] ?? null;
-
-
-                            if ($valor_principal === null || $valor_principal === '') {
-
-                                $mensaje = "Valor fijo no definido para campo {$campoDestinoId}";
-                                break 2;
-                            }
-
-
-                            break;
-
-                        case 'campo':
-
-                            $campoOrigenId = $asignacion['origen']['campo_id'] ?? null;
-
-
-                            if (!$campoOrigenId) {
-
-                                $mensaje = "Campo origen no definido para asignación {$action->id}";
-                                break 2;
-                            }
-
-
-
-                            $resultado = $this->GetResultadoByCampoOrigen(
-                                $filasSeleccionadas,
-                                $campoOrigenId,
-                                $asignacion['origen']['form'] ?? null
-                            );
-
-
-                            if (
-                                !is_array($resultado) ||
-                                blank($resultado['valor'] ?? null)
-                            ) {
-
-                                $mensaje = "No se encontró valor para campo origen {$campoOrigenId}";
-                                break 2;
-                            }
-
-
-                            $valor_principal = $resultado['valor'];
-
-
-                            break;
-
-
-                        case 'calculo':
-                        case 'funcion':
-
-                            $campoDestino = $asignacion['destino']['campo_id'] ?? null;
-
-
-                            if (!$campoDestino) {
-
-                                $mensaje = "Campo destino no definido para asignación {$action->id}";
-                                break 2;
-                            }
-
-                            $resultado = $this->GetResultadoByCampoOrigen(
-                                $filasSeleccionadas,
-                                $campoDestino,
-                                $asignacion['destino']['form'] ?? null
-                            );
-
-                            if (collect($resultado)->filter()->isEmpty()) {
-
-                                //SI NO ENCUENTRA RESPUESTA DESTINO CON LAS FILAS SELECCIONADAS, 
-                                //INTENTA OBTENER RESPUESTAS QUE CUMPLAN CON LAS CONDICIONES DE IGUALDAD PARA MODIFICAR EL CAMPO EN ESAS RESPUESTAS
-                                $respuestaIds = $this->GetRespuestaIdsByCondicion($condicionesIgual, $filasSeleccionadas, $parametros);
-                                $respuestaIds = array_values($respuestaIds);
-
-                                $respuestaDestino = RespuestasCampo::whereIn('respuesta_id', $respuestaIds)
-                                    ->where('cf_id', $campoDestino)
-                                    ->first();
-
-                                $resultado = [
-                                    'formulario_id' => $respuestaDestino->respuesta->form_id ?? null,
-                                    'respuesta_id' => $respuestaDestino->respuesta_id ?? null,
-                                    'campo_id' => $campoDestino,
-                                    'valor' => $respuestaDestino->valor ?? null,
-                                    'from_relation' => false
-                                ];
-                            }
-
-                            /*
-                                                        $valor_principal = $this->resolverFormulaAsignacion(
-                                                            $asignacion['formula'] ?? [],
-                                                            $filasSeleccionadas,
-                                                            $resultado
-                                                        );
-
-
-                                                        if ($valor_principal === null) {
-
-                                                            $mensaje = "No se pudo resolver cálculo para campo {$campoDestinoId}";
-                                                            break 2;
-                                                        }*/
-
-
-                            break;
-
-
-
-                        default:
-
-                            $mensaje = "Modo de asignación inválido: {$modo}";
-                            break 2;
-
-                    }
-
-                    $mensaje = $this->ValidarOtrasCondiciones(
-                        $otrasCondiciones,
-                        $filasSeleccionadas,
-                        $parametros,
-                        $respuestaOrigen,
-                        $valor_principal
-                    );
-
-
-                    if ($mensaje != '') {
-                        break;
-                    }
-
-                    Log::info("TAC-001 preparado | Campo {$campoDestinoId} = {$valor_principal}");
-
+                if (!$CampoDestino) {
+                    $mensaje = "No existe campo destino para {$accionNombre}, acción {$action->id}";
+                    break;
                 }
 
+
+                // RESOLVER CAMPO ORIGEN SEGÚN tipo_valor
+
+                $campoOrigenId = null;
+
+                if ($tipoValor == 'campo') {
+
+
+                    $campoOrigenId = $valorRaw;
+
+                    if (!$campoOrigenId) {
+                        $mensaje = "Campo origen no definido en acción {$action->id}";
+                        break;
+                    }
+
+                } elseif ($tipoValor == 'static') {
+
+                    // valor directo (no depende de campos)
+                    $valor_principal = $valorRaw;
+
+                    if ($valor_principal === null || $valor_principal === '') {
+                        $mensaje = "Valor estático no definido en acción {$action->id}";
+                        break;
+                    }
+
+                } else {
+
+                    $mensaje = "tipo_valor inválido en acción {$action->id}";
+                    break;
+                }
+
+
+                //CASO: VALOR DESDE OTRO CAMPO
+
+                if ($tipoValor == 'campo') {
+
+                    // Obtener valores desde filas seleccionadas
+                    $resultado = $this->GetResultadoByCampoOrigen($filasSeleccionadas, $campoOrigenId);
+
+                    if (collect($resultado)->filter()->isEmpty()) {
+
+                        $resultado = $this->GetResultadoByCampoOrigen($filasSeleccionadas, $campoOrigenId, $parametros['form_origen_id']);
+
+                    }
+
+                    $tieneValoresValidos = is_array($resultado) && !blank($resultado['valor'] ?? null);
+
+                    if (!$tieneValoresValidos) {
+
+                        $mensaje = "No se encontraron valores válidos en campo ID {$campoOrigenId}";
+                        break;
+                    }
+
+                    // Obtener valor real desde la respuesta origen
+                    $valor_principal = $resultado['valor'] ?? null;
+                    if ($valor_principal === null || $valor_principal === '') {
+                        $mensaje = "El campo origen ({$campoOrigenId}) no tiene valor";
+                        break;
+                    }
+                }
+
+                $mensaje = $this->ValidarOtrasCondiciones($otrasCondiciones, $filasSeleccionadas, $parametros, $respuestaOrigen, $valor_principal);
+
+                if ($mensaje != '') {
+                    break;
+                }
 
                 break;
 
@@ -1192,7 +806,6 @@ class FormLogicRepository implements FormLogicInterface
 
     private function resolverValorEvaluar($campo_condicion, $filasSeleccionadas, $form_id, $valorOrigen = null)
     {
-
         $resultado = [
             'formulario_id' => null,
             'respuesta_id' => null,
@@ -1258,8 +871,8 @@ class FormLogicRepository implements FormLogicInterface
 
         //SI NO ENCONTRÓ VALOR CONSULTAR BD COMO ÚLTIMO RECURSO
 
-        if (($resultado['valor'] === null || $resultado['valor'] === '') && $valorOrigen) {
 
+        if (($resultado['valor'] === null || $resultado['valor'] === '') && $valorOrigen) {
             $registro = RespuestasCampo::where('valor', $valorOrigen)
                 ->where('cf_id', $campo_condicion)
                 ->first();
@@ -1323,6 +936,8 @@ class FormLogicRepository implements FormLogicInterface
 
                 // TAC-001 modificar_campo
                 case 'TAC-001':
+
+
                     $condicionesIgual = [];
                     foreach ($parametros['condiciones'] ?? [] as $condicion) {
                         if (($condicion['operador'] ?? '=') === '=') {
@@ -1408,31 +1023,19 @@ class FormLogicRepository implements FormLogicInterface
                             $respuestas = RespuestasForm::whereIn('id', $respuestaIds)->get();
 
                             $errores = [];
-                            $visitados = [];
 
                             foreach ($respuestas as $respuesta) {
 
-                                $resultadoEliminar = $this->LogicaEliminarRespuesta(
-                                    'on_delete',
-                                    $respuesta,
-                                    false,
-                                    $visitados
-                                );
+                                $resultado = $this->LogicaEliminarRespuesta('on_delete', $respuesta);
 
-                                Log::info('Resultado eliminar', ['resultado' => $resultadoEliminar]);
-
-                                if (!$resultadoEliminar['success']) {
-                                    $errores = array_merge(
-                                        $errores,
-                                        $resultadoEliminar['errores'] ?? []
-                                    );
+                                if (!$resultado['success']) {
+                                    $errores = array_merge($errores, $resultado['errores'] ?? []);
                                 }
                             }
 
                             $errores = array_values(array_unique($errores));
 
                             $resultado = [
-                                'success' => empty($errores),
                                 'audit' => [
                                     'mensaje' => implode(' | ', $errores),
                                     'detalle' => [],
@@ -1440,25 +1043,13 @@ class FormLogicRepository implements FormLogicInterface
                             ];
                         } else {
                             $resultado = [
-                                'success' => false,
                                 'audit' => [
                                     'mensaje' => 'No existen respuestas para ejecutar la acción de eliminar registros',
                                     'detalle' => [],
                                 ]
                             ];
                         }
-                    } else {
-
-                        $resultado = [
-                            'success' => true,
-                            'audit' => [
-                                'mensaje' => 'Eliminación omitida por cascada',
-                                'detalle' => [],
-                            ]
-                        ];
-
                     }
-
                     break;
             }
 
@@ -2017,448 +1608,273 @@ class FormLogicRepository implements FormLogicInterface
         ];
     }
 
-    private function EjecutarModificarCampo(
-        $respuestas,
-        $esMultiple,
-        $parametros,
-        $action,
-        $condicionesIgual,
-        $regla
-    ) {
+    private function EjecutarModificarCampo($respuestas, $esMultiple, $parametros, $action, $condicionesIgual, $regla)
+    {
 
         $audit = ['detalle' => []];
 
+        $respuestasCollection = $esMultiple ? $respuestas : collect([$respuestas->first() ?? $respuestas]);
 
-        $respuestasCollection = $esMultiple
-            ? $respuestas
-            : collect([$respuestas->first() ?? $respuestas]);
+        $CampoDestinoId = $parametros['campo_ref_id'] ?? null;
+        $CampoDestino = CamposForm::find($CampoDestinoId);
 
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | NUEVA ESTRUCTURA:
-        | recorrer todas las asignaciones
-        |--------------------------------------------------------------------------
-        */
-
-        $asignaciones = $parametros['asignaciones'] ?? [];
-
-
-        if (empty($asignaciones)) {
-
+        if (!$CampoDestino) {
             return [
                 'success' => false,
                 'audit' => $audit
             ];
         }
 
+        $tipoValor = $parametros['tipo_valor'] ?? null;
 
+        $valorRaw = $parametros['valor'] ?? null;
 
-        /*
-        |--------------------------------------------------------------------------
-        | EVENTO NORMAL
-        |--------------------------------------------------------------------------
-        */
+        $campoOrigenId = null;
 
+        if ($tipoValor == 'campo') {
+            $campoOrigenId = $valorRaw;
+        }
         if ($regla->evento != 'scheduled') {
-
-
             foreach ($respuestasCollection as $respuestaOrigen) {
 
+                $valor = null;
 
                 $filasSeleccionadas = $respuestaOrigen->filasSeleccionadas ?? [];
-
                 $filasOriginales = $respuestaOrigen->filasOriginales ?? [];
 
+                if ($tipoValor == 'campo') {
 
-                foreach ($asignaciones as $asignacion) {
-
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Campo destino
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $campoDestinoId = $asignacion['destino']['campo_id'] ?? null;
-                    $campoDestinoText = $asignacion['destino']['nombre'] ?? null;
-
-
-                    $formDestinoId = $asignacion['destino']['form'] ?? $parametros['form_ref_id'];
-
-
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Resolver formula
-                    |--------------------------------------------------------------------------
-                    */
-
-                    $resultado = $this->GetResultadoByCampoOrigen(
+                    $resultadoOrigen = $this->GetResultadoByCampoOrigen(
                         $filasSeleccionadas,
-                        $campoDestinoId,
-                        $asignacion['destino']['form'] ?? null
+                        $campoOrigenId
                     );
 
+                    if (collect($resultadoOrigen)->filter()->isEmpty()) {
 
-                    if (collect($resultado)->filter()->isEmpty()) {
+                        $resultadoOrigen = $this->GetResultadoByCampoOrigen(
+                            $filasSeleccionadas,
+                            $campoOrigenId,
+                            $parametros['form_origen_id']
+                        );
+                    }
 
-                        //SI NO ENCUENTRA RESPUESTA DESTINO CON LAS FILAS SELECCIONADAS, 
-                        //INTENTA OBTENER RESPUESTAS QUE CUMPLAN CON LAS CONDICIONES DE IGUALDAD PARA MODIFICAR EL CAMPO EN ESAS RESPUESTAS
-                        $respuestaIds = $this->GetRespuestaIdsByCondicion($condicionesIgual, $filasSeleccionadas, $parametros);
-                        $respuestaIds = array_values($respuestaIds);
+                    $valor = $resultadoOrigen['valor'];
+                } else {
+                    $valor = $valorRaw;
+                }
+
+                // $valor => corresponde al valor de origen a procesarse
+
+                $resultadoDestino = $this->GetResultadoByCampoOrigen(
+                    $filasSeleccionadas,
+                    $CampoDestinoId,
+                    $parametros['form_ref_id'],
+                    $valor
+                );
+
+                if (collect($resultadoDestino)->filter()->isEmpty()) {
+
+                    //SI NO ENCUENTRA RESPUESTA DESTINO CON LAS FILAS SELECCIONADAS, 
+                    //INTENTA OBTENER RESPUESTAS QUE CUMPLAN CON LAS CONDICIONES DE IGUALDAD PARA MODIFICAR EL CAMPO EN ESAS RESPUESTAS
+                    $respuestaIds = $this->GetRespuestaIdsByCondicion($condicionesIgual, $filasSeleccionadas, $parametros);
+                    $respuestaIds = array_values($respuestaIds);
+
+                }
+
+
+                if (!collect($resultadoDestino)->filter()->isEmpty() || count($respuestaIds ?? []) > 0) {
+
+                    $respuestaDestino = RespuestasCampo::firstWhere([
+                        'respuesta_id' => $resultadoDestino['respuesta_id'],
+                        'cf_id' => $CampoDestinoId,
+                    ]);
+
+
+                    if ($respuestaDestino == null) {
 
                         $respuestaDestino = RespuestasCampo::whereIn('respuesta_id', $respuestaIds)
-                            ->where('cf_id', $campoDestinoId)
+                            ->where('cf_id', $CampoDestinoId)
                             ->first();
-
-                        $resultado = [
-                            'formulario_id' => $respuestaDestino->respuesta->form_id ?? null,
-                            'respuesta_id' => $respuestaDestino->respuesta_id ?? null,
-                            'campo_id' => $campoDestinoId,
-                            'valor' => $respuestaDestino->valor ?? null,
-                            'from_relation' => false
-                        ];
                     }
-
-
-
-
-                    $valor = $this->resolverFormulaAsignacion(
-                        $asignacion['formula'] ?? [],
-                        $filasSeleccionadas,
-                        $resultado,
-                        $filasOriginales
-                    );
-
-                    if ($valor === null) {
-                        continue;
-                    }
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Buscar registro destino
-                    |--------------------------------------------------------------------------
-                    */
-
-
-                    $resultadoDestino = $this->GetResultadoByCampoOrigen(
-                        $filasSeleccionadas,
-                        $campoDestinoId,
-                        $formDestinoId,
-                        $valor
-                    );
-
-
-                    /*
-                    |--------------------------------------------------------------------------
-                    | Si no encuentra por relación,
-                    | buscar por condiciones iguales
-                    |--------------------------------------------------------------------------
-                    */
-
-
-                    $respuestaIds = [];
-
-
-                    if (collect($resultadoDestino)->filter()->isEmpty()) {
-
-
-                        $respuestaIds =
-                            $this->GetRespuestaIdsByCondicion(
-                                $condicionesIgual,
-                                $filasSeleccionadas,
-                                $parametros
-                            );
-
-
-                        $respuestaIds = array_values($respuestaIds);
-
-                    }
-
-
-
-
-                    if (!collect($resultadoDestino)->filter()->isEmpty() || count($respuestaIds) > 0) {
-
-
-
-                        $respuestaDestino = RespuestasCampo::firstWhere([
-                            'respuesta_id' => $resultadoDestino['respuesta_id'] ?? null,
-                            'cf_id' => $campoDestinoId,
-                        ]);
-
-
-
-
-
-                        if (!$respuestaDestino) {
-
-
-                            $respuestaDestino =
-                                RespuestasCampo::whereIn(
-                                    'respuesta_id',
-                                    $respuestaIds
-                                )
-                                    ->where('cf_id', $campoDestinoId)
-                                    ->first();
-
-                        }
-
-
-
-                        if (!$respuestaDestino) {
-                            continue;
-                        }
-
-
-
-                        $valorAnterior = $respuestaDestino->valor;
-
-
-
-
-                        /*
-                        |--------------------------------------------------------------------------
-                        | Actualizar campo
-                        |--------------------------------------------------------------------------
-                        */
-
-
-                        $respuestaDestino->valor = $valor;
-
-                        $respuestaDestino->save();
-
-
-                        $audit['detalle'][] = [
-
-                            'Tipo' => 'Normal',
-
-                            'tac' => 'TAC-001',
-
-                            'campo_destino_id' => $campoDestinoId,
-
-                            'campo_destino_nombre' => $campoDestinoText,
-
-                            'respuesta_id' => $respuestaDestino->respuesta_id,
-
-                            'respuesta_campo_id' => $respuestaDestino->id,
-
-                            'valor_aplicado' => $valor,
-
-                            'valor_anterior' => $valorAnterior,
-
-                            'valor_nuevo' => $respuestaDestino->valor,
-
-                            'modo' => $esMultiple ? 'multiple' : 'individual',
-
-                        ];
-
-
-                    }
-
-
-                }
-
-            }
-
-
-
-        }
-
-
-
-        /*
-        |--------------------------------------------------------------------------
-        | PROGRAMADO
-        |--------------------------------------------------------------------------
-        */ else {
-
-
-            foreach ($asignaciones as $asignacion) {
-
-
-                $campoDestinoId =
-                    $asignacion['destino']['campo_id'];
-
-
-                $campoDestino =
-                    CamposForm::find($campoDestinoId);
-
-
-
-                if (!$campoDestino) {
-                    continue;
-                }
-
-
-
-                $respuestasDestino =
-                    RespuestasForm::with('camposRespuestas')
-                        ->where('form_id', $parametros['form_ref_id'])
-                        ->get();
-
-
-
-
-                foreach ($respuestasDestino as $respuestaForm) {
-
-
-                    $respuestaDestino =
-                        $respuestaForm->camposRespuestas
-                            ->firstWhere(
-                                'cf_id',
-                                $campoDestinoId
-                            );
-
-
-
-                    if (!$respuestaDestino) {
-                        continue;
-                    }
-
-
-
-                    $valor = $this->resolverFormulaAsignacion(
-                        $asignacion['formula'] ?? [],
-                        [],
-                        $parametros
-                    );
-
 
 
                     $valorAnterior = $respuestaDestino->valor;
 
-
-                    $respuestaDestino->valor = $valor;
-                    $respuestaDestino->save();
-
-
+                    $this->EjecutarOpModificarCampo(
+                        $parametros,
+                        $valor,
+                        $respuestaDestino,
+                        $filasSeleccionadas,
+                        $filasOriginales,
+                        $campoOrigenId
+                    );
 
                     $audit['detalle'][] = [
-
-                        'Tipo' => 'Scheduled',
-
+                        'Tipo' => 'Normal',
                         'tac' => 'TAC-001',
-
-                        'campo_destino_id' => $campoDestino->id,
-
-                        'campo_destino_nombre' => $campoDestino->nombre,
-
+                        'campo_destino_id' => $CampoDestino->id,
+                        'campo_destino_nombre' => $CampoDestino->nombre,
                         'respuesta_id' => $respuestaDestino->respuesta_id,
-
+                        'respuesta_campo_id' => $respuestaDestino->id,
+                        'operacion_codigo' => $parametros['operacion'],
+                        'operacion_nombre' => $action->OperacionCatalogo,
                         'valor_aplicado' => $valor,
-
                         'valor_anterior' => $valorAnterior,
-
                         'valor_nuevo' => $respuestaDestino->valor,
-
+                        'modo' => $esMultiple ? 'multiple' : 'individual',
                     ];
+                }
+            }
+        } else {
 
+            $valor = $valorRaw;
 
+            $respuestasDestino = RespuestasForm::with('camposRespuestas')
+                ->where('form_id', $regla->form_id)
+                ->get();
+
+            foreach ($respuestasDestino as $respuestaForm) {
+
+                $respuestaDestino = $respuestaForm->camposRespuestas
+                    ->firstWhere('cf_id', $CampoDestinoId);
+
+                if (!$respuestaDestino) {
+                    continue;
                 }
 
+                $valor = $valorRaw;
 
+                $valorAnterior = $respuestaDestino->valor;
+
+                $this->EjecutarOpModificarCampo(
+                    $parametros,
+                    $valor,
+                    $respuestaDestino
+                );
             }
-
+            $audit['detalle'][] = [
+                'Tipo' => 'Scheduled',
+                'tac' => 'TAC-001',
+                'campo_destino_id' => $CampoDestino->id,
+                'campo_destino_nombre' => $CampoDestino->nombre,
+                'respuesta_id' => $respuestaDestino->respuesta_id,
+                'respuesta_campo_id' => $respuestaDestino->id,
+                'operacion_codigo' => $parametros['operacion'],
+                'operacion_nombre' => $action->OperacionCatalogo,
+                'valor_aplicado' => $valor,
+                'valor_anterior' => $valorAnterior,
+                'valor_nuevo' => $respuestaDestino->valor,
+                'modo' => $esMultiple ? 'multiple' : 'individual',
+            ];
 
         }
-
-
-
         $audit['mensaje'] =
-            "Se ejecutaron las asignaciones de {$action->tipo_accion_catalogo}";
-
-
+            "Se actualizaron {$CampoDestino->nombre} mediante la operación {$action->OperacionCatalogo}";
 
         return [
             'success' => true,
             'audit' => $audit
         ];
-
     }
-    private function resolverFuncionDelta(
-        $formula,
-        $filasSeleccionadas,
-        $filasOriginales,
-        $respuestaDestino,
-        $parametros
-    ) {
-        $campoOrigen = null;
-        $inverso = false;
+    private function EjecutarOpModificarCampo($parametros, $valor, $respuestaDestino, $filasSeleccionadas = [], $filasOriginales = [], $campoOrigenId = null)
+    {
 
-        // LEER FORMULA
-        foreach ($formula as $elemento) {
+        switch ($parametros['operacion']) {
 
-            if (($elemento['tipo'] ?? null) === 'campo') {
-                $campoOrigen = $elemento;
-            }
+            case 'OPC-001': // SUMAR
 
-            if (
-                ($elemento['tipo'] ?? null) === 'funcion' &&
-                ($elemento['nombre'] ?? null) === 'INV'
-            ) {
-                $inverso = true;
-            }
+                $respuestaDestino->valor += (float) $valor;
+
+                break;
+
+            case 'OPC-002': // RESTAR
+
+                $respuestaDestino->valor -= (float) $valor;
+                break;
+
+            case 'OPC-003': // MULTIPLICAR
+                $respuestaDestino->valor *= (float) $valor;
+                break;
+
+            case 'OPC-004': // DIVIDIR
+                if ((float) $valor !== 0.0) {
+                    $respuestaDestino->valor /= (float) $valor;
+                }
+                break;
+
+            case 'OPC-005':
+            case 'OPC-006': //ASIGNAR VALOR
+                $respuestaDestino->valor = $valor;
+                break;
+
+            case 'OPC-007':
+                $campoOrigen = RespuestasCampo::find($valor);
+                $respuestaDestino->valor = $campoOrigen?->valor;
+                break;
+
+            case 'OPC-008':
+                $respuestaDestino->valor = ($respuestaDestino->valor ?? '') . $valor;
+                break;
+
+            case 'OPC-009':
+                $respuestaDestino->valor = null;
+                break;
+
+            case 'OPC-010':
+                $respuestaDestino->valor = \Carbon\Carbon::parse($respuestaDestino->valor)
+                    ->addDays((int) $valor)
+                    ->format('Y-m-d');
+                break;
+
+            case 'OPC-011':
+                $respuestaDestino->valor = \Carbon\Carbon::parse($respuestaDestino->valor)
+                    ->subDays((int) $valor)
+                    ->format('Y-m-d');
+                break;
+
+            case 'OPC-012':
+                $result = $this->OperacionesDelta(
+                    $filasSeleccionadas,
+                    $filasOriginales,
+                    $campoOrigenId,
+                    $parametros,
+                    $respuestaDestino,
+                    $valor
+                );
+
+                $respuestaDestino->valor = $result;
+                break;
         }
 
-        if (!$campoOrigen) {
-            dd('NO SE ENCONTRO CAMPO', $formula);
-        }
+        $respuestaDestino->save();
+    }
+    private function OperacionesDelta($filasSeleccionadas, $filasOriginales, $campoOrigenId, $parametros, $respuestasDestino, $valor)
+    {
+        $resultado = $this->GetResultadoByCampoOrigen($filasSeleccionadas, $campoOrigenId, $parametros['form_origen_id']);
 
-        // CAMPO
-        $campo = CamposForm::find($campoOrigen['campo_id']);
+        $campoOrigen = CamposForm::find($resultado['campo_id']);
 
-        if (!$campo) {
-            dd('NO EXISTE CAMPO', $campoOrigen);
-        }
-
-        // VALOR NUEVO
-        $resultado = $this->GetResultadoByCampoOrigen(
-            $filasSeleccionadas,
-            $campoOrigen['campo_id'],
-            $campoOrigen['form']
-        );
-
-        if (!is_array($resultado) || !isset($resultado['valor'])) {
-            dd('NO SE OBTUVO VALOR NUEVO', $resultado);
-        }
-
-        $valorNuevo = $resultado['valor'];
-
-        // VALOR ANTERIOR
-
-        $valorAnterior = $filasOriginales[$campo->id] ?? null;
+        $valorId = $filasOriginales[$campoOrigen->id] ?? null;
 
 
-
-        $valorAnterior = preg_replace('/\[\d+\]\s*/', '', (string) $valorAnterior);
-
-        // VALOR ACTUAL
-        $actual = (float) ($respuestaDestino['valor'] ?? 0);
+        $valoranterior = preg_replace('/\[\d+\]\s*/', '', $valorId);
 
 
+        $result = $respuestasDestino->valor;
+        $valornuevo = $valor;
 
-        $valorNuevo = is_numeric($valorNuevo)
-            ? (float) $valorNuevo
-            : 0;
 
-        $valorAnterior = is_numeric($valorAnterior)
-            ? (float) $valorAnterior
-            : 0;
+        if ($parametros['operacion_rev'] == '1') {
 
-        // CALCULO
-        if ($inverso) {
-            $nuevoValor = $actual + ($valorNuevo - $valorAnterior);
+            $result += ($valornuevo - $valoranterior);
+
+
         } else {
-            $nuevoValor = $actual + ($valorAnterior - $valorNuevo);
+
+            $result += ($valoranterior - $valornuevo);
+
         }
-
-
-        return $nuevoValor;
+        return $result;
     }
 
     public function EjecutarReglaLogica($reglas, array $respuestas, string $evento, $usuario, $url, $esCascada = false)
@@ -2485,8 +1901,6 @@ class FormLogicRepository implements FormLogicInterface
             $usuario,
             $esCascada
         );
-
-
         if (!empty($resultado['acciones_ejecutadas'])) {
 
             foreach ($resultado['acciones_ejecutadas'] as $accion) {
@@ -2542,6 +1956,7 @@ class FormLogicRepository implements FormLogicInterface
                 ->where('activo', true)
                 ->with('actions')
                 ->get();
+
 
             // Separar reglas síncronas y segundo plano
             $reglasSync = $reglas->filter(function ($regla) {
@@ -2648,6 +2063,16 @@ class FormLogicRepository implements FormLogicInterface
         ]);
 
         try {
+            /*
+                        $this->EjecutarReglaLogica(
+                            collect([$regla]),
+                            [],             // no hay respuestas disparadoras
+                            'scheduled',
+                            null,
+                            env('APP_URL'),
+                            false
+                        );*/
+
 
             EjecutarLogicaFormulario::dispatch(
                 collect([$regla]),
@@ -2790,11 +2215,6 @@ class FormLogicRepository implements FormLogicInterface
     }
     public function LogicaEliminarRespuesta($evento, $respuesta, $esCascada = false, &$visitados = [])
     {
-
-        Log::info('Eliminar', [
-            'respuesta' => $respuesta->id,
-            'visitados' => array_keys($visitados),
-        ]);
         if (isset($visitados[$respuesta->id])) {
             return [
                 'success' => true

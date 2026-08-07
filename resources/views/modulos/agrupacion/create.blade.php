@@ -22,6 +22,9 @@
 
     <form action="{{ route('grupos.store', 0) }}" method="POST">
         @csrf
+        <input type="hidden" name="asociacion_id" value="{{ $asociacion->id }}">
+        <input type="hidden" id="formularios_json" name="formularios">
+        <input type="hidden" name="operaciones_json" id="operaciones_json">
         @include('modulos.agrupacion._form')
     </form>
 @endsection

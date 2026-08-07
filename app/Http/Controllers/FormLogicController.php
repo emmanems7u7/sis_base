@@ -39,6 +39,22 @@ class FormLogicController extends Controller
             ->orderBy('created_at', 'desc')
             ->get();
 
+        $reglas = FormLogicRule::where('evento', 'scheduled')
+            ->where('activo', true)
+            ->with([
+                'actions',
+                'ejecuciones' => function ($q) {
+                    $q->latest('inicio')->limit(1);
+                }
+            ])
+            ->get();
+
+        foreach ($reglas as $regla) {
+
+            $this->FormLogicRepository->ejecutarTarea($regla);
+        }
+
+        dd(1);
 
         return view('tareas_programadas.index', compact('tareas', 'breadcrumb'));
     }
@@ -126,6 +142,7 @@ class FormLogicController extends Controller
 
     public function store(Request $request, Modulo $modulo)
     {
+
         $request->validate([
             'nombre' => 'required|string|max:255',
 
@@ -161,7 +178,6 @@ class FormLogicController extends Controller
         ]);
 
         $rule = $this->FormLogicRepository->CrearRegla($request, $modulo->id);
-
         return redirect()->route('modulo.administrar', $modulo->id)->with('success', 'Regla creada correctamente.');
     }
 
@@ -184,8 +200,8 @@ class FormLogicController extends Controller
         $rule = FormLogicRule::with([
             'formulario',
             'actions',
-            'actions.conditions.campoCondicion',
-            'actions.conditions.campoValor'
+            'actions',
+
         ])->find($rule->id);
 
 
@@ -203,37 +219,68 @@ class FormLogicController extends Controller
                 $tipo = $action->tipo_accion; // TAC-001, TAC-005 o enviar_email
                 $p = $action->parametros;     // JSON completo guardado
     
-                /** ------------------------------
-                 *  1️⃣ TAC-001 → modificar_campo
-                 * ------------------------------*/
+
+                //TAC-001 → modificar_campo
+    
                 if ($tipo === 'TAC-001') {
 
                     return (object) [
+
                         'id' => $action->id,
+
                         'tipo_accion_id' => $tipo,
+
                         'tipo_accion_text' => $action->tipo_accion_catalogo,
-                        'form_origen_id' => $p['form_origen_id'],
 
-                        'form_ref_id' => $p['form_ref_id'],
-                        'form_ref_text' => $action->formularioDestino?->nombre ?? 'No asignado',
 
-                        'campo_ref_id' => $action->campoDestino?->id,
-                        'campo_ref_text' => $action->campoDestino?->nombre ?? 'No asignado',
+                        'form_origen_id' => $p['form_origen_id'] ?? null,
+
+                        'form_ref_id' => $p['form_ref_id'] ?? null,
+
+                        'form_ref_text' => $p['form_ref_text']
+                            ?? $action->formularioDestino?->nombre
+                            ?? 'No asignado',
+
+
+
+                        'asignaciones' => $p['asignaciones'] ?? [],
+
+
+
+                        /*
+                        |--------------------------------------------------------------------------
+                        | Compatibilidad con acciones antiguas
+                        |--------------------------------------------------------------------------
+                        */
+
+                        'campo_ref_id' => $p['campo_ref_id']
+                            ?? $action->campoDestino?->id,
+
+                        'campo_ref_text' => $p['campo_ref_text']
+                            ?? $action->campoDestino?->nombre
+                            ?? 'No asignado',
+
                         'operacion_rev' => $p['operacion_rev'] ?? 0,
 
                         'operacion' => $p['operacion'] ?? null,
-                        'operacion_text' => $action->operacion_catalogo,
+
+                        'operacion_text' => $p['operacion_text']
+                            ?? $action->operacion_catalogo,
 
                         'tipo_valor' => $p['tipo_valor'] ?? null,
 
                         'valor' => $p['valor'] ?? null,
 
                         'valor_text' => ($p['tipo_valor'] ?? null) === 'campo'
+
                             ? ($p['valor_text'] ?? '---')
+
                             : ('Valor estático "' . ($p['valor'] ?? '') . '"'),
 
                         'filtros_relacion' => $p['filtros_relacion'] ?? [],
+
                         'condiciones' => $p['condiciones'] ?? [],
+
                     ];
                 }
                 /** ------------------------------

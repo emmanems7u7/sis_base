@@ -126,7 +126,6 @@
         }
     }
 
-    selectOperacion.addEventListener("change", toggleInvertir);
 
 
     // Objeto para almacenar filtros
@@ -263,15 +262,11 @@
 
 
     function LimpiarContenedor() {
+
         document.getElementById('modal-modificar-campo').classList.add('d-none');
         document.getElementById('modal-email-block').classList.add('d-none');
         document.getElementById('condiciones-container').innerHTML = '';
-        document.getElementById('modal-form-ref').value = '';
-        document.getElementById('modal-campo-ref').innerHTML = '<option value="">-- Ninguno --</option>';
-        document.getElementById('modal-operacion').value = '-1';
-        document.getElementById('tipo-valor').value = 'static';
-        document.getElementById('modal-valor-estatico').value = '';
-        document.getElementById('modal-valor-campo').innerHTML = '<option value="">-- Seleccionar campo --</option>';
+
         document.getElementById('modal-email-subject').value = '';
 
         editor.setData('');
@@ -293,51 +288,22 @@
         };
 
         if (tipoAccion_id === 'TAC-001') {
+
             const tipoAccion = document.getElementById('modal-tipo-accion');
-            const formRef = document.getElementById('modal-form-ref');
-            const form_origen_id = document.getElementById('formulario_id');
 
-            const campoRef = document.getElementById('modal-campo-ref');
-            const operacion = document.getElementById('modal-operacion');
-            const tipoValor = document.getElementById('tipo-valor').value;
-            const valor = tipoValor === 'static' ? document.getElementById('modal-valor-estatico').value : document
-                .getElementById('modal-valor-campo').value;
+            const formOrigen = document.getElementById('formulario_id');
 
-            let valor_text;
+            const formDestino = document.getElementById('modal-form-ref');
 
-            if (tipoValor === 'static') {
-                // Para valores estáticos (input o textarea)
-                valor_text = document.getElementById('modal-valor-estatico').value.trim();
-            } else {
-                // Para selector de campo
-                const select = document.getElementById('modal-valor-campo');
-                valor_text = select.options[select.selectedIndex]?.text || '';
-            }
-
-            const checkbox = document.getElementById("invertir_operacion");
-
-            const operacion_rev = checkbox.checked ? 1 : 0;
-
-            accionObj.form_origen_id = form_origen_id.value;
-
-            accionObj.form_ref_id = formRef.value;
-            accionObj.campo_ref_id = campoRef.value;
-            accionObj.operacion = operacion.value;
-            accionObj.tipo_valor = tipoValor;
-            accionObj.valor = valor;
-            accionObj.valor_text = valor_text;
-
+            accionObj.form_origen_id = formOrigen.value;
+            accionObj.form_ref_id = formDestino.value;
+            accionObj.asignaciones = asignaciones;
 
             accionObj.tipo_accion_text = tipoAccion.options[tipoAccion.selectedIndex]?.text || '';
-            // Textos legibles
-            accionObj.form_ref_text = formRef.options[formRef.selectedIndex]?.text || '';
-            accionObj.campo_ref_text = campoRef.options[campoRef.selectedIndex]?.text || '';
-            accionObj.operacion_text = operacion.options[operacion.selectedIndex]?.text || '';
-            accionObj.operacion_rev = operacion_rev;
 
+            accionObj.form_ref_text = formDestino.options[formDestino.selectedIndex]?.text || '';
 
         }
-
 
         if (tipoAccion_id === 'TAC-005') {
             const usarRelacion = document.getElementById('check-usar-relacion')?.checked;
@@ -767,47 +733,35 @@
 
     async function EjecutarEdicionTAC001(accion) {
 
+        const formOrigen = document.getElementById('formulario_id');
+        const formDestino = document.getElementById('modal-form-ref');
 
+        // Formularios
+        formOrigen.value = accion.form_origen_id;
+        formDestino.value = accion.form_ref_id;
 
-        const formSelect = document.getElementById('modal-form-ref');
-        const campoSelect = document.getElementById('modal-campo-ref');
-        const operacionSelect = document.getElementById('modal-operacion');
-        const formOrigenId = document.getElementById('formulario_id');
+        // Cargar campos de ambos formularios
+        await Promise.all([
+            renderCamposDraggables(
+                accion.form_origen_id,
+                'campos-origen',
+                'origen'
+            ),
+            renderCamposDraggables(
+                accion.form_ref_id,
+                'campos-destino',
+                'destino'
+            )
+        ]);
 
+        // Restaurar asignaciones
+        asignaciones = JSON.parse(JSON.stringify(accion.asignaciones ?? []));
+        console.log(asignaciones);
+        // Pintar lista
+        renderAsignaciones();
 
-        const formDestinoId = accion.form_ref_id || formSelect.value; // 
-
-        formSelect.value = accion.form_ref_id;
-        formSelect.dispatchEvent(new Event('change'));
-
-        formOrigenId.value = accion.form_origen_id;
-
-        await cargarCamposCached(formDestinoId, campoSelect, '-- Seleccione campo destino --');
-        campoSelect.value = accion.campo_ref_id;
-
-        // Operación
-        operacionSelect.value = accion.operacion;
-        toggleInvertir();
-
-        document.getElementById('tipo-valor').value = accion.tipo_valor;
-        document.getElementById('tipo-valor').dispatchEvent(new Event('change'));
-
-        if (accion.tipo_valor === 'static') {
-
-            document.getElementById('modal-valor-estatico').value = accion.valor;
-        } else {
-
-            cambiarTipoValor(accion.valor);
-
-        }
-
-        const checkbox = document.getElementById("invertir_operacion");
-
-        if (accion.operacion_rev == 1) {
-            checkbox.checked = true;
-        } else {
-            checkbox.checked = false;
-        }
+        // Limpiar constructor
+        limpiarConstructor();
 
     }
 
@@ -1030,20 +984,21 @@
 
         if (tipoAccion === 'TAC-001') {
 
-            const operacion = document.getElementById('modal-operacion').value;
-            if (operacion == -1) {
-                mostrarAlerta('warning', 'Seleccione un tipo de operación');
+            if (!accionObj.form_origen_id) {
+                mostrarAlerta('warning', 'Seleccione el formulario origen.');
                 return;
             }
 
-            if (!accionObj.form_ref_id || !accionObj.campo_ref_id || !accionObj.operacion || !accionObj
-                .valor) {
-
-                mostrarAlerta('warning',
-                    'Complete todos los campos obligatorios para la acción "Modificar Campo".');
-
+            if (!accionObj.form_ref_id) {
+                mostrarAlerta('warning', 'Seleccione el formulario destino.');
                 return;
             }
+
+            if (!accionObj.asignaciones || accionObj.asignaciones.length === 0) {
+                mostrarAlerta('warning', 'Agregue al menos una asignación.');
+                return;
+            }
+
         }
 
         if (tipoAccion === 'TAC-005') {

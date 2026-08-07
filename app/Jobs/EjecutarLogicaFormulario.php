@@ -36,7 +36,7 @@ class EjecutarLogicaFormulario implements ShouldQueue
         $this->evento = $evento;
         $this->usuario = $usuario;
         $this->url = $url;
-        $this->esCascada = $esCascada
+        $this->esCascada = $esCascada;
     }
     public function handle(FormLogicInterface $formLogic)
     {

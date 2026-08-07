@@ -250,6 +250,10 @@
     </div>
 </div>
 <script>
+    const formulariosSeleccionados = @json($asociacion->formularios);
+    console.log(formulariosSeleccionados);
+</script>
+<script>
     let contenedor_op = document.getElementById('contenedor_op');
     let btn_operacion = document.getElementById('btn_operacion');
 
@@ -638,7 +642,6 @@
                 cardOperacion(operacion)
             );
 
-        actualizarEventosEliminar();
 
         // Actualizar el input hidden
         actualizarHidden();
@@ -780,18 +783,15 @@
 
     }
 
-    // Función para actualizar input hidden
     function actualizarHidden() {
-        let inputHidden = document.getElementById('operaciones_json');
-        if (!inputHidden) {
 
-            inputHidden = document.createElement('input');
-            inputHidden.type = 'hidden';
-            inputHidden.id = 'operaciones_json';
-            inputHidden.name = 'operaciones_json'; // nombre para backend
-            document.querySelector('#contenedor_operaciones').appendChild(inputHidden);
-        }
-        inputHidden.value = JSON.stringify(operaciones);
+
+        let operacionesInput = document.getElementById('operaciones_json');
+        let formulariosInput = document.getElementById('formularios_json');
+
+        operacionesInput.value = JSON.stringify(operaciones);
+        formulariosInput.value = JSON.stringify(formulariosSeleccionados);
+
     }
 
     function cargarOperacionesExistentes(data) {
@@ -811,7 +811,6 @@
 
         });
 
-        actualizarEventosEliminar();
 
         actualizarHidden();
 

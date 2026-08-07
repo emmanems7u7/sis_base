@@ -94,69 +94,80 @@ class ModuloFormularioParaleloController extends Controller
     public function store(Request $request, $modulo)
     {
         $request->validate([
-            'grupo' => 'required|string',
-            'formularios' => 'required|array|min:1',
-            'principal' => 'required|in:' . implode(',', $request->formularios),
+            'asociacion_id' => 'required|exists:formulario_asociacions,id',
+            'formularios' => 'required|string',
             'operaciones_json' => 'required|string',
-
         ]);
 
+        // Decodificar formularios
+        $formulariosData = json_decode($request->formularios, true);
 
-        $operaciones = json_decode($request->operaciones_json, true);
-        if ($operaciones === null) {
-            return back()->withErrors(['operaciones_json' => 'Formato de operaciones inválido.']);
+        if (!is_array($formulariosData) || empty($formulariosData)) {
+            return back()->withErrors([
+                'formularios' => 'Los formularios enviados no son válidos.'
+            ]);
         }
 
-        foreach ($operaciones as $opIndex => $operacion) {
-            // Validar destino
-            if (empty($operacion['destino']['tipo']) || empty($operacion['destino']['nombre']) || empty($operacion['destino']['campo_id'])) {
+        // Debe existir un único formulario principal
+        $principales = collect($formulariosData)
+            ->where('es_principal', 1);
+
+        if ($principales->count() !== 1) {
+            return back()->withErrors([
+                'formularios' => 'Debe existir un único formulario principal.'
+            ]);
+        }
+
+        // Decodificar operaciones
+        $config = json_decode($request->operaciones_json, true);
+
+        if (!is_array($config)) {
+            return back()->withErrors([
+                'operaciones_json' => 'Formato de operaciones inválido.'
+            ]);
+        }
+
+        // Validar operaciones
+        foreach ($config as $opIndex => $operacion) {
+
+            if (
+                empty($operacion['destino']['tipo']) ||
+                empty($operacion['destino']['nombre']) ||
+                empty($operacion['destino']['campo_id'])
+            ) {
                 return back()->withErrors([
-                    'operaciones_json' => "La operación #" . ($opIndex + 1) . " tiene un destino incompleto."
+                    'operaciones_json' => 'La operación #' . ($opIndex + 1) . ' tiene un destino incompleto.'
                 ]);
             }
 
             $formula = $operacion['formula'] ?? [];
-            if (count($formula) === 0) {
+
+            if (empty($formula)) {
                 return back()->withErrors([
-                    'operaciones_json' => "La operación #" . ($opIndex + 1) . " no tiene fórmula."
+                    'operaciones_json' => 'La operación #' . ($opIndex + 1) . ' no tiene fórmula.'
                 ]);
             }
 
-            // Validar que haya al menos un operador
-
-
-            // Validar que no termine con operador
             $ultimo = end($formula);
-            if (isset($ultimo['tipo']) && $ultimo['tipo'] === 'operador') {
+
+            if (($ultimo['tipo'] ?? null) === 'operador') {
                 return back()->withErrors([
-                    'operaciones_json' => "La operación #" . ($opIndex + 1) . " no puede terminar con un operador."
+                    'operaciones_json' => 'La operación #' . ($opIndex + 1) . ' no puede terminar con un operador.'
                 ]);
             }
-
-
-            $formularios = $request->formularios;
-            $principal = $request->principal;
-            $config = json_decode($request->operaciones_json, true);
-
-            $formulariosData = [];
-
-            foreach ($formularios as $formId) {
-                $formulariosData[] = [
-                    'id' => $formId,
-                    'es_principal' => $principal == $formId ? 1 : 0
-                ];
-            }
-
-
         }
 
-        FormularioAsociacion::create([
-            'modulo_id' => $modulo,
-            'grupo' => $request->grupo,
+        // Actualizar la asociación creada previamente
+        $asociacion = FormularioAsociacion::findOrFail($request->asociacion_id);
+
+        $asociacion->update([
             'formularios' => $formulariosData,
-            'config' => $config ?? null
+            'config' => $config,
         ]);
-        return redirect()->route('modulo.administrar', $modulo)->with('status', 'Grupo creado');
+
+        return redirect()
+            ->route('modulo.administrar', $modulo)
+            ->with('status', 'Asociación actualizada correctamente.');
     }
 
     public function edit($grupo, $modulo)

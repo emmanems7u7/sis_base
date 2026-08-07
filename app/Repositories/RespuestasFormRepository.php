@@ -529,6 +529,7 @@ class RespuestasFormRepository implements RespuestasFormInterface
         $filas = $this->RespuestaCampoRepository->filaDesdeArray($respuesta, $datosFormulario, $campos);
 
         $errores = array_filter($this->FormLogicInterface->ValidarLogica($respuesta, $filas, $evento), fn($msg) => !empty(trim($msg)));
+
         if (!empty($errores)) {
             DB::rollBack();
             throw new \Exception(implode('<br>', $errores));

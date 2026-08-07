@@ -30,7 +30,8 @@ async function cambiarTipoValor(valorSeleccionado = null) {
 }
   
   /*PARA TAC-001*/
+  /*
   document.getElementById('tipo-valor')
   .addEventListener('change', () => {
       cambiarTipoValor();
-  });
+  });*/

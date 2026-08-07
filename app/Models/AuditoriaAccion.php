@@ -24,7 +24,7 @@ class AuditoriaAccion extends Model
     public function getNombreUsuarioAttribute(): string
     {
         $usuario = User::find($this->usuario_id);
-        return $usuario->NombreCompleto;
+        return $usuario->NombreCompleto ?? 'Usuario no encontrado';
     }
 
 }

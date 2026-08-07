@@ -119,13 +119,13 @@ class RespuestasFormController extends Controller
         }
 
         $humanRules = collect();
-
-        foreach ($formulariosFinales as $formulario) {
-            $humanRules = $humanRules->merge(
-                $this->RespuestasFormInterface->obtenerReglasHumanas($formulario->id)
-            );
-        }
-
+        /*
+                foreach ($formulariosFinales as $formulario) {
+                    $humanRules = $humanRules->merge(
+                        $this->RespuestasFormInterface->obtenerReglasHumanas($formulario->id)
+                    );
+                }
+        */
         return view('formularios.registrar_datos_form', [
             'formularios' => $formulariosFinales,
             'formulario' => $formulariosFinales->first(),
@@ -141,6 +141,8 @@ class RespuestasFormController extends Controller
 
     public function store(Request $request, $form, $modulo, $tipo)
     {
+
+
         $evento = 'on_create';
         DB::beginTransaction();
         try {
@@ -292,8 +294,8 @@ class RespuestasFormController extends Controller
             });
 
             $this->FormLogicInterface->EjecutarAcciones($agrupadas, $evento);
-
             DB::commit();
+
             DB::disconnect();
 
             if ($tipo == 0) {
@@ -386,12 +388,12 @@ class RespuestasFormController extends Controller
 
         // reglas humanas
         $humanRules = collect();
-
-        foreach ($formulariosFinales as $formulario) {
-            $humanRules = $humanRules->merge(
-                $this->RespuestasFormInterface->obtenerReglasHumanas($formulario->id)
-            );
-        }
+        /*
+                foreach ($formulariosFinales as $formulario) {
+                    $humanRules = $humanRules->merge(
+                        $this->RespuestasFormInterface->obtenerReglasHumanas($formulario->id)
+                    );
+                }*/
 
         // obtener grupo o fallback
         $grupo = $respuesta->grupos()->with('respuestas.camposRespuestas')->first();
@@ -548,6 +550,8 @@ class RespuestasFormController extends Controller
 
     public function update(Request $request, RespuestasForm $respuesta, $modulo)
     {
+
+
         $evento = 'on_update';
         DB::beginTransaction();
         try {
@@ -560,14 +564,27 @@ class RespuestasFormController extends Controller
 
             $formularios = $this->FormularioRepository->obtenerFormularios($form, $moduloModelo);
             $respuestasActualizadas = [];
+
+
             $grupo = $respuesta->grupos()->with('respuestas.camposRespuestas')->first();
 
             // INICIO ACTUALIZAR MÚLTIPLES
             $registrosRaw = json_decode($request->registros_json, true) ?? [];
-            $registros = $this->RespuestasFormInterface->normalizarRegistros($registrosRaw);
-            if ($grupo && !empty($registros)) {
 
-                $respuestasMultiples = $grupo->respuestas->groupBy('form_id');
+
+            $registros = $this->RespuestasFormInterface->normalizarRegistros($registrosRaw);
+
+
+            if (!empty($registros)) {
+
+                if ($grupo) {
+                    $respuestasMultiples = $grupo->respuestas->groupBy('form_id');
+                } else {
+
+                    $respuestasMultiples = collect([
+                        $respuesta->form_id => collect([$respuesta])
+                    ]);
+                }
 
                 foreach ($registros as $index => $registro) {
 
@@ -657,6 +674,7 @@ class RespuestasFormController extends Controller
                                 'filas_originales' => $filasOriginales,
                                 'form_id' => $formId
                             ];
+
 
                         } else {
 
@@ -785,6 +803,7 @@ class RespuestasFormController extends Controller
 
 
             }
+
 
 
             $agrupadas = collect($respuestasActualizadas)->unique('respuesta_id')->groupBy('form_id');
