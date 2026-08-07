@@ -24,7 +24,7 @@ class UserRepository extends BaseRepository implements UserInterface
         $user = User::create(attributes: [
             'name' => $this->cleanHtml($request->input('name')),
             'email' => $this->cleanHtml($request->input('email')),
-            'password' => Hash::make($$configuracion->conf_defecto),
+            'password' => Hash::make($configuracion->conf_defecto),
             'usuario_fecha_ultimo_acceso' => null,
             'usuario_fecha_ultimo_password' => null,
             'usuario_nombres' => $this->cleanHtml($request->input('usuario_nombres')),
