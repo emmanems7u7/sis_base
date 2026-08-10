@@ -61,8 +61,9 @@ class PasswordController extends Controller
             ]);
         }
 
-        // Actualizar contraseña y fecha
-        $user = Auth::user()->update([
+        $user = Auth::user();
+
+        $user->update([
             'password' => Hash::make($request->new_password),
             'usuario_fecha_ultimo_password' => Carbon::now(),
         ]);
