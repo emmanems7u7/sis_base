@@ -1,10 +1,12 @@
 <div class="d-flex gap-1 flex-wrap">
     {{-- Registrar --}}
-    <a href="{{ route('formularios.registrar', ['form' => $formulario, 'modulo' => $modulo]) }}"
-        class="btn btn-xs btn-success">
-        {!! configForm($formulario->id, 'buttons.add') !!}
-    </a>
 
+    @can($formulario->id . '.crear')
+        <a href="{{ route('formularios.registrar', ['form' => $formulario, 'modulo' => $modulo]) }}"
+            class="btn btn-xs btn-success">
+            {!! configForm($formulario->id, 'buttons.add') !!}
+        </a>
+    @endcan
     {{-- Exportar --}}
     <div class="btn-group" role="group">
         <button id="btnGroupExport" type="button" class="btn btn-xs btn-info dropdown-toggle" data-bs-toggle="dropdown"
