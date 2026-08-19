@@ -333,7 +333,6 @@ class FormularioController extends Controller
         }
         return $datos;
     }
-
     public function obtenerFilaVisor($form_id, $respuesta_id)
     {
         $respuesta = RespuestasForm::with([
@@ -345,29 +344,20 @@ class FormularioController extends Controller
             ->where('form_id', $form_id)
             ->where('id', $respuesta_id)
             ->first();
+
         if (!$respuesta) {
             return response()->json(['error' => 'No se encontró la respuesta'], 404);
         }
 
-
-
         $formulario = $respuesta->formulario;
 
-        // Procesar la respuesta principal
         $camposRespuestaPrincipal = $this->FormularioRepository->procesarCamposRespuesta($respuesta, $formulario);
 
-        $asociado = false;
-
-
-        // Revisar si pertenece a algún grupo
-        $grupo = $respuesta->grupos->first(); // tomamos el primer grupo si hay
-
+        $grupo = $respuesta->grupos->first();
         $respuestasGrupo = [];
 
         if ($grupo) {
-
             foreach ($grupo->respuestas as $resp) {
-
                 if ($resp->id == $respuesta->id) {
                     continue;
                 }
@@ -379,61 +369,55 @@ class FormularioController extends Controller
             }
         }
 
-
-
-
-
-        /* OBTENER REGISTRO ASOCIADO 1:1 CON FORMULARIO*/
+        /* OBTENER REGISTRO ASOCIADO 1:1 CON FORMULARIO */
 
         $datos = [];
-
+        $asociado = false;
+        $formRefId = null;
+        $campoRefId = null;
 
         foreach ($respuesta->camposRespuestas as $respuestaCampo) {
-            $config = $respuestaCampo->campo->config;
-            $asociado = isset($config['asociacion']) ?? false;
+            $config = $respuestaCampo->campo->config ?? [];
 
-            if ($asociado) {
-
+            if (!empty($config['asociacion'])) {
                 $asociacion = $config['asociacion'];
-
                 $formRefId = $asociacion['form_ref_id'] ?? null;
                 $campoRefId = $asociacion['campo_ref_id'] ?? null;
+                $asociado = true;
                 break;
-
             }
         }
-        if ($asociado) {
 
-            //CAMPF-031 asociado
-            $campoAsociado = collect($camposRespuestaPrincipal)->firstWhere('tipo', 'CAMPF-031');
+        if ($asociado && $formRefId && $campoRefId) {
+            $valorAsociado = $respuesta->camposRespuestas
+                ->firstWhere('cf_id', $campoRefId)
+                    ?->valor;
 
+            if ($valorAsociado !== null && $valorAsociado !== '') {
+                $respuestaCampoAsociada = RespuestasCampo::where('cf_id', $campoRefId)
+                    ->where('valor', $valorAsociado)
+                    ->first();
 
-            $valorAsociado = $campoAsociado['valores'][0] ?? null;
+                if ($respuestaCampoAsociada) {
+                    $respuestaAsociada = RespuestasForm::with(['camposRespuestas.campo'])
+                        ->where('form_id', $formRefId)
+                        ->where('id', $respuestaCampoAsociada->respuesta_id)
+                        ->first();
 
-
-
-
-            $resp = RespuestasCampo::where('cf_id', $campoRefId)->where('valor', $valorAsociado)->first()->respuesta_id ?? null;
-
-
-            $respuesta = RespuestasForm::with(['camposRespuestas.campo'])
-                ->where('form_id', $formRefId)
-                ->where('id', $resp)
-                ->first();
-
-            $datos = $this->GetfilaByFormResp($form_id, $respuesta);
-
+                    if ($respuestaAsociada) {
+                        $datos = $this->GetfilaByFormResp($formRefId, $respuestaAsociada);
+                    }
+                }
+            }
         }
 
-        /* OBTENER REGISTRO ASOCIADO 1:1 CON FORMULARIO*/
-
+        /* OBTENER REGISTROS RELACIONADOS */
 
         $datosRelacionados = [];
 
         $camposReferenciados = CamposForm::where('form_ref_id', $form_id)->get();
 
         foreach ($camposReferenciados as $campoRelacionado) {
-
             $config = $campoRelacionado->config['asociacion'] ?? null;
 
             if (!$config) {
@@ -446,38 +430,42 @@ class FormularioController extends Controller
                 continue;
             }
 
-            // valor del campo padre en la respuesta actual
-            $valorPadre = $respuesta->camposRespuestas->firstWhere('cf_id', $campoPadreId)?->valor;
+            $valorPadre = $respuesta->camposRespuestas
+                ->firstWhere('cf_id', $campoPadreId)
+                    ?->valor;
 
-            if (!$valorPadre) {
+            if ($valorPadre === null || $valorPadre === '') {
                 continue;
             }
 
-            // respuestas hijas que apuntan a este registro
             $respuestaIds = RespuestasCampo::where('cf_id', $campoRelacionado->id)
                 ->where('valor', $valorPadre)
                 ->pluck('respuesta_id');
 
-            $respuestasHijas = RespuestasForm::with([
-                'camposRespuestas.campo'
-            ])
+            if ($respuestaIds->isEmpty()) {
+                continue;
+            }
+
+            $respuestasHijas = RespuestasForm::with(['camposRespuestas.campo'])
                 ->whereIn('id', $respuestaIds)
                 ->get();
 
             foreach ($respuestasHijas as $hija) {
-
                 $datosRelacionados[] = [
                     'formulario_id' => $campoRelacionado->form_id,
                     'respuesta_id' => $hija->id,
-                    'campos' => $this->FormularioRepository->procesarCamposRespuesta($hija, $hija->formulario)
+                    'campos' => $this->FormularioRepository->procesarCamposRespuesta(
+                        $hija,
+                        $hija->formulario
+                    )
                 ];
             }
         }
+
         $datos_asociados_title = configForm($form_id, 'titles.datos_asociados');
         $datos_relacionados_title = configForm($form_id, 'titles.datos_relacionados');
         $grupo_title = configForm($form_id, 'titles.datos_agrupados');
         $detalle_registro = configForm($form_id, 'titles.detalle_registro', null, 'normal', 'none');
-
 
         return response()->json([
             'nombre_formulario' => $formulario->nombre,
@@ -491,9 +479,6 @@ class FormularioController extends Controller
             'datos_relacionados_title' => $datos_relacionados_title,
             'grupo_title' => $grupo_title,
             'detalle_registro' => $detalle_registro,
-
-
-
         ]);
     }
     /**
