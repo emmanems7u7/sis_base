@@ -5,7 +5,7 @@
             <img src="{{ asset(Auth::user()->foto_perfil) }}" alt="Foto de perfil" class="rounded-circle"
                 style="width: 115px; height: 115px; object-fit: cover;">
         @else
-            <img src="{{ asset('update/imagenes/user.jpg') }}" alt="Foto de perfil" class="rounded-circle"
+            <img src="{{ asset('user.jpg') }}" alt="Foto de perfil" class="rounded-circle"
                 style="width: 115px; height: 115px; object-fit: cover;">
         @endif
 
