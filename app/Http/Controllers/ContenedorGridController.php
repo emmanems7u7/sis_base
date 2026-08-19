@@ -47,7 +47,27 @@ class ContenedorGridController extends Controller
         return redirect()->route('contenedor.edit', $c->id);
     }
 
+    public function update(Request $r, $id)
+    {
+        $c = ContenedorGrid::findOrFail($id);
 
+        // Guardar el rol anterior
+        $rolAnterior = Role::find($c->role_id)?->name;
+
+        $c->update($r->only('nombre', 'role_id'));
+
+        $rolNuevo = Role::find($c->role_id)?->name;
+
+        if ($rolAnterior) {
+            Cache::forget('contenedor_grid_' . $rolAnterior);
+        }
+
+        if ($rolNuevo && $rolNuevo !== $rolAnterior) {
+            Cache::forget('contenedor_grid_' . $rolNuevo);
+        }
+
+        return redirect()->route('contenedores.index', $c->id);
+    }
     public function edit($id)
     {
         $breadcrumb = [
@@ -74,5 +94,22 @@ class ContenedorGridController extends Controller
         $contenedor = ContenedorGrid::with('filas.columnas')->findOrFail($id);
 
         return view('contenedores.conf', compact('widgets', 'contenedor', 'breadcrumb'));
+    }
+
+    public function destroy($id)
+    {
+        $c = ContenedorGrid::findOrFail($id);
+
+        $rolNombre = Role::find($c->role_id)?->name;
+
+        $c->delete();
+
+        if ($rolNombre) {
+            Cache::forget('contenedor_grid_' . $rolNombre);
+        }
+
+        return redirect()
+            ->back()
+            ->with('success', 'Contenedor eliminado correctamente.');
     }
 }

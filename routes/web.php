@@ -514,6 +514,10 @@ Route::middleware(['auth'])->group(function () {
     Route::get('/contenedor/create', [ContenedorGridController::class, 'create'])->name('contenedor.create');
     Route::post('/contenedor/store', [ContenedorGridController::class, 'store'])->name('contenedor.store');
     Route::get('/contenedor/{id}/edit', [ContenedorGridController::class, 'edit'])->name('contenedor.edit');
+    Route::put('/contenedor/{id}/update', [ContenedorGridController::class, 'update'])->name('contenedor.update');
+    Route::put('/contenedor/{id}/update', [ContenedorGridController::class, 'update'])->name('contenedor.update');
+    Route::delete('/contenedor/{id}', [ContenedorGridController::class, 'destroy'])
+        ->name('contenedor.destroy');
     Route::get('/contenedor/{id}/conf', [ContenedorGridController::class, 'conf'])->name('contenedor.conf');
 
     // Filas

@@ -155,8 +155,13 @@ class HomeController extends Controller
             case 'WID-008': // Línea
             case 'WID-009': // Pastel
                 return $this->resolverGrafico($widget, true);
-
-
+            case 'WID-016':
+                return [
+                    'tipo' => 'WID-016',
+                    'data' => [
+                        'nombre' => $widget->nombre,
+                    ],
+                ];
             default:
                 return [
                     'tipo' => 'DEFAULT',

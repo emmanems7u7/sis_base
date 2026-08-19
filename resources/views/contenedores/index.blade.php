@@ -1,8 +1,6 @@
 @extends('layouts.argon')
 
 @section('content')
-
-
     <div class="row">
         <div class="col-md-6 order-2 order-md-1">
             <div class="card shadow-lg">
@@ -34,14 +32,15 @@
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($contenedores as $c)
+                        @foreach ($contenedores as $c)
                             <tr>
                                 <td>{{ $c->nombre }}</td>
                                 <td>{{ $c->role->name }}</td>
                                 <td class="d-flex gap-1">
 
                                     <!-- Botón Editar -->
-                                    <a href="{{ route('contenedor.edit', ['id' => $c->id]) }}" class="btn btn-sm btn-warning">
+                                    <a href="{{ route('contenedor.edit', ['id' => $c->id]) }}"
+                                        class="btn btn-sm btn-warning">
                                         Editar
                                     </a>
 
@@ -51,7 +50,7 @@
                                         Eliminar
                                     </a>
                                     <form id="eliminarContenedorForm_{{ $c->id }}" method="POST"
-                                        action="{{ route('contenedor.store') }}" style="display: none;">
+                                        action="{{ route('contenedor.destroy', $c->id) }}" style="display: none;">
                                         @csrf
                                         @method('DELETE')
                                     </form>
@@ -69,5 +68,4 @@
             </div>
         </div>
     </div>
-
 @endsection

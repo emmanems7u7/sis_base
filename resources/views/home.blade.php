@@ -3,6 +3,7 @@
 @section('content')
 
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
+    <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
     <style>
         .minimal-card-horizontal {
             background-color: #ffffff;
@@ -142,15 +143,11 @@
                                     @case('WID-008')
 
                                     @case('WID-009')
-                                        <div class="card shadow-lg h-100 border-0">
+                                        @include('widgets.renders.graficos')
+                                    @break
 
-
-                                            <div class="card-body">
-                                                @include('widgets.renders.graficos')
-
-                                            </div>
-
-                                        </div>
+                                    @case('WID-016')
+                                        @include('widgets.renders.bienvenida')
                                     @break
 
                                     @default

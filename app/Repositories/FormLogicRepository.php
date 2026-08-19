@@ -645,8 +645,7 @@ class FormLogicRepository implements FormLogicInterface
                         $formula,
                         $filasSeleccionadas,
                         $filasOriginales,
-                        $respuestaDestino,
-                        $parametros
+                        $respuestaDestino
                     );
 
 
@@ -1200,6 +1199,7 @@ class FormLogicRepository implements FormLogicInterface
             'valor' => null,
             'from_relation' => false,
         ];
+
 
         if (!isset($form_id) || blank($form_id) || is_array($form_id)) {
 
@@ -2380,17 +2380,14 @@ class FormLogicRepository implements FormLogicInterface
         ];
 
     }
-    private function resolverFuncionDelta(
-        $formula,
-        $filasSeleccionadas,
-        $filasOriginales,
-        $respuestaDestino,
-        $parametros
-    ) {
+    private function resolverFuncionDelta($formula, $filasSeleccionadas, $filasOriginales, $respuestaDestino)
+    {
         $campoOrigen = null;
         $inverso = false;
 
-        // LEER FORMULA
+
+        //LEER FORMULA
+
         foreach ($formula as $elemento) {
 
             if (($elemento['tipo'] ?? null) === 'campo') {
@@ -2405,42 +2402,43 @@ class FormLogicRepository implements FormLogicInterface
             }
         }
 
-        if (!$campoOrigen) {
-            dd('NO SE ENCONTRO CAMPO', $formula);
+        //VALIDAR CAMPO
+
+        if (!$campoOrigen || empty($campoOrigen['campo_id'])) {
+            return null;
         }
 
-        // CAMPO
         $campo = CamposForm::find($campoOrigen['campo_id']);
 
         if (!$campo) {
-            dd('NO EXISTE CAMPO', $campoOrigen);
+            return null;
         }
 
-        // VALOR NUEVO
+        //VALOR NUEVO
+
         $resultado = $this->GetResultadoByCampoOrigen(
             $filasSeleccionadas,
             $campoOrigen['campo_id'],
-            $campoOrigen['form']
+            $campoOrigen['form'] ?? null
         );
 
-        if (!is_array($resultado) || !isset($resultado['valor'])) {
-            dd('NO SE OBTUVO VALOR NUEVO', $resultado);
+        if (!is_array($resultado) || !array_key_exists('valor', $resultado)) {
+            return null;
         }
 
         $valorNuevo = $resultado['valor'];
-
         // VALOR ANTERIOR
 
         $valorAnterior = $filasOriginales[$campo->id] ?? null;
 
-
-
+        // Eliminar prefijos como "[123] "
         $valorAnterior = preg_replace('/\[\d+\]\s*/', '', (string) $valorAnterior);
 
-        // VALOR ACTUAL
+        //VALOR ACTUAL DEL DESTINO
+
         $actual = (float) ($respuestaDestino['valor'] ?? 0);
 
-
+        //NORMALIZAR VALORES
 
         $valorNuevo = is_numeric($valorNuevo)
             ? (float) $valorNuevo
@@ -2450,17 +2448,14 @@ class FormLogicRepository implements FormLogicInterface
             ? (float) $valorAnterior
             : 0;
 
-        // CALCULO
+        // CALCULAR DELTA
+
         if ($inverso) {
-            $nuevoValor = $actual + ($valorNuevo - $valorAnterior);
-        } else {
-            $nuevoValor = $actual + ($valorAnterior - $valorNuevo);
+            return $actual + ($valorNuevo - $valorAnterior);
         }
 
-
-        return $nuevoValor;
+        return $actual + ($valorAnterior - $valorNuevo);
     }
-
     public function EjecutarReglaLogica($reglas, array $respuestas, string $evento, $usuario, $url, $esCascada = false)
     {
         $user = User::find($usuario);

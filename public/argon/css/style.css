@@ -1,0 +1,86 @@
+    /* Entrada escalonada de cada bloque */
+    .wc-animate .wc-bar-top,
+    .wc-animate .wc-icon,
+    .wc-animate .wc-title,
+    .wc-animate .wc-dot,
+    .wc-animate .wc-counter,
+    .wc-animate .wc-desc {
+        opacity: 0;
+        animation: wc-fade-up .5s ease forwards;
+    }
+
+    .wc-animate .wc-bar-top {
+        animation-delay: .0s;
+        animation-name: wc-bar-grow;
+    }
+
+    .wc-animate .wc-icon {
+        animation-delay: .08s;
+    }
+
+    .wc-animate .wc-title {
+        animation-delay: .14s;
+    }
+
+    .wc-animate .wc-dot {
+        animation-delay: .1s;
+    }
+
+    .wc-animate .wc-counter {
+        animation-delay: .2s;
+    }
+
+    .wc-animate .wc-desc {
+        animation-delay: .3s;
+    }
+
+    @keyframes wc-fade-up {
+        from {
+            opacity: 0;
+            transform: translateY(6px);
+        }
+
+        to {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    }
+
+    @keyframes wc-bar-grow {
+        from {
+            opacity: 0;
+            transform: scaleX(0);
+        }
+
+        to {
+            opacity: 1;
+            transform: scaleX(1);
+        }
+    }
+
+    .wc-bar-top {
+        transform-origin: left;
+    }
+
+    @keyframes pulse-ring {
+        0% {
+            transform: scale(1);
+            opacity: .5;
+        }
+
+        70% {
+            transform: scale(2.2);
+            opacity: 0;
+        }
+
+        100% {
+            transform: scale(2.2);
+            opacity: 0;
+        }
+    }
+
+    /* Barra de progreso: crece de 0 al valor final */
+    .wc-progress-fill {
+        width: 0%;
+        transition: width 1s ease .35s;
+    }

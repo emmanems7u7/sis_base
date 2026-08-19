@@ -9,7 +9,6 @@ use App\Models\Formulario;
 use App\Models\RespuestasCampo;
 use App\Models\RespuestasForm;
 use Illuminate\Support\Str;
-use Illuminate\Http\Request;
 
 class CamposFormRepository implements CamposFormInterface
 {
@@ -30,8 +29,7 @@ class CamposFormRepository implements CamposFormInterface
 
             if ($campo->categoria_id) {
                 // Trae todos los catálogos activos de la categoría
-                $campo->opciones_catalogo = $this->CatalogoRepository
-                    ->obtenerCatalogosPorCategoriaID($campo->categoria_id, true);
+                $campo->opciones_catalogo = $this->CatalogoRepository->obtenerCatalogosPorCategoriaID($campo->categoria_id, true);
             } elseif ($campo->form_ref_id) {
 
 

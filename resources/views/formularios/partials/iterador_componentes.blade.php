@@ -1,22 +1,17 @@
 @php
-    $valores = $respuesta->camposRespuestas
-        ->where('cf_id', $campo->id)
-        ->pluck('valor')
-        ->toArray();
+    $valores = $respuesta->camposRespuestas->where('cf_id', $campo->id)->pluck('valor')->toArray();
 
     $tipoCampo = strtolower($campo->campo_nombre);
     $displayValores = [];
 
     foreach ($valores as $v) {
-
         switch ($tipoCampo) {
-
-
-
             case 'imagen':
-
-                $displayValores[] = "
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <a href='" . asset("archivos/formulario_{$formulario->id}/imagenes/{$v}") . "'
+                $displayValores[] =
+                    "
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <a href='" .
+                    asset("archivos/formulario_{$formulario->id}/imagenes/{$v}") .
+                    "'
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                data-fancybox='gallery'
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                data-caption='Imagen'
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                class='text-primary me-2'>
@@ -27,8 +22,11 @@
                 break;
 
             case 'video':
-                $displayValores[] = "
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <a href='" . asset("archivos/formulario_{$formulario->id}/videos/{$v}") . "'
+                $displayValores[] =
+                    "
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            <a href='" .
+                    asset("archivos/formulario_{$formulario->id}/videos/{$v}") .
+                    "'
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                target='_blank'
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                class='text-primary me-2'>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                 <i class='fas fa-video'></i> Ver video
@@ -37,8 +35,11 @@
                 break;
 
             case 'archivo':
-                $displayValores[] = "
-                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <a href='" . asset("archivos/formulario_{$formulario->id}/archivos/{$v}") . "'
+                $displayValores[] =
+                    "
+                                                                                                                                                                                                                                                                                                                                                                                                                                                                                    <a href='" .
+                    asset("archivos/formulario_{$formulario->id}/archivos/{$v}") .
+                    "'
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     target='_blank'
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                     class='text-primary me-2'>
                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         <i class='fas fa-file'></i> Descargar
@@ -69,7 +70,7 @@
 @endphp
 
 
-@if($isMobile)
+@if ($isMobile)
     <div class="col-6 col-md-6 mb-1">
         <div class="border-bottom pb-1" style="font-size: 0.85rem;">
             <strong class="d-block">{{ $campo->etiqueta }}:</strong>
@@ -80,5 +81,4 @@
     </div>
 @else
     <td>{!! implode('<br>', $displayValores) !!}</td>
-
 @endif
