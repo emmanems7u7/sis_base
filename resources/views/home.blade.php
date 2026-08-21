@@ -4,6 +4,11 @@
 
     <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels"></script>
     <script src="https://cdn.jsdelivr.net/npm/apexcharts"></script>
+
+    <link id="pagestyle" href="{{ asset('css/dashboard/bienvenida.css') }}" rel="stylesheet" />
+    <link id="pagestyle" href="{{ asset('css/dashboard/boton.css') }}" rel="stylesheet" />
+    <link id="pagestyle" href="{{ asset('css/dashboard/contador.css') }}" rel="stylesheet" />
+
     <style>
         .minimal-card-horizontal {
             background-color: #ffffff;
@@ -42,12 +47,11 @@
         }
     </style>
     @if ($tiempo_cambio_contraseña != 1)
-        <div class="container mb-3">
+        <div class="container">
 
             @if (!empty($grid))
-                <div class="row g-3">
-
-                    @foreach ($grid as $fila)
+                @foreach ($grid as $fila)
+                    <div class="row g-3 mb-2">
                         @foreach ($fila['columnas'] as $col)
                             <div class="{{ $col['clases'] }}">
 
@@ -56,19 +60,7 @@
                                 @switch($widget['tipo'])
                                     {{-- 🔘 BOTÓN --}}
                                     @case('WID-001')
-                                        @php
-                                            $cfg = $widget['data']['configuracion'];
-                                        @endphp
-
-                                        <a href="{{ $cfg['url'] ?? '#' }}" class="btn"
-                                            style="background-color: {{ $cfg['color'] ?? '#0d6efd' }}; color:#fff;">
-
-                                            @if (!empty($cfg['icono']))
-                                                <i class="{{ $cfg['icono'] }} me-1"></i>
-                                            @endif
-
-                                            {{ $cfg['texto'] ?? 'Botón' }}
-                                        </a>
+                                        @include('widgets.renders.boton')
                                     @break
 
                                     {{-- 📊 ESTADÍSTICA --}}
@@ -163,9 +155,8 @@
 
                             </div>
                         @endforeach
-                    @endforeach
-
-                </div>
+                    </div>
+                @endforeach
             @else
                 <div class="alert alert-warning">
                     No hay widgets configurados para tu rol.

@@ -7,6 +7,7 @@ use Illuminate\Http\Request;
 use App\Models\Formulario;
 use App\Interfaces\CatalogoInterface;
 use App\Models\Modulo;
+use Illuminate\Support\Facades\Route;
 
 class WidgetController extends Controller
 {
@@ -33,14 +34,47 @@ class WidgetController extends Controller
     public function create()
     {
         $catalogos = $this->CatalogoRepository->obtenerCatalogosPorCategoria('Tipos de Widget', true);
-        $formularios = Formulario::where('estado', 'EFORM-002')->get();
+
         $breadcrumb = [
             ['name' => 'Inicio', 'url' => route('home')],
             ['name' => 'Widgets', 'url' => route('widgets.index')],
             ['name' => 'Crear Widget', 'url' => ''],
         ];
 
-        return view('widgets.create', compact('formularios', 'catalogos', 'breadcrumb'));
+        $routes = Route::getRoutes();
+        //dd($routes);
+        $routes = collect($routes)
+            ->filter(function ($route) {
+                return str_contains($route->getName(), 'index');
+            })
+            ->map(function ($route) {
+                return [
+                    'nombre' => $route->getName(),
+                    'tipo' => 'ruta',
+                ];
+            })
+            ->values();
+
+        $routes->push([
+            'nombre' => '__crear_modulo_formulario__',
+            'label' => 'Crear módulo / formulario asociado',
+            'tipo' => 'accion',
+        ]);
+        $routes->push([
+            'nombre' => '__ver_modulo_formulario__',
+            'label' => 'Ver módulo / formulario asociado',
+            'tipo' => 'accion',
+        ]);
+
+        $modulos = Modulo::where('activo', 1)
+            ->with([
+                'formularios' => function ($query) {
+                    $query->wherePivot('activo', 1);
+                }
+            ])
+            ->get();
+
+        return view('widgets.create', compact('modulos', 'catalogos', 'breadcrumb', 'routes'));
     }
 
     // Guardar widget
@@ -51,17 +85,32 @@ class WidgetController extends Controller
             'tipo' => 'required|string',
             'descripcion' => 'nullable|string',
         ]);
-
-
         $configuracion = [];
 
         switch ($request->tipo) {
 
             case 'WID-001':
+
+
+                //__crear_modulo_formulario__ 
+                switch ($request->configuracion['url']) {
+                    case '__crear_modulo_formulario__':
+
+                        $url = route('formularios.registrar', ['form' => $request->formulario_id, 'modulo' => $request->modulo_id]);
+                        break;
+                    case '__ver_modulo_formulario__':
+
+                        $url = route('modulo.index', $request->modulo_id);
+                        break;
+                    default:
+                        $url = route($request->configuracion['url']);
+                        break;
+                }
+
                 $configuracion = [
                     'texto' => $request->configuracion['texto'] ?? 'Botón',
                     'color' => $request->configuracion['color'] ?? '#0d6efd',
-                    'url' => route('formularios.registrar', ['form' => $request->formulario_id, 'modulo' => 0]),
+                    'url' => $url,
                     'valor' => $request->configuracion['valor'] ?? 0,
                     'icono' => $request->configuracion['icono'] ?? null,
                 ];

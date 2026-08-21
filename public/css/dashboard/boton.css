@@ -1,0 +1,90 @@
+.widget-action-btn {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 0.6rem;
+        padding: 1.5rem 1.25rem;
+        border-radius: 14px;
+        text-decoration: none;
+        color: #fff;
+        font-weight: 700;
+        font-size: 1.05rem;
+        background: var(--btn-color);
+        box-shadow: 0 6px 16px -3px color-mix(in srgb, var(--btn-color) 55%, transparent);
+        transition: transform 0.2s ease, box-shadow 0.2s ease, filter 0.2s ease;
+        animation: widgetBtnPulse 2.5s ease-in-out infinite;
+        min-width: 160px;
+        position: relative;
+        overflow: hidden;
+    }
+
+    .widget-action-btn::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: -75%;
+        width: 50%;
+        height: 100%;
+        background: linear-gradient(120deg, transparent, rgba(255, 255, 255, 0.35), transparent);
+        transform: skewX(-20deg);
+        transition: left 0.6s ease;
+        pointer-events: none;
+    }
+
+    .widget-action-btn:hover {
+        color: #fff;
+        transform: translateY(-3px) scale(1.02);
+        box-shadow: 0 10px 22px -3px color-mix(in srgb, var(--btn-color) 65%, transparent);
+        filter: brightness(1.08);
+        animation-play-state: paused;
+    }
+
+    .widget-action-btn:hover::before {
+        left: 125%;
+    }
+
+    .widget-action-btn:active {
+        transform: translateY(-1px) scale(0.99);
+    }
+
+    .widget-action-icon {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        width: 44px;
+        height: 44px;
+        border-radius: 50%;
+        background: rgba(255, 255, 255, 0.2);
+        font-size: 1.3rem;
+        animation: widgetIconFloat 2.5s ease-in-out infinite;
+    }
+
+    .widget-action-text {
+        white-space: nowrap;
+        letter-spacing: 0.2px;
+    }
+
+    @keyframes widgetBtnPulse {
+
+        0%,
+        100% {
+            box-shadow: 0 6px 16px -3px color-mix(in srgb, var(--btn-color) 55%, transparent);
+        }
+
+        50% {
+            box-shadow: 0 6px 22px 2px color-mix(in srgb, var(--btn-color) 70%, transparent);
+        }
+    }
+
+    @keyframes widgetIconFloat {
+
+        0%,
+        100% {
+            transform: translateY(0);
+        }
+
+        50% {
+            transform: translateY(-3px);
+        }
+    }

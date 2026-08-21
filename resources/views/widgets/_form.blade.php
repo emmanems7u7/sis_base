@@ -6,16 +6,25 @@
 </div>
 
 <div class="mb-3">
-    <label for="formulario_id" class="form-label">Formulario</label>
-    <select name="formulario_id" id="formulario_id" class="form-select">
-        <option value="">-- Seleccionar formulario --</option>
+    <label for="modulo_id" class="form-label">Módulo</label>
 
-        @foreach ($formularios as $form)
-            <option value="{{ $form->id }}"
-                {{ old('formulario_id', $widget->formulario_id ?? '') == $form->id ? 'selected' : '' }}>
-                {{ $form->nombre }}
+    <select name="modulo_id" id="modulo_id" class="form-control">
+        <option value="">Seleccione un módulo</option>
+
+        @foreach ($modulos as $modulo)
+            <option value="{{ $modulo->id }}">
+                {{ $modulo->nombre }}
             </option>
         @endforeach
+    </select>
+</div>
+
+
+<div class="mb-3">
+    <label for="formulario_id" class="form-label">Formulario</label>
+
+    <select name="formulario_id" id="formulario_id" class="form-control">
+        <option value="">Seleccione primero un módulo</option>
     </select>
 </div>
 
@@ -52,9 +61,31 @@
                 value="{{ $config['color'] ?? '#0d6efd' }}">
         </div>
         <div class="mb-3">
+            <label for="icono" class="form-label @error('icono') is-invalid @enderror">Icono</label>
+            <div class="input-group">
+                <input type="text" name="configuracion[icono]" id="icono"
+                    value="{{ old('configuracion[icono]') }}" class="form-control" required placeholder="fas fa-user">
+                <span class="input-group-text">
+                    <i id="preview-icono" class="{{ old('configuracion[icono]') }}"></i>
+                </span>
+            </div>
+            @error('icono')
+                <div class="invalid-feedback">{{ $message }}</div>
+            @enderror
+        </div>
+        <div class="mb-3">
             <label for="boton_link" class="form-label">URL del Botón</label>
-            <input type="text" name="configuracion[url]" id="boton_link" class="form-control"
-                value="{{ $config['url'] ?? '' }}">
+
+            <select name="configuracion[url]" id="boton_link" class="form-control">
+                <option value="">Seleccione una ruta</option>
+
+                @foreach ($routes as $route)
+                    <option value="{{ $route['nombre'] }}"
+                        {{ old('configuracion.url', $config['url'] ?? '') == $route['nombre'] ? 'selected' : '' }}>
+                        {{ $route['label'] ?? $route['nombre'] }}
+                    </option>
+                @endforeach
+            </select>
         </div>
     </div>
 
@@ -89,7 +120,8 @@
 
             <div class="col-md-2 mb-3">
                 <label class="form-label">Icono FontAwesome</label>
-                <input type="text" name="configuracion[icono]" class="form-control" placeholder="fa-solid fa-users">
+                <input type="text" name="configuracion[icono]" class="form-control"
+                    placeholder="fa-solid fa-users">
             </div>
             <div class="col-md-2">
                 <div class="form-check form-switch">
@@ -249,6 +281,103 @@
 </div>
 
 <button type="submit" class="btn btn-primary">Guardar Widget</button>
+
+
+
+@php
+    $modulosJson = $modulos
+        ->map(function ($modulo) {
+            return [
+                'id' => $modulo->id,
+                'nombre' => $modulo->nombre,
+                'formularios' => $modulo->formularios
+                    ->map(function ($formulario) {
+                        return [
+                            'id' => $formulario->id,
+                            'nombre' => $formulario->nombre,
+                        ];
+                    })
+                    ->values()
+                    ->toArray(),
+            ];
+        })
+        ->values()
+        ->toArray();
+@endphp
+
+<script>
+    const modulos = @json($modulosJson);
+
+    const moduloSelect = document.getElementById('modulo_id');
+    const form_select = document.getElementById('formulario_id');
+
+    const formularioSeleccionado = "{{ old('formulario_id', $widget->formulario_id ?? '') }}";
+
+    function cargarFormularios() {
+        const moduloId = moduloSelect.value;
+
+        form_select.innerHTML = '';
+
+        const opcionInicial = document.createElement('option');
+        opcionInicial.value = '';
+
+        if (!moduloId) {
+            opcionInicial.textContent = 'Seleccione primero un módulo';
+            form_select.appendChild(opcionInicial);
+            return;
+        }
+
+        opcionInicial.textContent = 'Seleccione un formulario';
+        form_select.appendChild(opcionInicial);
+
+        const modulo = modulos.find(
+            modulo => String(modulo.id) === String(moduloId)
+        );
+
+        if (!modulo) {
+            return;
+        }
+
+        modulo.formularios.forEach(formulario => {
+            const option = document.createElement('option');
+
+            option.value = formulario.id;
+            option.textContent = formulario.nombre;
+
+            if (
+                String(formulario.id) === String(formularioSeleccionado)
+            ) {
+                option.selected = true;
+            }
+
+            form_select.appendChild(option);
+        });
+    }
+
+    moduloSelect.addEventListener('change', function() {
+        form_select.value = '';
+        cargarFormularios();
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        const formularioId = "{{ old('formulario_id', $widget->formulario_id ?? '') }}";
+
+        if (formularioId) {
+            const moduloEncontrado = modulos.find(modulo =>
+                modulo.formularios.some(
+                    formulario =>
+                    String(formulario.id) === String(formularioId)
+                )
+            );
+
+            if (moduloEncontrado) {
+                moduloSelect.value = moduloEncontrado.id;
+            }
+        }
+
+        cargarFormularios();
+    });
+</script>
 
 
 <script>
